@@ -4,8 +4,6 @@
 cmake_minimum_required (VERSION 3.8)
 
 project ("VocalTractLabApi")
-
-# Add source to this project's executable.
-add_executable (VocalTractLabApi "VocalTractLabApi.cpp" "VocalTractLabApi.h")
+add_subdirectory(src)
 
 # TODO: Add tests and install targets if needed.
