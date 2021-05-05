@@ -21,6 +21,7 @@
 
 #include "VocalTractLabApi.h"
 #include "Dsp.h"
+#include "SoundLib.h"
 #include "AudioFile.h"
 #include "Synthesizer.h"
 #include "SegmentSequence.h"
