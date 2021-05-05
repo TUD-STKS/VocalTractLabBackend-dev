@@ -8,3 +8,8 @@ Please feel free to fork this repo and make your own contributions, though!
 The main branch of this repo is reviewed on a semi-regular basis for inclusion into the official release.
 
 This repo may be included in other repos as a submodule wherever the backend source code or the C/C++ API is needed.
+
+## Build instructions
+- Build using CMake
+
+Configurations for Windows x64 (Debug and Release), as well as WSL GCC (Debug and Release) are provided. More are welcome!
