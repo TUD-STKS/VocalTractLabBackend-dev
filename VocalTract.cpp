@@ -1227,7 +1227,7 @@ void VocalTract::getEmaSurfaceVertexRange(int emaSurface, int *min, int *max)
 // Reads the anatomy data for the vocal tract from the <anatomy> element node.
 // ****************************************************************************
 
-void VocalTract::readAnatomyXml(XmlNode *anatomyNode) throw (std::string)
+void VocalTract::readAnatomyXml(XmlNode *anatomyNode)
 {
   XmlNode *sectionNode;
   XmlNode *node;
@@ -1568,7 +1568,7 @@ void VocalTract::readAnatomyXml(XmlNode *anatomyNode) throw (std::string)
 /// Reads the list of vocal tract shapes from the <shapes> element node.
 // ****************************************************************************
 
-void VocalTract::readShapesXml(XmlNode *shapeListNode) throw (std::string)
+void VocalTract::readShapesXml(XmlNode *shapeListNode)
 {
   int i, k, m, n;
   XmlNode *shapeNode;
@@ -1641,7 +1641,7 @@ void VocalTract::readShapesXml(XmlNode *shapeListNode) throw (std::string)
 /// Read the speaker anatomy and vocal tract shape list from an xml file.
 // ****************************************************************************
 
-void VocalTract::readFromXml(const string &speakerFileName) throw (std::string)
+void VocalTract::readFromXml(const string &speakerFileName)
 {
   XmlNode *rootNode = xmlParseFile(speakerFileName, "speaker");
   if (rootNode == NULL)
