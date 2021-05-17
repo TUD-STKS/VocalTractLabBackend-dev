@@ -41,6 +41,7 @@ public:
   double OQ;      // [0, 1] Open quotient
   double SQ;      // [1, 2] Speed quotient
   double TL;      // [0, 0.2] Spectral tilt
+  double SNR;	  // [0., 50.] Signal to noise ratio
 
   // **************************************************************************
   // Public functions.
