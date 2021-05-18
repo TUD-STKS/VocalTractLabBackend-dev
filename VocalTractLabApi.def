@@ -17,5 +17,6 @@ vtlSynthBlock
 vtlApiTest
 vtlSegmentSequenceToGesturalScore
 vtlGesturalScoreToAudio
+vtlGesturalScoreToGlottisSignals
 vtlGesturalScoreToTractSequence
 vtlTractSequenceToAudio

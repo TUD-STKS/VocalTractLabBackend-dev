@@ -363,6 +363,24 @@ C_EXPORT int vtlGesturalScoreToAudio(const char* gesFileName, const char* wavFil
 
 
 // ****************************************************************************
+// This function directly converts a gestural score to a glottis signal file.
+// Parameters:
+// o gesFileName (in): Name of the gestural score file to synthesize.
+// o glottisSignalsFileName (in): Name of the file with the resulting glottis signals.
+//
+// Function return value:
+// 0: success.
+// 1: The API was not initialized.
+// 2: Loading the gestural score file failed.
+// 3: Values in the gestural score file are out of range.
+// 4: The glottis signals file could not be saved.
+// ****************************************************************************
+
+C_EXPORT int vtlGesturalScoreToGlottisSignals(const char* gesFileName,
+    const char* glottisSignalsFileName);
+
+
+// ****************************************************************************
 // This function directly converts a gestural score to a tract sequence file.
 // The latter is a text file containing the parameters of the vocal fold and 
 // vocal tract models in steps of 5 ms.

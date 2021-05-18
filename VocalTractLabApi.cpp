@@ -1217,6 +1217,261 @@ int vtlGesturalScoreToAudio(const char *gesFileName, const char *wavFileName,
 }
 
 
+
+// ****************************************************************************
+// This function directly converts a gestural score to a glottis signal file.
+// Parameters:
+// o gesFileName (in): Name of the gestural score file to synthesize.
+// o glottisSignalsFileName (in): Name of the file with the resulting glottis signals.
+//
+// Function return value:
+// 0: success.
+// 1: The API was not initialized.
+// 2: Loading the gestural score file failed.
+// 3: Values in the gestural score file are out of range.
+// 4: The glottis signals file could not be saved.
+// ****************************************************************************
+
+
+int vtlGesturalScoreToGlottisSignals(const char* gesFileName, const char* glottisSignalsFileName)
+{
+    if (!vtlApiInitialized)
+    {
+        printf("Error: The API has not been initialized.\n");
+        return 1;
+    }
+
+
+
+    // ****************************************************************
+    // Init and load the gestural score.
+    // ****************************************************************
+
+    GesturalScore* gesturalScore = new GesturalScore(vocalTract, glottis[selectedGlottis]);
+
+    bool allValuesInRange = true;
+    if (gesturalScore->loadGesturesXml(string(gesFileName), allValuesInRange) == false)
+    {
+        printf("Error in vtlGesturalScoreToGlottisSignals: Loading the gestural score file failed!\n");
+        delete gesturalScore;
+        return 2;
+    }
+
+    if (allValuesInRange == false)
+    {
+        printf("Error in vtlGesturalScoreToGlottisSignals: Some values in the gestural score are out of range!\n");
+        delete gesturalScore;
+        return 3;
+    }
+
+    // Important !!!
+    gesturalScore->calcCurves();
+
+    // ****************************************************************
+    // Do the actual synthesis.
+    // ****************************************************************
+
+
+
+    int duration = gesturalScore->getDuration_pt();
+    int startPos = gesturalScore->getPos_pt();
+    double timeStep_s = tdsModel->timeStep;
+
+    int pos_percent;
+    Tube tube;
+    int flowSourceSection;
+    int pressureSourceSection;
+    double pressureSource_dPa;
+    double flowSource_cm3_s;
+
+    double totalFlow_cm3_s;
+    double mouthFlow_cm3_s;
+    double nostrilFlow_cm3_s;
+    double skinFlow_cm3_s;
+
+    double pressure_dPa[4];
+    double inflow_cm3_s;
+    double outflow_cm3_s;
+
+    int userProbeSection = 20;
+    int internalProbeSection = -1;
+    tdsModel->constrictionMonitorTubeSection = userProbeSection;
+
+    int i, k;
+
+    int speed_percent = 100;
+
+    IirFilter outputPressureFilter;
+    outputPressureFilter.createChebyshev((double)SYNTHETIC_SPEECH_BANDWIDTH_HZ / (double)SAMPLING_RATE, false, 8);
+
+    // **************************************************************
+        // Sample the pressure and flow values at the mouth and the probe.
+        // **************************************************************
+
+        // Ring buffers for different time signals
+
+        // For TDS page
+    static const int TDS_BUFFER_EXPONENT = 15;
+    static const int TDS_BUFFER_LENGTH = 32768;
+    static const int TDS_BUFFER_MASK = 32767;
+
+    double userProbeFlow[TDS_BUFFER_LENGTH];
+    double userProbePressure[TDS_BUFFER_LENGTH];
+    double userProbeArea[TDS_BUFFER_LENGTH];
+    double userProbeVelocity[TDS_BUFFER_LENGTH];
+    double internalProbeFlow[TDS_BUFFER_LENGTH];
+    double internalProbePressure[TDS_BUFFER_LENGTH];
+    double outputFlow[TDS_BUFFER_LENGTH];
+    double outputPressure[TDS_BUFFER_LENGTH];
+    double filteredOutputPressure[TDS_BUFFER_LENGTH];
+
+
+    // ****************************************************************************
+    /// Reset all buffers related to the time-domain synthesis.
+      // ****************************************************************************
+
+
+    for (int i = 0; i < TDS_BUFFER_LENGTH; i++)
+    {
+        userProbeFlow[i] = 0.0;
+        userProbePressure[i] = 0.0;
+        userProbeArea[i] = 0.0;
+        userProbeVelocity[i] = 0.0;
+
+        internalProbeFlow[i] = 0.0;
+        internalProbePressure[i] = 0.0;
+
+        outputFlow[i] = 0.0;
+        outputPressure[i] = 0.0;
+        filteredOutputPressure[i] = 0.0;
+    }
+    outputPressureFilter.resetBuffers();
+
+    // ****************************************************************
+  // Shall we write out the glottis data ?
+  // ****************************************************************
+
+    ofstream glottisStream;
+
+    glottisStream.open(string(glottisSignalsFileName));
+    if (!glottisStream)
+    {
+        printf("Error in vtlGesturalScoreToGlottisSignals(): Failed to open the file %s to write out the glottis signals!\n");
+        delete gesturalScore;
+        return 4;
+    }
+    else
+    {
+        gesturalScore->glottis->printParamNames(glottisStream);
+    }
+
+
+    bool filtering;
+
+
+
+    for (i = startPos; (i < duration); i++)
+    {
+
+        // **************************************************************
+        // Make a time step with the current tube geometry.
+        // **************************************************************
+
+        gesturalScore->getTube(tube);
+        gesturalScore->getFlowSource(flowSource_cm3_s, flowSourceSection);
+        gesturalScore->getPressureSource(pressureSource_dPa, pressureSourceSection);
+
+        if (i == 0)
+        {
+            filtering = false;
+        }
+        else
+        {
+            filtering = true;
+        }
+
+        tdsModel->setTube(&tube, filtering);
+        tdsModel->setFlowSource(flowSource_cm3_s, flowSourceSection);
+        tdsModel->setPressureSource(pressureSource_dPa, pressureSourceSection);
+
+        // Get the four relevant pressure values for the glottis model:
+        // subglottal, lower glottis, upper glottis, supraglottal.
+
+        pressure_dPa[0] = tdsModel->getSectionPressure(Tube::LAST_TRACHEA_SECTION);
+        pressure_dPa[1] = tdsModel->getSectionPressure(Tube::LOWER_GLOTTIS_SECTION);
+        pressure_dPa[2] = tdsModel->getSectionPressure(Tube::UPPER_GLOTTIS_SECTION);
+        pressure_dPa[3] = tdsModel->getSectionPressure(Tube::FIRST_PHARYNX_SECTION);
+
+        gesturalScore->incPos(pressure_dPa);
+
+        totalFlow_cm3_s = tdsModel->proceedTimeStep(mouthFlow_cm3_s, nostrilFlow_cm3_s, skinFlow_cm3_s);
+
+
+
+
+
+        k = i & TDS_BUFFER_MASK;
+        outputFlow[k] = totalFlow_cm3_s;
+        outputPressure[k] = (outputFlow[k] - outputFlow[(k - 1) & TDS_BUFFER_MASK]) / timeStep_s;
+        filteredOutputPressure[k] = outputPressureFilter.getOutputSample(outputPressure[k]);
+        // Original scaling factor: 0.004 !
+        //data->track[Data::MAIN_TRACK]->setValue(i, (short)(data->filteredOutputPressure[k] * 0.003));
+
+        if ((userProbeSection >= 0) && (userProbeSection < Tube::NUM_SECTIONS))
+        {
+            tdsModel->getSectionFlow(userProbeSection, inflow_cm3_s, outflow_cm3_s);
+            userProbeFlow[k] = inflow_cm3_s;
+            userProbePressure[k] = tdsModel->getSectionPressure(userProbeSection);
+
+            double area = tdsModel->tubeSection[userProbeSection].area;
+            if (area < TdsModel::MIN_AREA_CM2)
+            {
+                area = TdsModel::MIN_AREA_CM2;
+            }
+            userProbeArea[k] = area;
+            userProbeVelocity[k] = inflow_cm3_s / area;
+        }
+
+        if ((internalProbeSection >= 0) && (internalProbeSection < Tube::NUM_SECTIONS))
+        {
+            tdsModel->getSectionFlow(internalProbeSection, inflow_cm3_s, outflow_cm3_s);
+            internalProbeFlow[k] = inflow_cm3_s;
+            internalProbePressure[k] = tdsModel->getSectionPressure(internalProbeSection);
+        }
+
+        // **************************************************************
+        // Output the glottis parameter in a file.
+        // **************************************************************
+
+        if (glottisStream)
+        {
+            tdsModel->getSectionFlow(Tube::UPPER_GLOTTIS_SECTION, inflow_cm3_s, outflow_cm3_s);
+            double glottisFlow_cm3_s = inflow_cm3_s;
+            gesturalScore->glottis->printParamValues(glottisStream, glottisFlow_cm3_s,
+                pressure_dPa, mouthFlow_cm3_s, nostrilFlow_cm3_s, skinFlow_cm3_s, filteredOutputPressure[k]);
+        }
+    }
+
+    // ****************************************************************
+    // Close the file with the glottis signals.
+    // ****************************************************************
+
+    if (glottisStream)
+    {
+        glottisStream.close();
+    }
+
+
+    // ****************************************************************
+    // Free the memory and return.
+    // ****************************************************************
+
+    delete gesturalScore;
+    return 0;
+}
+
+
+
 // ****************************************************************************
 // This function directly converts a gestural score to a tract sequence file.
 // The latter is a text file containing the parameters of the vocal fold and 
