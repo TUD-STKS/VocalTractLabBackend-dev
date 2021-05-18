@@ -1315,15 +1315,15 @@ int vtlGesturalScoreToGlottisSignals(const char* gesFileName, const char* glotti
     static const int TDS_BUFFER_LENGTH = 32768;
     static const int TDS_BUFFER_MASK = 32767;
 
-    double userProbeFlow[TDS_BUFFER_LENGTH];
-    double userProbePressure[TDS_BUFFER_LENGTH];
-    double userProbeArea[TDS_BUFFER_LENGTH];
-    double userProbeVelocity[TDS_BUFFER_LENGTH];
-    double internalProbeFlow[TDS_BUFFER_LENGTH];
-    double internalProbePressure[TDS_BUFFER_LENGTH];
-    double outputFlow[TDS_BUFFER_LENGTH];
-    double outputPressure[TDS_BUFFER_LENGTH];
-    double filteredOutputPressure[TDS_BUFFER_LENGTH];
+    vector<double> userProbeFlow(TDS_BUFFER_LENGTH, 0);
+    vector<double> userProbePressure(TDS_BUFFER_LENGTH, 0);
+    vector<double> userProbeArea(TDS_BUFFER_LENGTH, 0);
+    vector<double> userProbeVelocity(TDS_BUFFER_LENGTH, 0);
+    vector<double> internalProbeFlow(TDS_BUFFER_LENGTH, 0);
+    vector<double> internalProbePressure(TDS_BUFFER_LENGTH, 0);
+    vector<double> outputFlow(TDS_BUFFER_LENGTH, 0);
+    vector<double> outputPressure(TDS_BUFFER_LENGTH, 0);
+    vector<double> filteredOutputPressure(TDS_BUFFER_LENGTH, 0);
 
 
     // ****************************************************************************
@@ -1331,20 +1331,18 @@ int vtlGesturalScoreToGlottisSignals(const char* gesFileName, const char* glotti
       // ****************************************************************************
 
 
-    for (int i = 0; i < TDS_BUFFER_LENGTH; i++)
-    {
-        userProbeFlow[i] = 0.0;
-        userProbePressure[i] = 0.0;
-        userProbeArea[i] = 0.0;
-        userProbeVelocity[i] = 0.0;
-
-        internalProbeFlow[i] = 0.0;
-        internalProbePressure[i] = 0.0;
-
-        outputFlow[i] = 0.0;
-        outputPressure[i] = 0.0;
-        filteredOutputPressure[i] = 0.0;
-    }
+    //for (int i = 0; i < TDS_BUFFER_LENGTH; i++)
+    //{
+    //    userProbeFlow[i] = 0.0;
+    //    userProbePressure[i] = 0.0;
+    //    userProbeArea[i] = 0.0;
+    //    userProbeVelocity[i] = 0.0;
+    //    internalProbeFlow[i] = 0.0;
+    //    internalProbePressure[i] = 0.0;
+    //    outputFlow[i] = 0.0;
+    //    outputPressure[i] = 0.0;
+    //    filteredOutputPressure[i] = 0.0;
+    //}
     outputPressureFilter.resetBuffers();
 
     // ****************************************************************
@@ -1411,32 +1409,32 @@ int vtlGesturalScoreToGlottisSignals(const char* gesFileName, const char* glotti
 
 
         k = i & TDS_BUFFER_MASK;
-        outputFlow[k] = totalFlow_cm3_s;
-        outputPressure[k] = (outputFlow[k] - outputFlow[(k - 1) & TDS_BUFFER_MASK]) / timeStep_s;
-        filteredOutputPressure[k] = outputPressureFilter.getOutputSample(outputPressure[k]);
+        outputFlow.at(k) = totalFlow_cm3_s;
+        outputPressure.at(k) = (outputFlow.at(k) - outputFlow.at((k - 1) & TDS_BUFFER_MASK)) / timeStep_s;
+        filteredOutputPressure.at(k) = outputPressureFilter.getOutputSample(outputPressure.at(k));
         // Original scaling factor: 0.004 !
         //data->track[Data::MAIN_TRACK]->setValue(i, (short)(data->filteredOutputPressure[k] * 0.003));
 
         if ((userProbeSection >= 0) && (userProbeSection < Tube::NUM_SECTIONS))
         {
             tdsModel->getSectionFlow(userProbeSection, inflow_cm3_s, outflow_cm3_s);
-            userProbeFlow[k] = inflow_cm3_s;
-            userProbePressure[k] = tdsModel->getSectionPressure(userProbeSection);
+            userProbeFlow.at(k) = inflow_cm3_s;
+            userProbePressure.at(k) = tdsModel->getSectionPressure(userProbeSection);
 
             double area = tdsModel->tubeSection[userProbeSection].area;
             if (area < TdsModel::MIN_AREA_CM2)
             {
                 area = TdsModel::MIN_AREA_CM2;
             }
-            userProbeArea[k] = area;
-            userProbeVelocity[k] = inflow_cm3_s / area;
+            userProbeArea.at(k) = area;
+            userProbeVelocity.at(k) = inflow_cm3_s / area;
         }
 
         if ((internalProbeSection >= 0) && (internalProbeSection < Tube::NUM_SECTIONS))
         {
             tdsModel->getSectionFlow(internalProbeSection, inflow_cm3_s, outflow_cm3_s);
-            internalProbeFlow[k] = inflow_cm3_s;
-            internalProbePressure[k] = tdsModel->getSectionPressure(internalProbeSection);
+            internalProbeFlow.at(k) = inflow_cm3_s;
+            internalProbePressure.at(k) = tdsModel->getSectionPressure(internalProbeSection);
         }
 
         // **************************************************************
@@ -1448,7 +1446,7 @@ int vtlGesturalScoreToGlottisSignals(const char* gesFileName, const char* glotti
             tdsModel->getSectionFlow(Tube::UPPER_GLOTTIS_SECTION, inflow_cm3_s, outflow_cm3_s);
             double glottisFlow_cm3_s = inflow_cm3_s;
             gesturalScore->glottis->printParamValues(glottisStream, glottisFlow_cm3_s,
-                pressure_dPa, mouthFlow_cm3_s, nostrilFlow_cm3_s, skinFlow_cm3_s, filteredOutputPressure[k]);
+                pressure_dPa, mouthFlow_cm3_s, nostrilFlow_cm3_s, skinFlow_cm3_s, filteredOutputPressure.at(k));
         }
     }
 
