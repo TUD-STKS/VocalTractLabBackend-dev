@@ -1288,6 +1288,75 @@ int vtlGesturalScoreToTractSequence(const char* gesFileName, const char* tractSe
 }
 
 
+
+// ****************************************************************************
+// This function gets the duration from a gestural score.
+// Parameters:
+// o gesFileName (in): Name of the gestural score file.
+// o audioFileDuration (out): The number of audio samples, the audio file would
+//   have, if the gestural score was synthesized. This number can be slightly 
+//   larger than the length of the gestural score because the audio is 
+//   synthesized in chunks of a constant size. If not wanted, set to NULL.
+// o gesFileDuration (out): The duration of the gestural score (in samples).
+//   If not wanted, set to NULL.
+//
+// Function return value:
+// 0: success.
+// 1: The API was not initialized.
+// 2: Loading the gestural score file failed.
+// 3: Values in the gestural score file are out of range.
+// ****************************************************************************
+
+int vtlGetGesturalScoreDuration(const char* gesFileName, int* numAudioSamples, int* numGestureSamples)
+{
+    if (!vtlApiInitialized)
+    {
+        printf("Error: The API has not been initialized.\n");
+        return 1;
+    }
+
+
+
+    // ****************************************************************
+    // Init and load the gestural score.
+    // ****************************************************************
+
+    GesturalScore* gesturalScore = new GesturalScore(vocalTract, glottis[selectedGlottis]);
+    static const int NUM_CHUNK_SAMPLES = 110;
+
+    bool allValuesInRange = true;
+    if (gesturalScore->loadGesturesXml(string(gesFileName), allValuesInRange) == false)
+    {
+        printf("Error in vtlGesturalScoreToGlottisSignals: Loading the gestural score file failed!\n");
+        delete gesturalScore;
+        return 2;
+    }
+
+    if (allValuesInRange == false)
+    {
+        printf("Error in vtlGesturalScoreToGlottisSignals: Some values in the gestural score are out of range!\n");
+        delete gesturalScore;
+        return 3;
+    }
+
+    // Important !!!
+    gesturalScore->calcCurves();
+
+    if (numGestureSamples != NULL)
+    {
+        *numGestureSamples = gesturalScore->getDuration_pt();
+    }
+
+    if (numAudioSamples != NULL)
+    {
+        *numAudioSamples = ( (int)( ( gesturalScore->getDuration_pt() ) / NUM_CHUNK_SAMPLES ) + 1 )  * NUM_CHUNK_SAMPLES;
+    }
+
+
+    return 0;
+}
+
+
 // ****************************************************************************
 // This function converts a tract sequence file into an audio signal or file.
 // Parameters:
