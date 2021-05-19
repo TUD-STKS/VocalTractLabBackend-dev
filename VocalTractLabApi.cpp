@@ -638,6 +638,30 @@ int vtlGetTransferFunction(double *tractParams, int numSpectrumSamples,
 }
 
 
+int vtlInputTractToLimitedTract(double* inTractParams, double* outTractParams)
+{
+    if (!vtlApiInitialized)
+    {
+        printf("Error: The API has not been initialized.\n");
+        return 1;
+    }
+
+    // Calculate the vocal tract shape from the vocal tract parameters.
+    int i;
+    for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+    {
+        vocalTract->param[i].x = inTractParams[i];
+    }
+    vocalTract->calculateAll();
+
+    for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+    {
+        outTractParams[i] = vocalTract->param[i].limitedX;
+    }
+
+    return 0;
+}
+
 // ****************************************************************************
 // Resets the time-domain synthesis of continuous speech (using the functions
 // vtlSynthesisAddTube() or vtlSynthesisAddTract()). This function must be 

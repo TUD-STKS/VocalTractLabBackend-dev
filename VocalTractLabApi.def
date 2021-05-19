@@ -10,6 +10,7 @@ vtlGetTractParams
 vtlExportTractSvg
 vtlTractToTube
 vtlGetTransferFunction
+vtlInputTractToLimitedTract
 vtlSynthesisReset
 vtlSynthesisAddTube
 vtlSynthesisAddTract
