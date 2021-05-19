@@ -1288,6 +1288,47 @@ int vtlGesturalScoreToTractSequence(const char* gesFileName, const char* tractSe
 }
 
 
+
+int vtlGetGesturalScoreDuration(const char* gesFileName, int* gesFileDuration)
+{
+    if (!vtlApiInitialized)
+    {
+        printf("Error: The API has not been initialized.\n");
+        return 1;
+    }
+
+
+
+    // ****************************************************************
+    // Init and load the gestural score.
+    // ****************************************************************
+
+    GesturalScore* gesturalScore = new GesturalScore(vocalTract, glottis[selectedGlottis]);
+
+    bool allValuesInRange = true;
+    if (gesturalScore->loadGesturesXml(string(gesFileName), allValuesInRange) == false)
+    {
+        printf("Error in vtlGesturalScoreToGlottisSignals: Loading the gestural score file failed!\n");
+        delete gesturalScore;
+        return 2;
+    }
+
+    if (allValuesInRange == false)
+    {
+        printf("Error in vtlGesturalScoreToGlottisSignals: Some values in the gestural score are out of range!\n");
+        delete gesturalScore;
+        return 3;
+    }
+
+    // Important !!!
+    gesturalScore->calcCurves();
+
+    *gesFileDuration = gesturalScore->getDuration_pt();
+
+    return 0;
+}
+
+
 // ****************************************************************************
 // This function converts a tract sequence file into an audio signal or file.
 // Parameters:
