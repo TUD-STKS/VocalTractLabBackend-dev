@@ -1289,7 +1289,7 @@ int vtlGesturalScoreToTractSequence(const char* gesFileName, const char* tractSe
 
 
 
-int vtlGetGesturalScoreDuration(const char* gesFileName, int* gesFileDuration)
+int vtlGetGesturalScoreDuration(const char* gesFileName, int* audioFileDuration, int* gesFileDuration)
 {
     if (!vtlApiInitialized)
     {
@@ -1304,6 +1304,7 @@ int vtlGetGesturalScoreDuration(const char* gesFileName, int* gesFileDuration)
     // ****************************************************************
 
     GesturalScore* gesturalScore = new GesturalScore(vocalTract, glottis[selectedGlottis]);
+    static const int NUM_CHUNCK_SAMPLES = 110;
 
     bool allValuesInRange = true;
     if (gesturalScore->loadGesturesXml(string(gesFileName), allValuesInRange) == false)
@@ -1323,7 +1324,16 @@ int vtlGetGesturalScoreDuration(const char* gesFileName, int* gesFileDuration)
     // Important !!!
     gesturalScore->calcCurves();
 
-    *gesFileDuration = gesturalScore->getDuration_pt();
+    if (gesFileDuration != NULL)
+    {
+        *gesFileDuration = gesturalScore->getDuration_pt();
+    }
+
+    if (audioFileDuration != NULL)
+    {
+        *audioFileDuration = (int( ( gesturalScore->getDuration_pt() ) / NUM_CHUNCK_SAMPLES ) + 1)  * NUM_CHUNCK_SAMPLES;
+    }
+
 
     return 0;
 }
