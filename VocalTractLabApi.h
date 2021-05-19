@@ -386,9 +386,11 @@ C_EXPORT int vtlGesturalScoreToTractSequence(const char* gesFileName,
 // ****************************************************************************
 // This function gets the duration from a gestural score.
 // Parameters:
-// o gesFileName (in): Name of the gestural score file to synthesize.
+// o gesFileName (in): Name of the gestural score file.
 // o audioFileDuration (out): The number of audio samples, the audio file would
-//   have, if the gestural score was synthesized. If not wanted, set to NULL.
+//   have, if the gestural score was synthesized. This number can be slightly 
+//   larger than the length of the gestural score because the audio is 
+//   synthesized in chunks of a constant size. If not wanted, set to NULL.
 // o gesFileDuration (out): The duration of the gestural score (in samples).
 //   If not wanted, set to NULL.
 //
@@ -399,8 +401,8 @@ C_EXPORT int vtlGesturalScoreToTractSequence(const char* gesFileName,
 // 3: Values in the gestural score file are out of range.
 // ****************************************************************************
 
-C_EXPORT int vtlGetGesturalScoreDuration(const char* gesFileName, int* audioFileDuration,
-    int* gesFileDuration);
+C_EXPORT int vtlGetGesturalScoreDuration(const char* gesFileName, int* numAudioSamples,
+    int* numGestureSamples);
 
 
 // ****************************************************************************

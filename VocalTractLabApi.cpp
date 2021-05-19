@@ -1289,7 +1289,25 @@ int vtlGesturalScoreToTractSequence(const char* gesFileName, const char* tractSe
 
 
 
-int vtlGetGesturalScoreDuration(const char* gesFileName, int* audioFileDuration, int* gesFileDuration)
+// ****************************************************************************
+// This function gets the duration from a gestural score.
+// Parameters:
+// o gesFileName (in): Name of the gestural score file.
+// o audioFileDuration (out): The number of audio samples, the audio file would
+//   have, if the gestural score was synthesized. This number can be slightly 
+//   larger than the length of the gestural score because the audio is 
+//   synthesized in chunks of a constant size. If not wanted, set to NULL.
+// o gesFileDuration (out): The duration of the gestural score (in samples).
+//   If not wanted, set to NULL.
+//
+// Function return value:
+// 0: success.
+// 1: The API was not initialized.
+// 2: Loading the gestural score file failed.
+// 3: Values in the gestural score file are out of range.
+// ****************************************************************************
+
+int vtlGetGesturalScoreDuration(const char* gesFileName, int* numAudioSamples, int* numGestureSamples)
 {
     if (!vtlApiInitialized)
     {
@@ -1304,7 +1322,7 @@ int vtlGetGesturalScoreDuration(const char* gesFileName, int* audioFileDuration,
     // ****************************************************************
 
     GesturalScore* gesturalScore = new GesturalScore(vocalTract, glottis[selectedGlottis]);
-    static const int NUM_CHUNCK_SAMPLES = 110;
+    static const int NUM_CHUNK_SAMPLES = 110;
 
     bool allValuesInRange = true;
     if (gesturalScore->loadGesturesXml(string(gesFileName), allValuesInRange) == false)
@@ -1324,14 +1342,14 @@ int vtlGetGesturalScoreDuration(const char* gesFileName, int* audioFileDuration,
     // Important !!!
     gesturalScore->calcCurves();
 
-    if (gesFileDuration != NULL)
+    if (numGestureSamples != NULL)
     {
-        *gesFileDuration = gesturalScore->getDuration_pt();
+        *numGestureSamples = gesturalScore->getDuration_pt();
     }
 
-    if (audioFileDuration != NULL)
+    if (numAudioSamples != NULL)
     {
-        *audioFileDuration = (int( ( gesturalScore->getDuration_pt() ) / NUM_CHUNCK_SAMPLES ) + 1)  * NUM_CHUNCK_SAMPLES;
+        *numAudioSamples = ( (int)( ( gesturalScore->getDuration_pt() ) / NUM_CHUNK_SAMPLES ) + 1 )  * NUM_CHUNK_SAMPLES;
     }
 
 
