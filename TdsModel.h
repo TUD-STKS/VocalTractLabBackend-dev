@@ -322,7 +322,7 @@ private:
   
   void resetConstriction(Constriction *c);
   void calcNoiseSources();
-  void calcNoiseSample(NoiseSource *s, double ampThreshold);
+  void calcNoiseSample(NoiseSource* s, double ampThreshold);
 
   double getCurrentIn(const int section);
   double getCurrentOut(const int section);

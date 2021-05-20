@@ -20,6 +20,7 @@
 // ****************************************************************************
 
 #include "LfPulse.h"
+#include <random>
 
 
 // ****************************************************************************
@@ -42,6 +43,7 @@ void LfPulse::resetParams()
   OQ  = 0.5;
   SQ  = 3.0;
   TL  = 0.02;
+  SNR = 50.0;
 }
 
 
@@ -107,6 +109,14 @@ void LfPulse::getPulse(Signal& s, int numSamples, bool getDerivative)
     double preFactor = (B*exp(alpha*te)*sin(w*te)*exp(epsilon*te)) / (epsilon*ta);
     double F2_te = preFactor*(-exp(-epsilon*te)/epsilon - te*exp(-epsilon*T0));
 
+	// to generate noise
+	std::random_device rd{};
+	std::mt19937 randomNumberGenerator{ rd() };
+	// inputSample is a random number with the standard deviation
+	// 1/sqrt(12) and range limited to [-1.0, 1.0]
+	std::normal_distribution<double> normalDistribution(0.0, 1.0 / sqrt(12.0));
+	double inputSample;
+
     for (i=0; i < s.N; i++)
     {
       t = (double)i / (double)s.N;
@@ -118,6 +128,14 @@ void LfPulse::getPulse(Signal& s, int numSamples, bool getDerivative)
       {
         s.x[i] = u1_te + preFactor*(-exp(-epsilon*t)/epsilon - t*exp(-epsilon*T0)) - F2_te;
       }
+
+	  // add noise 
+	  inputSample = 0.0;
+	  do
+	  {
+		  inputSample = normalDistribution(randomNumberGenerator);
+	  } while ((inputSample < -1.0) || (inputSample > 1.0));
+	  s.x[i] *= (1. + pow(10, -SNR / 20.) * inputSample);
     }
   }
 }
