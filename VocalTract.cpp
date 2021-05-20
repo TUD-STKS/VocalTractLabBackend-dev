@@ -2351,13 +2351,9 @@ void VocalTract::calculateAll()
   // ****************************************************************
 
   int i;
-  for (i = 0; i < NUM_PARAMS; i++)
-  {
-      restrictParam(i);
-  }
-
   for (i=0; i < NUM_PARAMS; i++)
   {
+    restrictParam(i);
     param[i].limitedX = param[i].x;
   }
 
