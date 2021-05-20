@@ -43,7 +43,7 @@ void LfPulse::resetParams()
   OQ  = 0.5;
   SQ  = 3.0;
   TL  = 0.02;
-  SNR = 20.;
+  SNR = 50.0;
 }
 
 

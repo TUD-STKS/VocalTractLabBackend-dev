@@ -297,9 +297,6 @@ public:
   void getSectionFlow(int sectionIndex, double &inflow, double &outflow);
   double getSectionPressure(int sectionIndex);
 
-  void calcNoiseSample(NoiseSource* s, double ampThreshold);
-  void incrementPosition() { position++; }
-
   // ************************************************************************
   // Private data.
   // ************************************************************************
@@ -325,7 +322,7 @@ private:
   
   void resetConstriction(Constriction *c);
   void calcNoiseSources();
-  
+  void calcNoiseSample(NoiseSource* s, double ampThreshold);
 
   double getCurrentIn(const int section);
   double getCurrentOut(const int section);
