@@ -18,4 +18,5 @@ vtlApiTest
 vtlSegmentSequenceToGesturalScore
 vtlGesturalScoreToAudio
 vtlGesturalScoreToTractSequence
+vtlGetGesturalScoreDuration
 vtlTractSequenceToAudio
