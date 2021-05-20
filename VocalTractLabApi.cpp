@@ -677,6 +677,7 @@ int vtlInputTractToLimitedTract(double* inTractParams, double* outTractParams)
     return 0;
 }
 
+
 // ****************************************************************************
 // Resets the time-domain synthesis of continuous speech (using the functions
 // vtlSynthesisAddTube() or vtlSynthesisAddTract()). This function must be 
