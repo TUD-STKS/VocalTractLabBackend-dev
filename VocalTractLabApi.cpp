@@ -638,6 +638,21 @@ int vtlGetTransferFunction(double *tractParams, int numSpectrumSamples,
 }
 
 
+// ****************************************************************************
+// Calculates the real limited tract params (the ones that are actually used
+// in the synthesis) from a given arbitrary set of tract parameters
+//
+// Parameters:
+// o inTractParams (in): Is a vector of vocal tract parameters with 
+//     numVocalTractParams elements.
+// o outTractParams (out): Is a vector of vocal tract parameters with 
+//     numVocalTractParams elements.
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
 int vtlInputTractToLimitedTract(double* inTractParams, double* outTractParams)
 {
     if (!vtlApiInitialized)

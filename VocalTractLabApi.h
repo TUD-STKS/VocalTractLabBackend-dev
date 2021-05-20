@@ -206,28 +206,14 @@ C_EXPORT int vtlGetTransferFunction(double *tractParams, int numSpectrumSamples,
 
 
 // ****************************************************************************
-// Calculates the real params
+// Calculates the real limited tract params (the ones that are actually used
+// in the synthesis) from a given arbitrary set of tract parameters
 //
-// Parameters in:
-// o tractParams: Is a vector of vocal tract parameters with 
+// Parameters:
+// o inTractParams (in): Is a vector of vocal tract parameters with 
 //     numVocalTractParams elements.
-// o numSpectrumSamples: The number of samples (points) in the requested 
-//     spectrum. This number of samples includes the negative frequencies and
-//     also determines the frequency spacing of the returned magnitude and
-//     phase vectors. The frequency spacing is 
-//     deltaFreq = SAMPLING_RATE / numSpectrumSamples.
-//     For example, with the sampling rate of 44100 Hz and 
-//     numSpectrumSamples = 512, the returned magnitude and phase values are 
-//     at the frequencies 0.0, 86.13, 172.3, ... Hz.
-//     The value of numSpectrumSamples should not be greater than 16384,
-//     otherwise the returned spectrum will be bandlimited to below 10 kHz.
-//
-// Parameters out:
-// o magnitude: Vector of spectral magnitudes at equally spaced discrete 
-//     frequencies. This vector mus have at least numSpectrumSamples elements.
-// o phase_rad: Vector of the spectral phase in radians at equally 
-//     spaced discrete frequencies. This vector must have at least 
-//     numSpectrumSamples elements.
+// o outTractParams (out): Is a vector of vocal tract parameters with 
+//     numVocalTractParams elements.
 //
 // Function return value:
 // 0: success.
