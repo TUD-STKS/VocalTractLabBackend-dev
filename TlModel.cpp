@@ -22,6 +22,8 @@
 #include "TlModel.h"
 #include <cmath>
 
+#include <boost/math/special_functions/bessel.hpp> 
+
 const double TlModel::MIN_AREA_CM2  = 0.01e-2; // = 0.01 mm^2
 const double TlModel::MIN_FREQ_RAD = 0.0001;
 
@@ -713,13 +715,33 @@ ComplexValue TlModel::getRadiationCharacteristic(double omega)
 {
   const double MICROPHONE_DISTANCE_CM = 25.0;    // 25 cm
   ComplexValue H;
-  
-  H = ComplexValue(0.0, (AMBIENT_DENSITY_CGS*omega) / (4.0*M_PI*MICROPHONE_DISTANCE_CM));
-  
-  double angle = (omega*MICROPHONE_DISTANCE_CM) / SOUND_VELOCITY_CGS;
+  double a;
+
+  switch (options.radiation)
+  {
+  case PISTONINWALL_RADIATION:
+    // Compute the radiated field in front a baffled circular piston 
+    // using Eq. 2.106
+    // from Fourier Acoustics, Earl G. Williams, Academic Press, 1999
+
+    // compute the radius of a circular piston of equivalent end area
+    a = sqrt(tube.section[Tube::LAST_MOUTH_SECTION]->area_cm2/M_PI);
+
+    H = ComplexValue(0.0, AMBIENT_DENSITY_CGS * SOUND_VELOCITY_CGS *
+      boost::math::cyl_bessel_j(1.0, omega * a / SOUND_VELOCITY_CGS)
+      / M_PI / a / MICROPHONE_DISTANCE_CM);
+
+    break;
+  default:
+    H = ComplexValue(0.0, (AMBIENT_DENSITY_CGS * omega) / (4.0 * M_PI * MICROPHONE_DISTANCE_CM));
+    break;
+  }
+
+  double angle = (omega * MICROPHONE_DISTANCE_CM) / SOUND_VELOCITY_CGS;
   double re = cos(angle);
   double im = -sin(angle);
-  H*= ComplexValue(re, im);
+  H *= ComplexValue(re, im);
+  
   return H;
 }
 
