@@ -9,7 +9,25 @@ The main branch of this repo is reviewed on a semi-regular basis for inclusion i
 
 This repo may be included in other repos as a submodule wherever the backend source code or the C/C++ API is needed.
 
-## Build instructions
-- Build using CMake
+## Getting started
+- Clone the current main branch:
+```
+git clone https://github.com/TUD-STKS/VocalTractLabBackend-dev
+```
+### Build using CMake (Windows, Linux, macOS)
+- Get the latet release of [CMake for your platform](https://cmake.org/)
+- Create a folder ``out``inside the cloned repository folder
+- Open a shell/command prompt and navigate to ``out``
+- Configure the project and generate a build system:
+```
+cmake ..
+```
+- Build the library (still from within the folder ``out``)
+```
+cmake --build .
+```
 
-Configurations for Windows x64 (Debug and Release), as well as WSL GCC (Debug and Release) are provided. More are welcome!
+### Build using Visual Studio 2019 (Windows)
+- Open ``VocalTractLabApi.sln``
+- Build the project ``VocalTractLabApi``
+
