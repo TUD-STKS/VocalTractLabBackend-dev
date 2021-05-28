@@ -72,6 +72,18 @@ C_EXPORT int vtlClose();
 
 
 // ****************************************************************************
+// Switch to turn off/on the automatic calculation of the tongue root 
+// parameters TRX and TRY.
+//
+// Return values:
+// 0: success.
+// 1: The API was not initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlCalcTongueRootAutomatically(bool automaticCalculation);
+
+
+// ****************************************************************************
 // Returns the version of this API as a string that contains the compile data.
 // Reserve at least 32 chars for the string.
 // ****************************************************************************

@@ -2,6 +2,7 @@ LIBRARY
 EXPORTS
 vtlInitialize
 vtlClose
+vtlCalcTongueRootAutomatically
 vtlGetVersion
 vtlGetConstants
 vtlGetTractParamInfo

@@ -277,6 +277,31 @@ int vtlClose()
 
 
 // ****************************************************************************
+// Switch to turn off/on the automatic calculation of the tongue root 
+// parameters TRX and TRY.
+//
+// Return values:
+// 0: success.
+// 1: The API was not initialized.
+// ****************************************************************************
+
+int vtlCalcTongueRootAutomatically(bool automaticCalculation)
+{
+    if (!vtlApiInitialized)
+    {
+        printf("Error: The API was not initialized.\n");
+        return 1;
+    }
+
+    vocalTract->anatomy.automaticTongueRootCalc = automaticCalculation;
+    vocalTract->calculateAll();
+
+    return 0;
+}
+
+
+
+// ****************************************************************************
 // Returns the version of this API as a string that contains the compile data.
 // Reserve at least 32 chars for the string.
 // ****************************************************************************
