@@ -21,6 +21,8 @@
 
 #include "Geometry.h"
 #include <cmath>
+#include <sstream>			 
+using namespace std;					
 
 // ----------------------------------------------------------------------------
 // 2D point.
@@ -156,7 +158,7 @@ void Point2D::turn(double angle)
 // values, the point is left, and otherwise right of V.
 // ****************************************************************************
 
-double Point2D::getDistanceFrom(Vector2D V)
+double Point2D::getDistanceFrom(Vector2D V) const
 {
   Point2D w(V.P.x - x, V.P.y - y);
   Point2D &v = V.v;
@@ -167,6 +169,10 @@ double Point2D::getDistanceFrom(Vector2D V)
   return (v.x*w.y - v.y*w.x) / denominator;
 }
 
+double Point2D::getDistanceFrom(Point2D& Pt)
+{
+	return sqrt(pow(x - Pt.x, 2) + pow(y - Pt.y, 2));
+}											
 // ****************************************************************************
 // ****************************************************************************
 
@@ -1183,4 +1189,60 @@ double getEllipseTangent(Point2D H, Point2D C, double a, double b, bool uhrzeige
   }
 }
 
+// ----------------------------------------------------------------------------
+// Triangle 3D
+// ----------------------------------------------------------------------------
+
+// ****************************************************************************
+// Constructor ****************************************************************
+
+Triangle3D::Triangle3D()
+{
+	for (int i(0); i < 3; i++){ P[i] .set(0.0, 0.0, 0.0); }
+}
+
+// ****************************************************************************
+
+Triangle3D::Triangle3D(Point3D P0, Point3D P1, Point3D P2)
+{
+	P[0] = P0;
+	P[1] = P1;
+	P[2] = P2;
+}
+
+// ****************************************************************************
+
+void Triangle3D::set(Point3D P0, Point3D P1, Point3D P2)
+{
+	P[0] = P0;
+	P[1] = P1;
+	P[2] = P2;
+}
+
+// ****************************************************************************
+
+string Triangle3D::stringSTLformat()
+{
+
+	// compute normal to the triangle
+	double normal[3];
+	normal[0] = (P[1].y - P[0].y) * (P[2].z - P[0].z) -
+		(P[1].z - P[0].z) * (P[2].y - P[0].y);
+	normal[1] = (P[1].z - P[0].z) * (P[2].x - P[0].x) -
+		(P[1].x - P[0].x) * (P[2].z - P[0].z);
+	normal[2] = (P[1].x - P[0].x) * (P[2].y - P[0].y) -
+		(P[1].y - P[0].y) * (P[2].x - P[0].x);
+
+	// generate the text corresponding to the STL expression for creating the triangle
+	ostringstream streamTextSTL;
+	streamTextSTL << "facet normal " << scientific
+		<< normal[0] << " " << normal[1] << " " << normal[2] << "\n"
+		<< "\touter loop\n"
+		<< "\tvertex " << P[0].x << " " << P[0].y << " " << P[0].z << "\n"
+		<< "\tvertex " << P[1].x << " " << P[1].y << " " << P[1].z << "\n"
+		<< "\tvertex " << P[2].x << " " << P[2].y << " " << P[2].z << "\n"
+		<< "\tendloop\nendfacet\n";
+
+	return streamTextSTL.str();
+}
 // ****************************************************************************

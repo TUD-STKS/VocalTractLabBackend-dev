@@ -33,6 +33,9 @@ const double SOUND_VELOCITY_CGS = 3.5e4;      // cm/s
 const double AIR_VISCOSITY_CGS = 1.86e-4;     // dyne-s/cm^2
 const double SPECIFIC_HEAT_CGS = 0.24;        // cal/g-K
 const double HEAT_CONDUCTION_CGS = 0.055e-3;  // cal/cm-s-K
+const double MOLECULAR_MASS = 28.94;		  // g/mol
+const double GAS_CONSTANT = 8.314e7;		  // erg/K/mol
+const double KELVIN_SHIFT = 273.15;			  // K												
 
 const double CRITICAL_REYNOLDS_NUMBER = 1800.0;
 

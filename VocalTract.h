@@ -421,7 +421,9 @@ public:
   // ****************************************************************
 
   void calcCenterLine();
-  void verifyCenterLineNormal(int left, int center, int right);
+  void verifyCenterLineNormal(int toCorrect, int refNeighbour, double scaling);
+  int numNormalsIntersected(double scaling);
+  void correctPointPosition(int toCorrect, int refNeighbour, double scaling);
 
   // ****************************************************************
   // Calculate the piecewise linear area function.
@@ -430,6 +432,9 @@ public:
   void calcCrossSections();
   void getCrossProfiles(Point2D P, Point2D v, double *upperProfile, double *lowerProfile, 
     bool considerTongue, Tube::Articulator &articulator, bool debug = false);
+void getCrossProfiles(Point2D P, Point2D v, double* upperProfile, double* lowerProfile,
+	  int* upperProfileSurface, int* lowerProfileSurface,
+	  bool considerTongue, Tube::Articulator& articulator, bool debug = false);							
   void insertUpperProfileLine(Point2D P0, Point2D P1, int surfaceIndex, 
     double *upperProfile, int *upperProfileSurface);
   void insertLowerProfileLine(Point2D P0, Point2D P1, int surfaceIndex, 
@@ -439,6 +444,7 @@ public:
   void getCrossSection(double *upperProfile, double *lowerProfile, CrossSection *section);
   
   bool exportCrossSections(const string &fileName);
+  bool exportVocalTractToSTL(const string &fileName);
   bool exportTractContourSvg(const string &fileName, bool addCenterLine, bool addCutVectors);
   void addRibPointsSvg(ostream &os, Surface *s, int rib, int firstRibPoint, int lastRibPoint);
   void addRibsSvg(ostream &os, Surface *s, int firstRib, int lastRib, int ribPoint);

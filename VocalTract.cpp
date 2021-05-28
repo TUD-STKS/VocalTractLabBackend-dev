@@ -28,6 +28,7 @@
 #include <iostream>
 #include <cmath>
 #include <fstream>
+#include <algorithm>          
 
 
 using namespace std;
@@ -127,10 +128,10 @@ void VocalTract::init()
     "  </jaw>\n"
     "  <!--****************************************************************************-->\n"
     "  <tongue>\n"
-	  "    <tip radius=\"0.2000\"/>\n"
-	  "    <body radius_x=\"1.8000\" radius_y=\"1.8000\"/>\n"
-		"    <root automatic_calc=\"1\" trx_slope=\"0.938\" trx_intercept=\"-5.11\" try_slope=\"0.831\" try_intercept=\"-3.03\"/>\n"
-	  "  </tongue>\n"
+    "    <tip radius=\"0.2000\"/>\n"
+    "    <body radius_x=\"1.8000\" radius_y=\"1.8000\"/>\n"
+    "    <root automatic_calc=\"1\" trx_slope=\"0.938\" trx_intercept=\"-5.11\" try_slope=\"0.831\" try_intercept=\"-3.03\"/>\n"
+    "  </tongue>\n"
     "  <!--****************************************************************************-->\n"
     "  <lips width=\"1.3\"/>\n"
     "  <!--****************************************************************************-->\n"
@@ -148,7 +149,7 @@ void VocalTract::init()
     "  </larynx>\n"
     "  <piriform_fossa length = \"2.5\" volume = \"1.5\"/>\n"
     "  <subglottal_cavity length=\"23.0\"/>\n"
-	  "  <nasal_cavity length=\"11.4\"/>\n"
+    "  <nasal_cavity length=\"11.4\"/>\n"
     "  <!--****************************************************************************-->\n"
     "  <param index=\"0\"  name=\"HX\"   min=\"0.0\"   max=\"1.0\"   neutral=\"1.0\"   positive_velocity_factor=\"1.0\"   negative_velocity_factor=\"1.0\"/>\n"  
     "  <param index=\"1\"  name=\"HY\"   min=\"-6.0\"  max=\"-3.5\"  neutral=\"-4.75\"   positive_velocity_factor=\"1.0\"   negative_velocity_factor=\"1.0\"/>\n" 
@@ -1973,8 +1974,8 @@ bool VocalTract::saveAsObjFile(const string &fileName, bool saveBothSides)
   if (saveBothSides)
   {
     exportSurface[0]  = &surface[TONGUE];
-	  exportSurface[1]  = &surface[UPPER_TEETH_TWOSIDE];
-	  exportSurface[2]  = &surface[LOWER_TEETH_TWOSIDE];
+    exportSurface[1]  = &surface[UPPER_TEETH_TWOSIDE];
+    exportSurface[2]  = &surface[LOWER_TEETH_TWOSIDE];
     exportSurface[3]  = &surface[UPPER_LIP_TWOSIDE];
     exportSurface[4]  = &surface[LOWER_LIP_TWOSIDE];
     exportSurface[5]  = &surface[UPPER_COVER_TWOSIDE];
@@ -1988,8 +1989,8 @@ bool VocalTract::saveAsObjFile(const string &fileName, bool saveBothSides)
   {
     exportSurface[0]  = &surface[TONGUE];
     exportSurface[1]  = &surface[VocalTract::UPPER_TEETH];
-	  exportSurface[2]  = &surface[VocalTract::LOWER_TEETH];
-	  exportSurface[3]  = &surface[VocalTract::UPPER_LIP];
+    exportSurface[2]  = &surface[VocalTract::LOWER_TEETH];
+    exportSurface[3]  = &surface[VocalTract::UPPER_LIP];
     exportSurface[4]  = &surface[VocalTract::LOWER_LIP];
     exportSurface[5]  = &surface[VocalTract::UPPER_COVER];
     exportSurface[6]  = &surface[VocalTract::LOWER_COVER];
@@ -3354,7 +3355,7 @@ void VocalTract::calcLips()
     Q = P1; Q.y = P0.y;
     Q = (1.0-t)*Q + t*P1;
   
-  	t = 0.0;
+    t = 0.0;
 
     R = P0; R.y = P1.y;
     R = (1.0-t)*R + t*P1;
@@ -5365,41 +5366,36 @@ void VocalTract::calcCenterLine()
   }
 
   // ****************************************************************
-  // Run through all normal vectors in a certain order and adjust 
+  // Iteratively run through all normal vectors to adjust 
   // their directions such that they don't overlap.
   // ****************************************************************
 
-  int numToCheck;
-  int distance;
-  int index;
-
-  for (i=0; i < NUM_CENTERLINE_POINTS_EXPONENT; i++)
-  {
-    numToCheck = 1 << i;
-    distance = 1 << (NUM_CENTERLINE_POINTS_EXPONENT-i);
-    index = distance/2;
-
-    for (k=0; k < numToCheck; k++)
-    {
-      verifyCenterLineNormal(index-distance/2, index, index+distance/2);
-      index+= distance;
-    }
-  }
-
-  // ****************************************************************
-  // For the normal vectors that have changed, recalculate the min-
-  // and max-values.
-  // ****************************************************************
-
   Point2D n;
+  double scaling(1.5);
+  int cnt(0), 
+    nbIntersect(numNormalsIntersected(scaling)), 
+    maxIter(1);
 
-  for (i=0; i < NUM_CENTERLINE_POINTS; i++)
+  while ((nbIntersect > 0) && (cnt < maxIter) )
   {
-    if (centerLine[i].reserved != 0.0)
+    for (i = 1; i < NUM_CENTERLINE_POINTS; i++)
     {
+      verifyCenterLineNormal(i, i - 1, scaling);
+    }
+
+    // correct centerline points position so that the normal
+    // are perpendicular to the cross-sections
+    for (i = 1; i < NUM_CENTERLINE_POINTS; i++)
+    {
+      //correctPointPosition(i, i - 1, scaling);
+
+      // For the normal vectors that have changed, recalculate the min-
+      // and max-values.
+      if (centerLine[i].reserved != 0.0)
+      {
       P = centerLine[i].point;
       n = centerLine[i].normal;
-    
+
       ok[0] = upperOutline.getSpecialIntersection(P, n, t[0], S[0]);
       ok[1] = lowerOutline.getClosestIntersection(P, n, t[1], S[1]);
       ok[2] = tongueOutline.getClosestIntersection(P, n, t[2], S[2]);
@@ -5417,7 +5413,8 @@ void VocalTract::calcCenterLine()
       // Lower border.
       if ((ok[1]) && (ok[2]))
       {
-        if (t[1] > t[2]) { centerLine[i].min = t[1]; } else { centerLine[i].min = t[2]; }
+        if (t[1] > t[2]) { centerLine[i].min = t[1]; }
+        else { centerLine[i].min = t[2]; }
       }
       else
       if (ok[2])
@@ -5433,7 +5430,11 @@ void VocalTract::calcCenterLine()
       {
         centerLine[i].min = -3.0;       // Default-Wert im Fehlerfall
       }
+      }
     }
+
+    cnt++;
+    nbIntersect = numNormalsIntersected(scaling);
   }
 
 }
@@ -5444,23 +5445,29 @@ void VocalTract::calcCenterLine()
 /// prevented.
 // ****************************************************************************
 
-void VocalTract::verifyCenterLineNormal(int l, int m, int r)
+void VocalTract::verifyCenterLineNormal(int toCorrect, int refNeighbour, double scaling)
 {
   double s, t;
-  double denominator;
+  double denominator, minCs, maxCs;
   Point2D P, v, R, w, Q;
 
   // The middle line is P+t*v with (min <= t <= max)
   
-  P = centerLine[m].point;
-  v = centerLine[m].normal;
+  P = centerLine[toCorrect].point;
+  v = centerLine[toCorrect].normal;
+  
+  // min and max y value of the cross-sectional points
+  // this is multiplied by scaling to make sure that there is 
+  // a sufficient spacing between the contours
+  minCs = scaling *min(centerLine[refNeighbour].min, centerLine[toCorrect].min);
+  maxCs = scaling *max(centerLine[refNeighbour].max, centerLine[toCorrect].max);
 
   // ****************************************************************
   // Intersection with the left line ?
   // ****************************************************************
 
-  R = centerLine[l].point + centerLine[l].min*centerLine[l].normal;
-  w = centerLine[l].point + centerLine[l].max*centerLine[l].normal - R;
+  R = centerLine[refNeighbour].point + minCs *centerLine[refNeighbour].normal;
+  w = centerLine[refNeighbour].point + maxCs *centerLine[refNeighbour].normal - R;
 
   Q = P - R;
   denominator = v.x*w.y - v.y*w.x;
@@ -5470,52 +5477,156 @@ void VocalTract::verifyCenterLineNormal(int l, int m, int r)
     if ((s >= 0.0) && (s <= 1.0))
     {
       t = (w.x*Q.y - Q.x*w.y) / denominator;
-      if ((t <= 0.0) && (t >= centerLine[m].min))
+      if ((t <= 0.0) && (t >= minCs))
       {
-        centerLine[m].normal = centerLine[m].point - R;
-        centerLine[m].normal.normalize();
-        centerLine[m].reserved = 1.0;     // Because it was changed.
+    // if the cross-sections intersect in the lower part of 
+    // the contour
+        centerLine[toCorrect].normal = centerLine[toCorrect].point -
+      (R - 1.001* centerLine[refNeighbour].normal);
+        centerLine[toCorrect].normal.normalize();
+    
+        centerLine[toCorrect].reserved = 1.0;     // Because it was changed.
       }
       else
-      if ((t >= 0.0) && (t <= centerLine[m].max))
+      if ((t >= 0.0) && (t <= maxCs))
       {
-        centerLine[m].normal = R+w - centerLine[m].point;
-        centerLine[m].normal.normalize();
-        centerLine[m].reserved = 1.0;     // Because it was changed.
+    // if the cross-sections intersect in the upper part of 
+    // the contour
+        centerLine[toCorrect].normal = (R+w + 1.001 * centerLine[refNeighbour].normal) 
+      - centerLine[toCorrect].point;
+        centerLine[toCorrect].normal.normalize();
+
+        centerLine[toCorrect].reserved = 1.0;     // Because it was changed.
       }
     }
   }
+}
 
-  // ****************************************************************
-  // Intersection with the right line ?
-  // ****************************************************************
+// ****************************************************************************
+// Return the number of intersecting normals
+// ****************************************************************************
 
-  R = centerLine[r].point + centerLine[r].min*centerLine[r].normal;
-  w = centerLine[r].point + centerLine[r].max*centerLine[r].normal - R;
+int VocalTract::numNormalsIntersected(double scaling)
+{
+  int nbIntersect(0);
+  double s, t;
+  double denominator, minCs, maxCs;
+  Point2D P, v, R, w, Q;
 
-  Q = P - R;
-  denominator = v.x*w.y - v.y*w.x;
-  if (denominator != 0.0)
+  // The middle line is P+t*v with (min <= t <= max)
+
+  // loop over the sections
+  for (int i(0); i < NUM_CENTERLINE_POINTS -1; i++)
   {
-    s = (v.x*Q.y - Q.x*v.y) / denominator;
-    if ((s >= 0.0) && (s <= 1.0))
+    P = centerLine[i].point;
+    v = centerLine[i].normal;
+
+    // min and max y value of the cross-sectional points
+    // this is multiplied by scaling to make sure that there is 
+    // a sufficient spacing between the contours
+    minCs = scaling *min(centerLine[i].min, centerLine[i + 1].min);
+    maxCs = scaling *max(centerLine[i].max, centerLine[i + 1].max);
+    R = centerLine[i + 1].point + minCs * centerLine[i + 1].normal;
+    w = centerLine[i + 1].point + maxCs * centerLine[i + 1].normal - R;
+
+    Q = P - R;
+    denominator = v.x * w.y - v.y * w.x;
+    if (denominator != 0.0)
     {
-      t = (w.x*Q.y - Q.x*w.y) / denominator;
-      if ((t <= 0.0) && (t >= centerLine[m].min))
+      s = (v.x * Q.y - Q.x * v.y) / denominator;
+      if ((s >= 0.0) && (s <= 1.0))
       {
-        centerLine[m].normal = centerLine[m].point - R;
-        centerLine[m].normal.normalize();
-        centerLine[m].reserved = 1.0;     // Because it was changed.
-      }
-      else
-      if ((t >= 0.0) && (t <= centerLine[m].max))
-      {
-        centerLine[m].normal = R+w - centerLine[m].point;
-        centerLine[m].normal.normalize();
-        centerLine[m].reserved = 1.0;     // Because it was changed.
+        t = (w.x * Q.y - Q.x * w.y) / denominator;
+        if ((t <= maxCs) && (t >= minCs)) { nbIntersect++; }
       }
     }
   }
+
+  return nbIntersect;
+}
+
+// ****************************************************************************
+// Shift the position of the centerline points on the cross-sectional
+// planes so that the normals are really perpendicular to the centerline
+// ****************************************************************************
+
+void VocalTract::correctPointPosition(int toCorrect, int refNeighbour, double scaling)
+{
+  Point2D Pcor(centerLine[toCorrect].point);
+  Point2D Ncor(centerLine[toCorrect].normal);
+  Point2D Pref(centerLine[refNeighbour].point);
+  Point2D Nref(centerLine[refNeighbour].normal);
+
+  double radRef, radCor;
+
+  // compute the distance between the interseection point between Ncor and Nref
+  // and Pref
+  radRef = ((Pcor.y - Pref.y) * Ncor.x - (Pcor.x - Pref.x) * Ncor.y) /
+    (Ncor.x * Nref.y - Ncor.y * Nref.x);
+
+  // compute the distance between the interseection point between Ncor and Nref
+  // and Pcor
+  radCor = ((Pcor.y - Pref.y) * Nref.x - (Pcor.x - Pref.x) * Nref.y) /
+    (Ncor.x * Nref.y - Ncor.y * Nref.x);
+
+  // correct the position of the point Pcor so that it is on the same
+  // circle arc as Pref
+  centerLine[toCorrect].point = Pcor + (radCor - radRef) * Ncor;
+
+  //double s, t;
+  //double denominator, minCs, maxCs;
+  //Point2D P, v, R, w, Q;
+
+  //ofstream log("log.txt", ofstream::app);
+
+  //P = centerLine[toCorrect].point;
+  //v = centerLine[toCorrect].normal;
+
+  //// min and max y value of the cross-sectional points
+  //// this is multiplied by scaling to make sure that there is 
+  //// a sufficient spacing between the contours
+  //minCs = scaling * min(centerLine[refNeighbour].min, centerLine[toCorrect].min);
+  //maxCs = scaling * max(centerLine[refNeighbour].max, centerLine[toCorrect].max);
+  //R = centerLine[refNeighbour].point + minCs * centerLine[refNeighbour].normal;
+  //w = centerLine[refNeighbour].point + maxCs * centerLine[refNeighbour].normal - R;
+
+  //Q = P - R;
+  //denominator = v.x * w.y - v.y * w.x;
+  //log << "denominator " << denominator << endl;
+  //if (denominator != 0.0)
+  //{
+  //  //s = (v.x * Q.y - Q.x * v.y) / denominator;
+  //  //log << "s " << s << endl;
+  //  //if ((s >= 0.0) && (s <= 1.0))
+  //  //{
+  //    t = (w.x * Q.y - Q.x * w.y) / denominator;
+  //    log << "t " << t << endl;
+  //    if (t <= 0.0)
+  //    {
+  //      // if the cross-sections intersect in the lower part of 
+  //      // the contour
+  //      log << "Low init " << centerLine[toCorrect].point.x << "  "
+  //        << centerLine[toCorrect].point.y << endl;
+  //      centerLine[toCorrect].point = centerLine[refNeighbour].point +
+  //    minCs * (centerLine[refNeighbour].normal - centerLine[toCorrect].normal);
+  //      log << "After " << centerLine[toCorrect].point.x << "  "
+  //        << centerLine[toCorrect].point.y << endl;
+  //    }
+  //    else
+  //      if (t >= 0.0)
+  //      {
+  //        // if the cross-sections intersect in the upper part of 
+  //        // the contour
+  //        log << "Up init " << centerLine[toCorrect].point.x << "  "
+  //          << centerLine[toCorrect].point.y << endl;
+  //        centerLine[toCorrect].point = centerLine[refNeighbour].point +
+  //    maxCs * (centerLine[refNeighbour].normal - centerLine[toCorrect].normal);
+  //        log << "After " << centerLine[toCorrect].point.x << "  "
+  //          << centerLine[toCorrect].point.y << endl;
+  //      }
+  //  //}
+  //}
+
 }
 
 
@@ -6504,6 +6615,819 @@ void VocalTract::getCrossProfiles(Point2D P, Point2D v, double *upperProfile,
 
 }
 
+// ****************************************************************************
+// Overload of getCrossProfiles that returns the indexes of the surfaces
+// constituting the contour
+// ****************************************************************************
+
+void VocalTract::getCrossProfiles(Point2D P, Point2D v, double* upperProfile,
+  double* lowerProfile, int* upperProfileSurface, int* lowerProfileSurface,
+  bool considerTongue, Tube::Articulator& articulator, bool debug)
+{
+  const double MIN_SQUARED_NORMAL_LENGTH = 0.0000001;
+  const double INVALID = INVALID_PROFILE_SAMPLE;
+  const int N = NUM_PROFILE_SAMPLES;
+  const int N2 = NUM_PROFILE_SAMPLES / 2;
+  const int TOP = 1;       // = Bit at pos. 0
+  const int BOTTOM = 2;    // = Bit at pos. 1
+  const int NUM_PROFILE_SURFACES = 10;
+
+  int i, k;
+  Surface* s;
+  Point2D Q, P0, P1, n;
+  Point2D lowestTeethPoint;
+  int left, right;
+  int localIndex, globalIndex;
+  bool rightOrientation;
+
+  // Handle all upper-posterior surfaces first, and then the other
+  // surfaces.
+  int profileSurfaceIndex[NUM_PROFILE_SURFACES] =
+  {
+    // Surfaces that contribute to the upper profile
+    UPPER_COVER,
+    UPPER_TEETH,
+    UPPER_LIP,
+    UVULA,
+    // Surfaces that contribute to the lower profile
+    LOWER_COVER,
+    LOWER_TEETH,
+    LOWER_LIP,
+    EPIGLOTTIS,
+    // Surfaces that may contribute to the upper and lower profile
+    LEFT_COVER,
+    RADIATION
+  };
+
+  const int MAX_CUTS = 2048;
+
+  struct Cut
+  {
+    Point2D P0, P1, n;
+    int globalSurfaceIndex;
+    int localSurfaceIndex;
+  };
+
+  Cut cut[MAX_CUTS];
+  int numCuts;
+
+  // For the fast intersection method:
+
+  const int MAX_LIST_ENTRIES = 1024;
+  int indexList[MAX_LIST_ENTRIES];
+  int numListEntries;
+
+  // ****************************************************************
+  // Initialize all profile values.
+  // ****************************************************************
+
+  for (i = 0; i < NUM_PROFILE_SAMPLES; i++)
+  {
+    upperProfile[i] = EXTREME_PROFILE_VALUE;
+    lowerProfile[i] = -EXTREME_PROFILE_VALUE;
+    upperProfileSurface[i] = -1;
+    lowerProfileSurface[i] = -1;
+  }
+
+  // ****************************************************************
+  // Cut all surfaces except the tongue and, if considerTongue == false,
+  // except the uvula and epiglottis. The uvuala and epiglottis sur-
+  // faces are formed after the tongue, so they are not valid yet.
+  // ****************************************************************
+
+  numCuts = 0;
+  for (k = 0; k < NUM_PROFILE_SURFACES; k++)
+  {
+    globalIndex = profileSurfaceIndex[k];
+
+    if ((considerTongue) || ((considerTongue == false) &&
+      (globalIndex != UVULA) && (globalIndex != EPIGLOTTIS)))
+    {
+      s = &surface[globalIndex];
+
+      // The fast intersection method.
+
+      if (makeFasterIntersections)
+      {
+        if (intersectionsPrepared[globalIndex] == false)
+        {
+          // Assign all triangles to the tiles (only once !)
+          s->prepareIntersections();
+          intersectionsPrepared[globalIndex] = true;
+        }
+
+        s->prepareIntersection(P, v);
+        s->getTriangleList(indexList, numListEntries, MAX_LIST_ENTRIES);
+
+        for (i = 0; i < numListEntries; i++)
+        {
+          if ((s->getTriangleIntersection(indexList[i], P0, P1, n)) && (numCuts < MAX_CUTS) &&
+            (P0.y < MAX_PROFILE_VALUE) && (P1.y < MAX_PROFILE_VALUE) &&
+            (P1.y > MIN_PROFILE_VALUE) && (P1.y > MIN_PROFILE_VALUE))
+          {
+            cut[numCuts].P0 = P0;
+            cut[numCuts].P1 = P1;
+            cut[numCuts].n = n;
+            cut[numCuts].globalSurfaceIndex = globalIndex;
+            cut[numCuts].localSurfaceIndex = k;
+            numCuts++;
+          }
+        }
+      }
+      else
+
+        // The "normal", slower intersection method.
+
+      {
+        s->prepareIntersection(P, v);
+
+        for (i = 0; i < s->numTriangles; i++)
+        {
+          if ((s->getTriangleIntersection(i, P0, P1, n)) && (numCuts < MAX_CUTS) &&
+            (P0.y < MAX_PROFILE_VALUE) && (P1.y < MAX_PROFILE_VALUE) &&
+            (P1.y > MIN_PROFILE_VALUE) && (P1.y > MIN_PROFILE_VALUE))
+          {
+            cut[numCuts].P0 = P0;
+            cut[numCuts].P1 = P1;
+            cut[numCuts].n = n;
+            cut[numCuts].globalSurfaceIndex = globalIndex;
+            cut[numCuts].localSurfaceIndex = k;
+            numCuts++;
+          }
+        }
+      }
+
+    }
+  }
+
+
+  // ****************************************************************
+  // Dertermine how the teeth and lips were cut!
+  // ****************************************************************
+
+  double upperTeethMinY = EXTREME_PROFILE_VALUE;
+  double lowerTeethMaxY = -EXTREME_PROFILE_VALUE;
+  double upperTeethMaxY = -EXTREME_PROFILE_VALUE;
+  double lowerTeethMinY = EXTREME_PROFILE_VALUE;
+  double upperTeethMinX = 0.0;
+  double lowerTeethMinX = 0.0;
+  double upperLipMinY = EXTREME_PROFILE_VALUE;
+  double lowerLipMaxY = -EXTREME_PROFILE_VALUE;
+  bool bothTeethCut;        // Were both lips cut ?
+  bool bothLipsCut;         // Were both teeth cut ?
+
+  for (i = 0; i < numCuts; i++)
+  {
+    P0 = cut[i].P0;
+    P1 = cut[i].P1;
+    globalIndex = cut[i].globalSurfaceIndex;
+
+    // Teeth data
+    if (globalIndex == UPPER_TEETH)
+    {
+      if (P0.y < upperTeethMinY) { upperTeethMinY = P0.y; }
+      if (P1.y < upperTeethMinY) { upperTeethMinY = P1.y; }
+      if (P0.y > upperTeethMaxY) { upperTeethMaxY = P0.y; }
+      if (P1.y > upperTeethMaxY) { upperTeethMaxY = P1.y; }
+      if (P0.x < upperTeethMinX) { upperTeethMinX = P0.x; }
+      if (P1.x < upperTeethMinX) { upperTeethMinX = P1.x; }
+    }
+    if (globalIndex == LOWER_TEETH)
+    {
+      if (P0.y > lowerTeethMaxY) { lowerTeethMaxY = P0.y; }
+      if (P1.y > lowerTeethMaxY) { lowerTeethMaxY = P1.y; }
+      if (P0.y < lowerTeethMinY) { lowerTeethMinY = P0.y; }
+      if (P1.y < lowerTeethMinY) { lowerTeethMinY = P1.y; }
+      if (P0.x < lowerTeethMinX) { lowerTeethMinX = P0.x; }
+      if (P1.x < lowerTeethMinX) { lowerTeethMinX = P1.x; }
+    }
+
+    // Lip data
+    if (globalIndex == UPPER_LIP)
+    {
+      if (P0.y < upperLipMinY) { upperLipMinY = P0.y; }
+      if (P1.y < upperLipMinY) { upperLipMinY = P1.y; }
+    }
+    if (globalIndex == LOWER_LIP)
+    {
+      if (P0.y > lowerLipMaxY) { lowerLipMaxY = P0.y; }
+      if (P1.y > lowerLipMaxY) { lowerLipMaxY = P1.y; }
+    }
+  }
+
+  // Where both teeth or teeth cut in the right orientation ?
+
+  if (upperTeethMaxY > lowerTeethMinY)
+  {
+    bothTeethCut = true;
+  }
+  else
+  {
+    bothTeethCut = false;
+  }
+
+  if ((upperLipMinY != EXTREME_PROFILE_VALUE) && (lowerLipMaxY != -EXTREME_PROFILE_VALUE))
+  {
+    bothLipsCut = true;
+  }
+  else
+  {
+    bothLipsCut = false;
+  }
+
+  // ****************************************************************
+  // Create the upper and lower profile.
+  // ****************************************************************
+
+  for (i = 0; i < numCuts; i++)
+  {
+    P0 = cut[i].P0;
+    P1 = cut[i].P1;
+    n = cut[i].n;
+    localIndex = cut[i].localSurfaceIndex;
+    globalIndex = cut[i].globalSurfaceIndex;
+
+    // **************************************************************
+    // Surfaces that contribute to the upper profile.
+    // **************************************************************
+
+    if (globalIndex == UPPER_COVER)
+    {
+      if (n.y < 0.0) { insertUpperProfileLine(P0, P1, globalIndex, upperProfile, upperProfileSurface); }
+    }
+    else
+
+    if (globalIndex == UPPER_TEETH)
+    {
+      if (n.y < 0.0) { insertUpperProfileLine(P0, P1, globalIndex, upperProfile, upperProfileSurface); }
+    }
+    else
+
+    if (globalIndex == UPPER_LIP)
+    {
+      if (n.y < 0.0) { insertUpperProfileLine(P0, P1, globalIndex, upperProfile, upperProfileSurface); }
+    }
+    else
+
+    if (globalIndex == UVULA)
+    {
+      if (n.y < 0.0) { insertUpperProfileLine(P0, P1, globalIndex, upperProfile, upperProfileSurface); }
+    }
+    else
+
+    // **************************************************************
+    // Surfaces that contribute to the lower profile.
+    // **************************************************************
+
+    if (globalIndex == LOWER_COVER)
+    {
+      // The lower cover is special - it may also supplement
+      // the upper profile.
+      if (n.y > 0.0)
+      {
+        insertLowerCoverProfileLine(P0, P1, globalIndex, upperProfile,
+          upperProfileSurface, lowerProfile, lowerProfileSurface);
+      }
+    }
+    else
+
+    if (globalIndex == LOWER_TEETH)
+    {
+      if (n.y > 0.0) { insertLowerProfileLine(P0, P1, globalIndex, lowerProfile, lowerProfileSurface); }
+    }
+    else
+
+    if (globalIndex == LOWER_LIP)
+    {
+      if (n.y > 0.0) { insertLowerProfileLine(P0, P1, globalIndex, lowerProfile, lowerProfileSurface); }
+    }
+    else
+
+    if (globalIndex == EPIGLOTTIS)
+    {
+      if (n.y > 0.0) { insertLowerProfileLine(P0, P1, globalIndex, lowerProfile, lowerProfileSurface); }
+    }
+    else
+
+      // **************************************************************
+      // All other surfaces (LEFT_COVER and RADIATION) can contribute 
+      // to either the upper or the lower profile, depending on the 
+      // surface normal.
+      // And only if the surface normal is long enough (> epsilon).
+      // **************************************************************
+
+    {
+      rightOrientation = true;
+
+      // Consider these surfaces only in the oral and upper pharyngeal
+      // part of the vocal tract, because it may cause sporadic errors 
+      // in the lower pharyngeal part.
+      // Therefore, the normal vector v of the cutting line must not
+      // point into the bottom left (posterior) quadrant.
+
+      if ((v.x < 0.0) && (v.y < 0.0))
+      {
+        rightOrientation = false;
+      }
+
+      if ((n.x * n.x + n.y * n.y > MIN_SQUARED_NORMAL_LENGTH) && (rightOrientation))
+      {
+        if (n.y <= 0.0)
+        {
+          insertUpperProfileLine(P0, P1, globalIndex, upperProfile, upperProfileSurface);
+        }
+        else
+        if (n.y >= 0.0)
+        {
+          insertLowerProfileLine(P0, P1, globalIndex, lowerProfile, lowerProfileSurface);
+        }
+      }
+    }
+  }
+
+  // ****************************************************************
+  // Mark invalid profile values as such.
+  // ****************************************************************
+
+  for (i = 0; i < N2; i++)
+  {
+    if (upperProfile[i] == EXTREME_PROFILE_VALUE) { upperProfile[i] = INVALID; }
+    if (lowerProfile[i] == -EXTREME_PROFILE_VALUE) { lowerProfile[i] = INVALID; }
+  }
+
+  // ****************************************************************
+  // When the upper teeth are cut, the profile more lateral from the
+  // teeth may not be higher than the lower edge of the upper teeth.
+  // Analog for the lower profile.
+  // This is to make sure that in the vicinity of the incisors, the
+  // area between the lips left and right from the teeth is not
+  // considered in the profile (only with the profile height between 
+  // the teeth). This ensures a constantly smaller area between the
+  // incisors, which is important for transitions from and to /sh/.
+  // ****************************************************************
+
+
+  double upperLimit = 1000000.0;
+  double lowerLimit = -1000000.0;
+
+  // Go from median to lateral.
+  for (i = N2 - 1; i >= 0; i--)
+  {
+    if (upperProfile[i] != INVALID)
+    {
+      if (upperProfileSurface[i] == UPPER_TEETH)
+      {
+        if (upperProfile[i] < upperLimit)
+        {
+          upperLimit = upperProfile[i];
+        }
+      }
+
+      if (upperProfile[i] > upperLimit)
+      {
+        upperProfile[i] = upperLimit;
+      }
+    }
+
+    if (lowerProfile[i] != INVALID)
+    {
+      if (lowerProfileSurface[i] == LOWER_TEETH)
+      {
+        if (lowerProfile[i] > lowerLimit)
+        {
+          lowerLimit = lowerProfile[i];
+        }
+      }
+
+      if (lowerProfile[i] < lowerLimit)
+      {
+        lowerProfile[i] = lowerLimit;
+      }
+    }
+  }
+
+
+  // ****************************************************************
+  // Fill gaps in the upper profile.
+  // ****************************************************************
+
+  double lastValue = INVALID;
+
+  for (i = 0; i < N2; i++)
+  {
+    if (upperProfile[i] == INVALID)
+    {
+      upperProfile[i] = lastValue;
+    }
+    else
+    {
+      lastValue = upperProfile[i];
+    }
+  }
+
+  // ****************************************************************
+  // All invalid samples of the lower profile are filled up with 
+  // minimum values starting from the middle, until the first valid
+  // value is found.
+  // If all samples are invalid, assume the width of the upper profile.
+  // ****************************************************************
+
+  int firstUpperValid = -1;
+  int firstLowerValid = -1;
+  for (i = 0; i < N2; i++)
+  {
+    if ((firstLowerValid == -1) && (lowerProfile[i] != INVALID)) { firstLowerValid = i; }
+    if ((firstUpperValid == -1) && (upperProfile[i] != INVALID)) { firstUpperValid = i; }
+  }
+
+  if (firstLowerValid == -1)
+  {
+    if (firstUpperValid == -1) { firstUpperValid = 0; }
+    for (i = firstUpperValid; i < N2; i++) { lowerProfile[i] = MIN_PROFILE_VALUE; }
+  }
+  else
+  {
+    i = N2 - 1;
+    while ((i > 0) && (lowerProfile[i] == INVALID)) { lowerProfile[i--] = MIN_PROFILE_VALUE; }
+  }
+
+  // ****************************************************************
+  // Interpolate gaps in the lower profile.
+  // ****************************************************************
+
+  left = 0;
+  right = 0;
+
+  for (i = 0; i < N2; i++)
+  {
+    if (lowerProfile[i] == INVALID)
+    {
+      if ((i <= left) || (i >= right))
+      {
+        // Find a new valid left and right sample.
+        left = i;
+        right = i;
+        while ((lowerProfile[left] == INVALID) && (left > 0)) { left--; }
+        while ((lowerProfile[right] == INVALID) && (right < N2 - 1)) { right++; }
+      }
+
+      if ((i > left) && (i < right))
+      {
+        if ((lowerProfile[left] != INVALID) && (lowerProfile[right] != INVALID))
+        {
+          lowerProfile[i] = lowerProfile[left] + (double)(i - left) * (lowerProfile[right] - lowerProfile[left]) / (right - left);
+        }
+        else
+          if (lowerProfile[left] != INVALID)
+          {
+            lowerProfile[i] = lowerProfile[left];
+          }
+      }
+    }
+  }
+
+  // ****************************************************************
+  // The lower profile samples must always lie below the upper 
+  // profile samples.
+  // ****************************************************************
+
+  for (i = 0; i < N2; i++)
+  {
+    if ((lowerProfile[i] != INVALID) && (upperProfile[i] != INVALID) && (lowerProfile[i] > upperProfile[i]))
+    {
+      lowerProfile[i] = upperProfile[i];
+    }
+  }
+
+  // ****************************************************************
+  // Find the leftmost valid sample in both profiles.
+  // ****************************************************************
+
+  int upperLeft = 0;
+  while ((upperProfile[upperLeft] == INVALID) && (upperLeft < N2 - 1)) { upperLeft++; }
+
+  int lowerLeft = 0;
+  while ((lowerProfile[lowerLeft] == INVALID) && (lowerLeft < N2 - 1)) { lowerLeft++; }
+
+  // ****************************************************************
+  // The leftmost valid sample index.
+  // ****************************************************************
+
+  int leftmost = N2 - 1;
+  if ((upperProfile[upperLeft] != INVALID) && (upperLeft < leftmost)) { leftmost = upperLeft; }
+  if ((lowerProfile[lowerLeft] != INVALID) && (lowerLeft < leftmost)) { leftmost = lowerLeft; }
+
+  // ****************************************************************
+  // Make both profiles have an equal width.
+  // ****************************************************************
+
+  if (upperProfile[upperLeft] == INVALID) { upperProfile[upperLeft] = MAX_PROFILE_VALUE; }
+  if (lowerProfile[lowerLeft] == INVALID) { lowerProfile[lowerLeft] = MIN_PROFILE_VALUE; }
+
+  if (upperLeft < lowerLeft)
+  {
+    for (i = upperLeft; i < lowerLeft; i++) { lowerProfile[i] = lowerProfile[lowerLeft]; }
+  }
+  else
+  {
+    for (i = lowerLeft; i < upperLeft; i++) { upperProfile[i] = upperProfile[upperLeft]; }
+  }
+
+  // ****************************************************************
+  // When both lips were cut, and they are closed in the midsagittal
+  // plane, then the profile is closed completely!
+  // ****************************************************************
+
+  if ((bothLipsCut) && (bothTeethCut == false) && (upperProfile[N2 - 1] == lowerProfile[N2 - 1]))
+  {
+    double d;
+    for (i = 0; i < N2; i++)
+    {
+      if ((upperProfile[i] != INVALID) && (lowerProfile[i] != INVALID))
+      {
+        d = 0.5 * (lowerProfile[i] + upperProfile[i]);
+        lowerProfile[i] = d;
+        upperProfile[i] = d;
+      }
+    }
+  }
+
+  // ****************************************************************
+  // Mirror the right half of the profiles to the left.
+  // ****************************************************************
+
+  for (i = 0; i <= N2; i++)
+  {
+    upperProfile[N - 1 - i] = upperProfile[i];
+    upperProfileSurface[N - 1 - i] = upperProfileSurface[i];
+    lowerProfile[N - 1 - i] = lowerProfile[i];
+    lowerProfileSurface[N - 1 - i] = lowerProfileSurface[i];
+  }
+  int rightmost = N - 1 - leftmost;
+
+
+  // ****************************************************************
+  // Consider the tongue.
+  // ****************************************************************
+
+  if (considerTongue)
+  {
+    double tongueProfile[NUM_PROFILE_SAMPLES];
+    int tongueProfileSurface[NUM_PROFILE_SAMPLES];
+
+    // Init. the profile.
+
+    for (i = 0; i < N; i++)
+    {
+      tongueProfile[i] = -EXTREME_PROFILE_VALUE;
+      tongueProfileSurface[i] = -1;
+    }
+
+    s = &surface[TONGUE];
+
+    // Faster intersection method.
+
+    if (makeFasterIntersections)
+    {
+      if (intersectionsPrepared[TONGUE] == false)
+      {
+        // Assign all triangles to the tiles (only once !)
+        s->prepareIntersections();
+        intersectionsPrepared[TONGUE] = true;
+      }
+
+      s->prepareIntersection(P, v);
+      s->getTriangleList(indexList, numListEntries, MAX_LIST_ENTRIES);
+
+      for (i = 0; i < numListEntries; i++)
+      {
+        if (s->getTriangleIntersection(indexList[i], P0, P1, n))
+        {
+          if (n.y >= 0.0)
+          {
+            insertLowerProfileLine(P0, P1, TONGUE, tongueProfile, tongueProfileSurface);
+          }
+        }
+      }
+    }
+    else
+
+      // Slower intersection method.
+
+    {
+      s->prepareIntersection(P, v);
+      for (i = 0; i < s->numTriangles; i++)
+      {
+        if (s->getTriangleIntersection(i, P0, P1, n))
+        {
+          if (n.y >= 0.0)
+          {
+            insertLowerProfileLine(P0, P1, TONGUE, tongueProfile, tongueProfileSurface);
+          }
+        }
+      }
+    }
+
+    for (i = 0; i < N; i++)
+    {
+      if (tongueProfile[i] == -EXTREME_PROFILE_VALUE) { tongueProfile[i] = INVALID; }
+    }
+
+    // **************************************************************
+    // Linear interpolation of gaps in the tongue profile.
+    // **************************************************************
+
+    left = 0;
+    right = 0;
+
+    for (i = 0; i < N; i++)
+    {
+      if (tongueProfile[i] == INVALID)
+      {
+        if ((i <= left) || (i >= right))
+        {
+          // Find a new valid left and right sample.
+          left = i;
+          right = i;
+          while ((tongueProfile[left] == INVALID) && (left > 0)) { left--; }
+          while ((tongueProfile[right] == INVALID) && (right < N - 1)) { right++; }
+        }
+
+        if (right > left)
+        {
+          if ((tongueProfile[left] != INVALID) && (tongueProfile[right] != INVALID))
+          {
+            tongueProfile[i] = tongueProfile[left] + (double)(i - left) * (tongueProfile[right] - tongueProfile[left]) / (right - left);
+          }
+          else
+          if (tongueProfile[left] != INVALID)
+          {
+            tongueProfile[i] = tongueProfile[left];
+          }
+          else
+          if (tongueProfile[right] != INVALID)
+          {
+            tongueProfile[i] = tongueProfile[right];
+          }
+        }
+      }
+    }
+
+    // **************************************************************
+    // Merge the tongue with the lower profile.
+    // **************************************************************
+
+    for (i = leftmost; i <= rightmost; i++)
+    {
+      if ((tongueProfile[i] != INVALID) && (lowerProfile[i] != INVALID) &&
+        (tongueProfile[i] > lowerProfile[i]))
+      {
+        lowerProfile[i] = tongueProfile[i];
+        lowerProfileSurface[i] = tongueProfileSurface[i];
+      }
+    }
+
+    while ((leftmost < N2) && (lowerProfile[leftmost] > upperProfile[leftmost] - 0.1)) { leftmost++; }
+    while ((rightmost > N2) && (lowerProfile[rightmost] > upperProfile[rightmost] - 0.1)) { rightmost--; }
+
+    // **************************************************************
+    // The lower profile samples must always lie below the upper 
+    // profile samples.
+    // **************************************************************
+
+    for (i = 0; i < N; i++)
+    {
+      if ((i >= leftmost) && (i <= rightmost))
+      {
+        if (lowerProfile[i] > upperProfile[i]) { lowerProfile[i] = upperProfile[i]; }
+      }
+      else
+      {
+        lowerProfile[i] = INVALID;
+        upperProfile[i] = INVALID;
+      }
+    }
+  }
+
+  // ****************************************************************
+  // Go from the middle to the left until the first open part 
+  // (greater than a certain minimum distance) is found in the profile. 
+  // This is mostly directly in the middle (apart from /l/).
+  // Then declare the profile as valid only as long as it remains 
+  // open towards the sides. More than one closure within the
+  // profile are not allowed.
+  // ****************************************************************
+
+  const double OPEN_THRESHOLD = 0.1;   // = 1 mm
+  const double CUTOFF_THRESHOLD = 0.01;
+
+  i = N2 - 1;
+  while ((upperProfile[i] - lowerProfile[i] < OPEN_THRESHOLD) && (i > 0)) { i--; }
+  while ((upperProfile[i] - lowerProfile[i] >= CUTOFF_THRESHOLD) && (i > 0)) { i--; }
+  while (i >= 0)
+  {
+    upperProfile[i] = INVALID;
+    lowerProfile[i] = INVALID;
+    i--;
+  }
+
+  i = N2 - 1;
+  while ((upperProfile[i] - lowerProfile[i] < OPEN_THRESHOLD) && (i < N - 1)) { i++; }
+  while ((upperProfile[i] - lowerProfile[i] >= CUTOFF_THRESHOLD) && (i < N - 1)) { i++; }
+  while (i <= N - 1)
+  {
+    upperProfile[i] = INVALID;
+    lowerProfile[i] = INVALID;
+    i++;
+  }
+
+  // ****************************************************************
+  // Make the connection between both profiles.
+  // ****************************************************************
+
+  leftmost = 0;
+  while (((upperProfile[leftmost] == INVALID) || (lowerProfile[leftmost] == INVALID)) &&
+    (leftmost < N2 - 1)) {
+    leftmost++;
+  }
+  if ((upperProfile[leftmost] != INVALID) && (lowerProfile[leftmost] != INVALID))
+  {
+    upperProfile[leftmost] = lowerProfile[leftmost] = 0.5 * (upperProfile[leftmost] + lowerProfile[leftmost]);
+
+    // if the index of at least one of the leftmost points is a tooth
+    if ((upperProfileSurface[leftmost] == UPPER_TEETH) || (lowerProfileSurface[leftmost] == LOWER_TEETH))
+    {
+      // assuming that the common point cannot be a tooth, its index is set as a left cover
+      upperProfileSurface[leftmost] = lowerProfileSurface[leftmost] = LEFT_COVER;
+    }
+  }
+
+  rightmost = N - 1;
+  while (((upperProfile[rightmost] == INVALID) || (lowerProfile[rightmost] == INVALID)) &&
+    (rightmost > N2)) {
+    rightmost--;
+  }
+  if ((upperProfile[rightmost] != INVALID) && (lowerProfile[rightmost] != INVALID))
+  {
+    upperProfile[rightmost] = lowerProfile[rightmost] = 0.5 * (upperProfile[rightmost] + lowerProfile[rightmost]);
+
+    // if the index of at least one of the rightmost points is a tooth
+    if ((upperProfileSurface[rightmost] == UPPER_TEETH) || (lowerProfileSurface[rightmost] == LOWER_TEETH))
+    {
+      upperProfileSurface[rightmost] = lowerProfileSurface[rightmost] = RIGHT_COVER;
+    }
+  }
+
+  // ****************************************************************
+  // Determine the articulator that determines the lower profile
+  // in the midsagittal plane.
+  // Always test the two most median samples.
+  // ****************************************************************
+
+  articulator = Tube::OTHER_ARTICULATOR;
+
+  bool hasTongue = false;
+  bool hasLowerLip = false;
+  bool hasLowerTeeth = false;
+
+  double CHECK_RANGE_CM = 0.5;
+  int NUM_CHECK_SAMPLES = (int)(CHECK_RANGE_CM / PROFILE_SAMPLE_LENGTH);
+
+  for (i = 1; i < NUM_CHECK_SAMPLES; i++)
+  {
+    if (lowerProfileSurface[N2 - i] == TONGUE)
+    {
+      hasTongue = true;
+    }
+    else
+    if ((lowerProfileSurface[N2 - i] == LOWER_LIP) || (lowerProfileSurface[N2 - i] == RADIATION))
+    {
+      hasLowerLip = true;
+    }
+    else
+    if (lowerProfileSurface[N2 - i] == LOWER_TEETH)
+    {
+      hasLowerTeeth = true;
+    }
+
+  }
+
+  if (hasLowerTeeth)
+  {
+    articulator = Tube::LOWER_INCISORS;
+  }
+  else
+  if (hasLowerLip)
+  {
+    articulator = Tube::LOWER_LIP;
+  }
+  else
+  if (hasTongue)
+  {
+    articulator = Tube::TONGUE;
+  }
+
+}
 
 // ****************************************************************************
 // Samples the cutting line between P0 and P1 horizontally and inserts it into 
@@ -6748,6 +7672,8 @@ bool VocalTract::exportCrossSections(const string &fileName)
 
   // ****************************************************************
 
+  double maxCs, minCs;
+
   ofstream os(fileName);
   if (!os)
   {
@@ -6767,14 +7693,21 @@ bool VocalTract::exportCrossSections(const string &fileName)
     os << centerLine[i].point.x << " " << centerLine[i].point.y << endl;
     os << centerLine[i].normal.x << " " << centerLine[i].normal.y << endl;
 
+  maxCs = -5.;
     for (k = 0; k < NUM_PROFILE_SAMPLES; k++)
     {
+    if (upperProfile[k] < 10.)
+    {
+      maxCs = max(maxCs, upperProfile[k]);
+    }
       os << upperProfile[k] << " ";
     }
     os << endl;
 
+  minCs = 5.;
     for (k = 0; k < NUM_PROFILE_SAMPLES; k++)
     {
+    minCs = min(minCs, lowerProfile[k]);
       os << lowerProfile[k] << " ";
     }
     os << endl;
@@ -7635,3 +8568,354 @@ void VocalTract::restoreControlParams()
 
 // ****************************************************************************
 
+// ****************************************************************************
+/// Write a STL file contianing the vocal tract geometry
+// ****************************************************************************
+
+bool VocalTract::exportVocalTractToSTL(const string& fileName)
+{
+  double upperProfile[2][NUM_PROFILE_SAMPLES];
+  double lowerProfile[2][NUM_PROFILE_SAMPLES];
+  double xUp[2][2];
+  double xLo[2][2];
+  double yUp[2][2];
+  double yLo[2][2];
+  double zProfile[NUM_PROFILE_SAMPLES];
+  unsigned int configuration;
+  Tube::Articulator articulator;
+  Point3D P[3];
+  Triangle3D triangle;
+
+  // ****************************************************************
+
+  ofstream os(fileName);
+  if (!os)
+  {
+    return false;
+  }
+
+  // Write STL file header
+  size_t lastBackSlash = fileName.find_last_of("/\\");
+  size_t lastDot = fileName.find_last_of(".");
+  os << "solid " << fileName.substr(lastBackSlash+1, lastDot - lastBackSlash -1) << endl;
+
+  // ****************************************************************
+  // Compute the 3D coordinates of the profile points
+  // ****************************************************************
+  // initialise the x coordinates
+  for (int i(0); i < NUM_PROFILE_SAMPLES; i++)
+  {
+    zProfile[i] = 10.*(-PROFILE_LENGTH / 2 + i * PROFILE_SAMPLE_LENGTH);
+  }
+
+  // ****************************************************************
+  // The STL format describes a geometry with triangles themselves 
+  // describes their facet normal and the coordinates of their 
+  // points.
+  //
+  // The strategy here is to define triangles which link the points
+  // of 2 successives profiles.
+  //
+  // The case of two points connected to the two following ones is 
+  // trivial, however a bunch of particular cases appears when at 
+  // least one of the four points does not exist.
+  //
+  // To detect these particular cases and properly adress them, 
+  // the strategy is here to attribute a prime number to each of 
+  // the four considered position and to sum the numbers corresponding
+  // to each existing point.
+  //
+  //    current profile    2 *    3 *
+  //    following profile  7 *    5 *
+  //
+  // This results in a number which uniquely identify a particular 
+  // configuration and allow ones to treat it appropriately.
+  // ****************************************************************
+
+  // loop over the section
+  for (int s(0); s < NUM_CENTERLINE_POINTS-1; s++)
+  {
+    // get the first profile to extract the points of the two first positions
+    getCrossProfiles(centerLine[s].point, centerLine[s].normal,
+      upperProfile[0], lowerProfile[0], true, articulator);
+
+    // get the first profile to extract the points of the two next positions
+    getCrossProfiles(centerLine[s+1].point, centerLine[s+1].normal,
+      upperProfile[1], lowerProfile[1], true, articulator);
+                                        
+                                         
+
+    // loop over the points
+    for (int p(0); p < NUM_PROFILE_SAMPLES - 1; p++)
+    {
+      for (int i(0); i < 2; i++)
+      {
+        for (int j(0); j < 2; j++)
+        {
+          xUp[i][j] = 10. * (centerLine[s+i].point.x + upperProfile[i][p+j] * centerLine[s+i].normal.x + 20.);
+          yUp[i][j] = 10. * (upperProfile[i][p+j] * centerLine[s+i].normal.y + centerLine[s+i].point.y + 20.);
+          xLo[i][j] = 10. * (centerLine[s+i].point.x + lowerProfile[i][p+j] * centerLine[s+i].normal.x + 20.);
+          yLo[i][j] = 10. * (lowerProfile[i][p+j] * centerLine[s+i].normal.y + centerLine[s+i].point.y + 20.);
+        }
+      }
+
+      // compute the configuration identification number
+      configuration = max(1, 2 * (upperProfile[0][p] == INVALID_PROFILE_SAMPLE)) * 
+        max(1, 3 * (upperProfile[0][p+1] == INVALID_PROFILE_SAMPLE)) *
+        max(1, 7 * (upperProfile[1][p] == INVALID_PROFILE_SAMPLE)) *
+        max(1, 5 * (upperProfile[1][p+1] == INVALID_PROFILE_SAMPLE));
+
+      // identify the configuration and build the necessary triangles
+      switch (configuration)
+      {
+      case 1:
+        // +  +
+        // +  +
+
+        // upper profile triangle 1
+        P[0].set(xUp[0][0], yUp[0][0], zProfile[p]);
+        P[1].set(xUp[0][1], yUp[0][1], zProfile[p + 1]);
+        P[2].set(xUp[1][0], yUp[1][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // upper profile triangle 2
+        P[0].set(xUp[0][1], yUp[0][1], zProfile[p+1]);
+        P[1].set(xUp[1][1], yUp[1][1], zProfile[p + 1]);
+        P[2].set(xUp[1][0], yUp[1][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // lower profile triangle 1
+        P[0].set(xLo[1][0], yLo[1][0], zProfile[p]);
+        P[1].set(xLo[0][1], yLo[0][1], zProfile[p + 1]);
+        P[2].set(xLo[0][0], yLo[0][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // lower profile triangle 2
+        P[0].set(xLo[1][0], yLo[1][0], zProfile[p]);
+        P[1].set(xLo[1][1], yLo[1][1], zProfile[p + 1]);
+        P[2].set(xLo[0][1], yLo[0][1], zProfile[p+1]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+        break;
+      case 2:
+        //    +
+        // +  +
+
+        // upper profile triangle
+        P[0].set(xUp[0][1], yUp[0][1], zProfile[p+1]);
+        P[1].set(xUp[1][1], yUp[1][1], zProfile[p + 1]);
+        P[2].set(xUp[1][0], yUp[1][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // lower profile triangle
+        P[0].set(xLo[1][0], yLo[1][0], zProfile[p]);
+        P[1].set(xLo[1][1], yLo[1][1], zProfile[p + 1]);
+        P[2].set(xLo[0][1], yLo[0][1], zProfile[p+1]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // link between profiles, triangle 1
+        P[0].set(xLo[0][1], yLo[0][1], zProfile[p+1]);
+        P[1].set(xUp[0][1], yUp[0][1], zProfile[p + 1]);
+        P[2].set(xUp[1][0], yUp[1][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // link between profiles, triangle 2
+        P[0].set(xLo[1][0], yLo[1][0], zProfile[p]);
+        P[1].set(xLo[0][1], yLo[0][1], zProfile[p + 1]);
+        P[2].set(xUp[1][0], yUp[1][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+        break;
+      case 7:
+        // +   +
+        //    +
+
+        // upper profile triangle
+        P[0].set(xUp[0][0], yUp[0][0], zProfile[p]);
+        P[1].set(xUp[0][1], yUp[0][1], zProfile[p + 1]);
+        P[2].set(xUp[1][1], yUp[1][1], zProfile[p+1]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // lower profile triangle
+        P[0].set(xLo[1][1], yLo[1][1], zProfile[p+1]);
+        P[1].set(xLo[0][1], yLo[0][1], zProfile[p + 1]);
+        P[2].set(xLo[0][0], yLo[0][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+                                           
+        // link between profiles, triangle 1
+        P[0].set(xUp[0][0], yUp[0][0], zProfile[p]);
+        P[1].set(xUp[1][1], yUp[1][1], zProfile[p + 1]);
+        P[2].set(xLo[1][1], yLo[1][1], zProfile[p+1]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // link between profiles, triangle 2
+        P[0].set(xLo[1][1], yLo[1][1], zProfile[p + 1]);
+        P[1].set(xLo[0][0], yLo[0][0], zProfile[p]);
+        P[2].set(xUp[0][0], yUp[0][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+   
+
+        break;
+      case 5:
+        // +   +
+        // +
+
+        // upper profile triangle
+        P[0].set(xUp[0][0], yUp[0][0], zProfile[p]);
+        P[1].set(xUp[0][1], yUp[0][1], zProfile[p + 1]);
+        P[2].set(xUp[1][0], yUp[1][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // lower profile triangle
+        P[0].set(xLo[1][0], yLo[1][0], zProfile[p]);
+        P[1].set(xLo[0][1], yLo[0][1], zProfile[p + 1]);
+        P[2].set(xLo[0][0], yLo[0][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // link between profiles, triangle 1
+        P[0].set(xUp[1][0], yUp[1][0], zProfile[p]);
+        P[1].set(xUp[0][1], yUp[0][1], zProfile[p + 1]);
+        P[2].set(xLo[1][0], yLo[1][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // link between profiles, triangle 2
+        P[0].set(xLo[0][1], yLo[0][1], zProfile[p+1]);
+        P[1].set(xLo[1][0], yLo[1][0], zProfile[p]);
+        P[2].set(xUp[0][1], yUp[0][1], zProfile[p+1]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+                                         
+        break;
+      case 3:
+        // + 
+        // +  +
+
+        // upper profile triangle
+        P[0].set(xUp[0][0], yUp[0][0], zProfile[p]);
+        P[1].set(xUp[1][1], yUp[1][1], zProfile[p + 1]);
+        P[2].set(xUp[1][0], yUp[1][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // lower profile triangle
+        P[0].set(xLo[1][0], yLo[1][0], zProfile[p]);
+        P[1].set(xLo[1][1], yLo[1][1], zProfile[p + 1]);
+        P[2].set(xLo[0][0], yLo[0][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // link between profiles, triangle 1
+        P[0].set(xLo[0][0], yLo[0][0], zProfile[p]);
+        P[1].set(xUp[1][1], yUp[1][1], zProfile[p + 1]);
+        P[2].set(xUp[0][0], yUp[0][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // link between profiles, triangle 2
+        P[0].set(xUp[1][1], yUp[1][1], zProfile[p+1]);
+        P[1].set(xLo[0][0], yLo[0][0], zProfile[p]);
+        P[2].set(xLo[1][1], yLo[1][1], zProfile[p+1]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        break;
+      case 35:
+        // +  +
+        // 
+
+        // link between profiles, triangle 1
+        P[0].set(xUp[0][0], yUp[0][0], zProfile[p]);
+        P[1].set(xUp[0][1], yUp[0][1], zProfile[p + 1]);
+        P[2].set(xLo[0][0], yLo[0][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // link between profiles, triangle 2
+        P[0].set(xUp[0][1], yUp[0][1], zProfile[p+1]);
+        P[1].set(xLo[0][1], yLo[0][1], zProfile[p+1]);
+        P[2].set(xLo[0][0], yLo[0][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        break;
+      case 6:
+        //
+        // +  +
+
+        // link between profiles, triangle 1
+        P[0].set(xLo[1][0], yLo[1][0], zProfile[p]);
+        P[1].set(xUp[1][1], yUp[1][1], zProfile[p + 1]);
+        P[2].set(xUp[1][0], yUp[1][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // link between profiles, triangle 2
+        P[0].set(xLo[1][0], yLo[1][0], zProfile[p]);
+        P[1].set(xLo[1][1], yLo[1][1], zProfile[p+1]);
+        P[2].set(xUp[1][1], yUp[1][1], zProfile[p+1]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        break;
+      case 15:
+        // +
+        // +
+                      
+        // link between profiles, triangle 1
+        P[0].set(xLo[1][0], yLo[1][0], zProfile[p]);
+        P[1].set(xUp[1][0], yUp[1][0], zProfile[p]);
+        P[2].set(xUp[0][0], yUp[0][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // link between profiles, triangle 2
+        P[0].set(xUp[0][0], yUp[0][0], zProfile[p]);
+        P[1].set(xLo[0][0], yLo[0][0], zProfile[p]);
+        P[2].set(xLo[1][0], yLo[1][0], zProfile[p]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        break;
+      case 14:
+        //    +
+        //    +
+
+        // link between profiles, triangle 1
+        P[0].set(xUp[0][1], yUp[0][1], zProfile[p+1]);
+        P[1].set(xUp[1][1], yUp[1][1], zProfile[p+1]);
+        P[2].set(xLo[1][1], yLo[1][1], zProfile[p+1]);
+        triangle.set(P[0], P[1], P[2]);
+        os << triangle.stringSTLformat();
+
+        // link between profiles, triangle 2
+        P[0].set(xLo[1][1], yLo[1][1], zProfile[p+1]);
+        P[1].set(xLo[0][1], yLo[0][1], zProfile[p+1]);
+        P[2].set(xUp[0][1], yUp[0][1], zProfile[p+1]);
+
+        break;
+      default:
+        break;
+      }
+    }
+  }
+
+  // ****************************************************************
+  // Close the file.
+  // ****************************************************************
+
+  os.close();
+  return true;
+}

@@ -23,6 +23,7 @@
 #define __GEOMETRY_H__
 
 #include <cmath>
+#include <string>
 
 class Point2D;
 class Point3D;
@@ -31,6 +32,7 @@ class Line2D;
 class Line3D;
 class Circle;
 class Ellipse2D;
+class Triangle3D;				 
 
 // ****************************************************************************
 // A 2D point.
@@ -51,7 +53,8 @@ public:
   Point2D turnRight();
   Point2D turnLeft();
   void turn(double angle);
-  double getDistanceFrom(Vector2D V);
+  double getDistanceFrom(Vector2D V) const;
+  double getDistanceFrom(Point2D& Pt);								  
   
   double magnitude() { return sqrt(x*x + y*y); }
   double squareMagnitude() { return x*x + y*y; }
@@ -256,6 +259,25 @@ class Ellipse2D
 
 double getEllipseTangent(Point2D H, Point2D C, double a, double b, bool uhrzeiger);
 
+// ****************************************************************************
+// A 3D triangle 
+// ****************************************************************************
+
+class Triangle3D
+{
+public:
+
+	Triangle3D();
+	Triangle3D(Point3D P0, Point3D P1, Point3D P2);
+
+	void set(Point3D P0, Point3D P1, Point3D P2);
+	std::string stringSTLformat();
+
+private:
+
+	Point3D P[3];
+
+};
 // ****************************************************************************
 
 #endif
