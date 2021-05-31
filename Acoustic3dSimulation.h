@@ -82,6 +82,7 @@ public:
 	void RayleighSommerfeldIntegral(vector<Point_3> points,
 		Eigen::VectorXcd &radPress, double freq);
 	void staticSimulation(VocalTract* tract);
+  void runTest();
 
 // **************************************************************************
 // accessors

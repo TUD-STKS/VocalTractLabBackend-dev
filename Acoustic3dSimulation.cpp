@@ -2331,6 +2331,34 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 }
 
 // ****************************************************************************
+// Run specific simulation tests
+
+void Acoustic3dSimulation::runTest()
+{
+  ofstream ofs;
+
+  // Generate a circular contour
+  Polygon_2 contour;
+  double radius(0.04), angle, area(M_PI*pow(radius, 2)), length(0.3);
+  int nbAngles(101);
+  vector<int> surfaceIdx(nbAngles, 0);
+  double scalingFactors[2] = { 1., 1. };
+  for (int i(0); i < nbAngles; i++)
+  {
+    angle = 2. * (double)(i / (nbAngles - 1)) * M_PI;
+    contour.push_back(Point(radius * cos(angle), radius * sin(angle)));
+  }
+  ofs.open("cont.txt");
+  for (auto it : contour) { ofs << it.x() << "  " << it.y() << endl; }
+  ofs.close();
+
+  m_crossSections.clear();
+  addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
+    surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
+    scalingFactors);
+}
+
+// ****************************************************************************
 // Compute the Rayleigh-Sommerfeld integral to compute radiated pressure
 
 void Acoustic3dSimulation::RayleighSommerfeldIntegral(vector<Point_3> points,

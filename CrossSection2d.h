@@ -49,6 +49,11 @@ enum physicalQuantity {
 	VELOCITY
 };
 
+enum areaVariationProfile {
+  LINEAR,
+  GAUSSIAN
+};
+
 struct simulationParameters
 {
 	double temperature;
@@ -264,6 +269,7 @@ public:
 
   // propagation
   double curvature(bool curved);
+  void setAreaVariationProfileType(enum areaVariationProfile profile);
   double scaling(double tau);
   void propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
 	  double freq, double direction, enum physicalQuantity quant);
@@ -316,6 +322,7 @@ public:
 
 private:
 
+  enum areaVariationProfile m_areaProfile;
 	double m_scalingFactors[2];
 	double m_curvatureRadius;
 	double m_circleArcAngle;

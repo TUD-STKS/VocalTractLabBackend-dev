@@ -218,7 +218,7 @@ CrossSection2dFEM::CrossSection2dFEM(double maxCutOnFreq, Point2D ctrLinePt, Poi
 	m_junctionSection(false),
 	m_spacing(spacing),
 	m_contour(contour),
-	m_surfaceIdx(surfacesIdx) 
+	m_surfaceIdx(surfacesIdx)
 	{
 		for (int i(0); i < 2; i++) { m_scalingFactors[i] = scalingFactors[i]; }
 		m_area = area;
@@ -229,6 +229,7 @@ CrossSection2dFEM::CrossSection2dFEM(double maxCutOnFreq, Point2D ctrLinePt, Poi
 		{
 			m_perimeter += sqrt(it->squared_length());
 		}
+    m_areaProfile = LINEAR;
 	}
 
 CrossSection2dRadiation::CrossSection2dRadiation(
@@ -1511,12 +1512,27 @@ double CrossSection2dFEM::curvature(bool curved)
 }
 
 // **************************************************************************
+// Set the area variation profile type
+void CrossSection2dFEM::setAreaVariationProfileType(enum areaVariationProfile profile)
+{
+  m_areaProfile = profile;
+}
+
+// **************************************************************************
 // scaling function
 
 double CrossSection2dFEM::scaling(double tau)
 {
-	return (m_scalingFactors[1] - m_scalingFactors[0]) * tau
-		+ m_scalingFactors[0];
+  switch (m_areaProfile)
+  {
+  case LINEAR:
+    return (m_scalingFactors[1] - m_scalingFactors[0]) * tau
+      + m_scalingFactors[0];
+    break;
+  case GAUSSIAN:
+    return (0.04*(1. + 0.75*exp(-pow(0.3*(tau - 0.5),2)/2./pow(0.04,2))));
+    break;
+  }
 }
 
 // **************************************************************************
