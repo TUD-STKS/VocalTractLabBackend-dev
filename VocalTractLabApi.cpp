@@ -575,7 +575,7 @@ int vtlTractToTube(double *tractParams,
 
 int vtlGetDefaultTransferFunctionOptions(TransferFunctionOptions* opts)
 {
-    opts->radiation = PARALLEL_RADIATION;
+    opts->radiationType = PARALLEL_RADIATION;
     opts->boundaryLayer = true;
     opts->heatConduction = false;
     opts->softWalls = true;
@@ -585,7 +585,7 @@ int vtlGetDefaultTransferFunctionOptions(TransferFunctionOptions* opts)
     opts->paranasalSinuses = true;
     opts->piriformFossa = true;
     opts->staticPressureDrops = true;
-    opts->type = SPECTRUM_UU;
+    opts->spectrumType = SPECTRUM_UU;
     return 0;
 }
 
@@ -666,7 +666,7 @@ int vtlGetTransferFunction(double* tractParams, int numSpectrumSamples, Transfer
     tlOpts.lumpedElements = opts->lumpedElements;
     tlOpts.paranasalSinuses = opts->paranasalSinuses;
     tlOpts.piriformFossa = opts->piriformFossa;
-    tlOpts.radiation = (TlModel::RadiationType)opts->radiation;
+    tlOpts.radiation = (TlModel::RadiationType)opts->radiationType;
     tlOpts.softWalls = opts->softWalls;
 
     tlModel->options = tlOpts;
@@ -675,7 +675,7 @@ int vtlGetTransferFunction(double* tractParams, int numSpectrumSamples, Transfer
 
     tlModel->getSpectrum(TlModel::FLOW_SOURCE_TF, &s, numSpectrumSamples, Tube::FIRST_PHARYNX_SECTION);
 
-    if (opts->type == SPECTRUM_PU)
+    if (opts->spectrumType == SPECTRUM_PU)
     {
         ComplexSignal radiationSpectrum(0);
         tlModel->getSpectrum(TlModel::RADIATION, &radiationSpectrum, numSpectrumSamples, 0);

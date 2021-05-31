@@ -203,8 +203,8 @@ typedef enum
 
 typedef struct
 {
-    SpectrumType type;              // What kind of transfer function to calculate
-    RadiationType radiation;        // Radiation model
+    SpectrumType spectrumType;      // What kind of transfer function to calculate
+    RadiationType radiationType;        // Radiation model
     bool boundaryLayer;             // Consider boundary layer resistance
     bool heatConduction;            // Consider heat conduction losses
     bool softWalls;                 // Consider soft walls
