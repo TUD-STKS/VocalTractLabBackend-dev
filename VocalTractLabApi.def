@@ -10,6 +10,7 @@ vtlGetGlottisParamInfo
 vtlGetTractParams
 vtlExportTractSvg
 vtlTractToTube
+vtlGetDefaultTransferFunctionOptions
 vtlGetTransferFunction
 vtlInputTractToLimitedTract
 vtlSynthesisReset

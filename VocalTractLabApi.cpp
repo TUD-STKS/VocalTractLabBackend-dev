@@ -587,7 +587,35 @@ int vtlTractToTube(double *tractParams,
 
 
 // ****************************************************************************
-// Calculates the volume velocity transfer function of the vocal tract between 
+// Returns the default options for the transfer function calculation. 
+// 
+// Parameters out:
+// o opts: A struct containing the default values for the options available for
+// the transfer function calculation.
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+int vtlGetDefaultTransferFunctionOptions(TransferFunctionOptions* opts)
+{
+    opts->radiationType = PARALLEL_RADIATION;
+    opts->boundaryLayer = true;
+    opts->heatConduction = false;
+    opts->softWalls = true;
+    opts->hagenResistance = false;
+    opts->lumpedElements = true;
+    opts->innerLengthCorrections = false;
+    opts->paranasalSinuses = true;
+    opts->piriformFossa = true;
+    opts->staticPressureDrops = true;
+    opts->spectrumType = SPECTRUM_UU;
+    return 0;
+}
+
+// ****************************************************************************
+// Calculates the transfer function of the vocal tract between 
 // the glottis and the lips for the given vector of vocal tract parameters and
 // returns the spectrum in terms of magnitude and phase.
 //
@@ -604,7 +632,10 @@ int vtlTractToTube(double *tractParams,
 //     at the frequencies 0.0, 86.13, 172.3, ... Hz.
 //     The value of numSpectrumSamples should not be greater than 16384,
 //     otherwise the returned spectrum will be bandlimited to below 10 kHz.
-//
+// o opts: The options to use for the transfer function calculation. If NULL 
+//     is passed, the default options will be used (see 
+//     vtlGetDefaultTransferFunctionOptions()).
+// 
 // Parameters out:
 // o magnitude: Vector of spectral magnitudes at equally spaced discrete 
 //     frequencies. This vector mus have at least numSpectrumSamples elements.
@@ -617,49 +648,76 @@ int vtlTractToTube(double *tractParams,
 // 1: The API has not been initialized.
 // ****************************************************************************
 
-int vtlGetTransferFunction(double *tractParams, int numSpectrumSamples,
-  double *magnitude, double *phase_rad)
+int vtlGetTransferFunction(double* tractParams, int numSpectrumSamples, TransferFunctionOptions* opts, double* magnitude, double* phase_rad)
 {
-  if (!vtlApiInitialized)
-  {
-    printf("Error: The API has not been initialized.\n");
-    return 1;
-  }
+    if (!vtlApiInitialized)
+    {
+        printf("Error: The API has not been initialized.\n");
+        return 1;
+    }
 
-  int i;
-  ComplexSignal s;
+    int i;
+    ComplexSignal s;
 
-  if (numSpectrumSamples < 16)
-  {
-    numSpectrumSamples = 16;
-  }
+    if (numSpectrumSamples < 16)
+    {
+        numSpectrumSamples = 16;
+    }
 
-  // Calculate the vocal tract shape from the vocal tract parameters.
+    // Calculate the vocal tract shape from the vocal tract parameters.
 
-  for (i = 0; i < VocalTract::NUM_PARAMS; i++)
-  {
-    vocalTract->param[i].x = tractParams[i];
-  }
-  vocalTract->calculateAll();
+    for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+    {
+        vocalTract->param[i].x = tractParams[i];
+    }
+    vocalTract->calculateAll();
 
-  // Calculate the transfer function.
+    // Calculate the transfer function.
 
-  TlModel *tlModel = new TlModel();
-  vocalTract->getTube(&tlModel->tube);
-  tlModel->tube.setGlottisArea(0.0);
-  tlModel->getSpectrum(TlModel::FLOW_SOURCE_TF, &s, numSpectrumSamples, Tube::FIRST_PHARYNX_SECTION);
+    TlModel* tlModel = new TlModel();
 
-  // Separate the transfer function into magnitude and phase.
+    // Set the options
+    TlModel::Options tlOpts;
+    if (opts == NULL)
+    {
+      TransferFunctionOptions tfOpts;
+      vtlGetDefaultTransferFunctionOptions(&tfOpts);
+      opts = &tfOpts;
+    }
+    tlOpts.boundaryLayer = opts->boundaryLayer;
+    tlOpts.hagenResistance = opts->hagenResistance;
+    tlOpts.heatConduction = opts->heatConduction;
+    tlOpts.innerLengthCorrections = opts->innerLengthCorrections;
+    tlOpts.lumpedElements = opts->lumpedElements;
+    tlOpts.paranasalSinuses = opts->paranasalSinuses;
+    tlOpts.piriformFossa = opts->piriformFossa;
+    tlOpts.radiation = (TlModel::RadiationType)opts->radiationType;
+    tlOpts.softWalls = opts->softWalls;
 
-  for (i = 0; i < numSpectrumSamples; i++)
-  {
-    magnitude[i] = s.getMagnitude(i);
-    phase_rad[i] = s.getPhase(i);
-  }
+    tlModel->options = tlOpts;
+    vocalTract->getTube(&tlModel->tube);
+    tlModel->tube.setGlottisArea(0.0);
 
-  delete tlModel;
+    tlModel->getSpectrum(TlModel::FLOW_SOURCE_TF, &s, numSpectrumSamples, Tube::FIRST_PHARYNX_SECTION);
 
-  return 0;
+    if (opts->spectrumType == SPECTRUM_PU)
+    {
+        ComplexSignal radiationSpectrum(0);
+        tlModel->getSpectrum(TlModel::RADIATION, &radiationSpectrum, numSpectrumSamples, 0);
+        s *= radiationSpectrum;
+        s *= 10.0;
+    }
+
+    // Separate the transfer function into magnitude and phase.
+    for (i = 0; i < numSpectrumSamples; i++)
+    {
+        magnitude[i] = s.getMagnitude(i);
+        phase_rad[i] = s.getPhase(i);
+    }
+
+    delete tlModel;
+
+    return 0;
 }
 
 

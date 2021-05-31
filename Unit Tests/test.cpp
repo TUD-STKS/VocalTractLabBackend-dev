@@ -133,6 +133,51 @@ TEST(ApiTest, TractToTube)
 	vtlClose();
 }
 
+TEST(ApiTest, DefaultTransferFunctionOptions)
+{
+	vtlInitialize(speakerFile);
+
+	TransferFunctionOptions defaultOpts;
+	int ret = vtlGetDefaultTransferFunctionOptions(&defaultOpts);
+
+	EXPECT_EQ(ret, 0);
+	EXPECT_EQ(defaultOpts.radiation, PARALLEL_RADIATION);
+	EXPECT_EQ(defaultOpts.boundaryLayer, true);
+	EXPECT_EQ(defaultOpts.heatConduction, false);
+	EXPECT_EQ(defaultOpts.softWalls, true);
+	EXPECT_EQ(defaultOpts.hagenResistance, false);
+	EXPECT_EQ(defaultOpts.lumpedElements, true);
+	EXPECT_EQ(defaultOpts.innerLengthCorrections, false);
+	EXPECT_EQ(defaultOpts.paranasalSinuses, true);
+	EXPECT_EQ(defaultOpts.piriformFossa, true);
+	EXPECT_EQ(defaultOpts.staticPressureDrops, true);
+	EXPECT_EQ(defaultOpts.type, SPECTRUM_UU);
+}
+
+TEST(ApiTest, GetTransferFunction)
+{
+	vtlInitialize(speakerFile);
+
+	TransferFunctionOptions opts;
+	vtlGetDefaultTransferFunctionOptions(&opts);
+	opts.type = SPECTRUM_PU;
+
+	int _, numVocalTractParams;
+	vtlGetConstants(&_, &_, &numVocalTractParams, &_);
+	
+	std::vector<double> tractParams(numVocalTractParams);
+	vtlGetTractParams("a", &tractParams[0]);
+	
+	const int numSamples = 4096;
+	std::vector<double> magnitude(numSamples);
+	std::vector<double> phase(numSamples);
+	int ret = vtlGetTransferFunction(&tractParams[0], numSamples,
+		&opts, &magnitude[0], &phase[0]);
+
+	EXPECT_EQ(ret, 0);
+}
+
+
 TEST(ApiTest, GesToAudio_FileOut)
 {
 	vtlInitialize(speakerFile);
