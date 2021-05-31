@@ -72,6 +72,18 @@ C_EXPORT int vtlClose();
 
 
 // ****************************************************************************
+// Switch to turn off/on the automatic calculation of the tongue root 
+// parameters TRX and TRY.
+//
+// Return values:
+// 0: success.
+// 1: The API was not initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlCalcTongueRootAutomatically(bool automaticCalculation);
+
+
+// ****************************************************************************
 // Returns the version of this API as a string that contains the compile data.
 // Reserve at least 32 chars for the string.
 // ****************************************************************************
@@ -171,6 +183,67 @@ C_EXPORT int vtlTractToTube(double* tractParams,
 
 
 // ****************************************************************************
+// Enumerates the different options to model radiation of the sound wave
+// from the mouth
+// ****************************************************************************
+
+typedef enum
+{
+    NO_RADIATION,
+    PISTONINSPHERE_RADIATION,
+    PISTONINWALL_RADIATION,
+    PARALLEL_RADIATION,
+    NUM_RADIATION_OPTIONS
+} RadiationType;
+
+
+// ****************************************************************************
+// Enumerates the different types of spectra (or transfer functions)
+// ****************************************************************************
+
+typedef enum
+{
+    SPECTRUM_UU,  // Output flow over input flow
+    SPECTRUM_PU   // Output output pressure over input flow
+} SpectrumType;
+
+
+// ****************************************************************************
+// A struct containing the various options available for the calculation 
+// of the vocal tract transfer function
+// ****************************************************************************
+
+typedef struct
+{
+    SpectrumType spectrumType;      // What kind of transfer function to calculate
+    RadiationType radiationType;        // Radiation model
+    bool boundaryLayer;             // Consider boundary layer resistance
+    bool heatConduction;            // Consider heat conduction losses
+    bool softWalls;                 // Consider soft walls
+    bool hagenResistance;           // Consider Hagen-Poiseuille resistance
+    bool innerLengthCorrections;    // Make inner (tube) length corrections
+    bool lumpedElements;            // Use lumped elements in T-sections
+    bool paranasalSinuses;          // Include the paranasal sinuses
+    bool piriformFossa;             // Include the piriform fossa
+    bool staticPressureDrops;       // Consider static pressure drops
+} TransferFunctionOptions;
+
+
+// ****************************************************************************
+// Returns the default options for the transfer function calculation. 
+// 
+// Parameters out:
+// o opts: A struct containing the default values for the options available for
+// the transfer function calculation.
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+C_EXPORT int vtlGetDefaultTransferFunctionOptions(TransferFunctionOptions* opts);
+
+
+// ****************************************************************************
 // Calculates the volume velocity transfer function of the vocal tract between 
 // the glottis and the lips for the given vector of vocal tract parameters and
 // returns the spectrum in terms of magnitude and phase.
@@ -188,7 +261,10 @@ C_EXPORT int vtlTractToTube(double* tractParams,
 //     at the frequencies 0.0, 86.13, 172.3, ... Hz.
 //     The value of numSpectrumSamples should not be greater than 16384,
 //     otherwise the returned spectrum will be bandlimited to below 10 kHz.
-//
+// o opts: The options to use for the transfer function calculation. If NULL 
+//     is passed, the default options will be used (see 
+//     vtlGetDefaultTransferFunctionOptions()).
+// 
 // Parameters out:
 // o magnitude: Vector of spectral magnitudes at equally spaced discrete 
 //     frequencies. This vector mus have at least numSpectrumSamples elements.
@@ -201,8 +277,8 @@ C_EXPORT int vtlTractToTube(double* tractParams,
 // 1: The API has not been initialized.
 // ****************************************************************************
 
-C_EXPORT int vtlGetTransferFunction(double *tractParams, int numSpectrumSamples,
-  double *magnitude, double *phase_rad);
+C_EXPORT int vtlGetTransferFunction(double* tractParams, int numSpectrumSamples,
+    TransferFunctionOptions* opts, double* magnitude, double* phase_rad);
 
 
 // ****************************************************************************

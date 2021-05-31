@@ -2,6 +2,7 @@ LIBRARY
 EXPORTS
 vtlInitialize
 vtlClose
+vtlCalcTongueRootAutomatically
 vtlGetVersion
 vtlGetConstants
 vtlGetTractParamInfo
@@ -9,6 +10,7 @@ vtlGetGlottisParamInfo
 vtlGetTractParams
 vtlExportTractSvg
 vtlTractToTube
+vtlGetDefaultTransferFunctionOptions
 vtlGetTransferFunction
 vtlInputTractToLimitedTract
 vtlSynthesisReset
