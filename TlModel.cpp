@@ -138,13 +138,18 @@ void TlModel::getImpulseResponse(Signal *impulseResponse, int lengthExponent)
 
 void TlModel::getSpectrum(SpectrumType type, ComplexSignal *spectrum, int spectrumLength, int section)
 {
-  // For the cutoff frequency, we *cannot* take the frequency
-  // SYNTHETIC_SPEECH_BANDWIDTH_HZ (=12000), because the calculations
-  // with *lumped* network elements start to generate very noisy
-  // spectra from about 11300 Hz on. Maybe the wavelength (= 3 cm)
-  // is getting too short at that frequency, but I am not really sure.
+  double TL_CUTOFF_FREQ = 22050;
 
-  const double TL_CUTOFF_FREQ = 10000;
+  if(this->options.lumpedElements == true)
+  {
+    // For the cutoff frequency, we *cannot* take the frequency
+    // SYNTHETIC_SPEECH_BANDWIDTH_HZ (=12000), because the calculations
+    // with *lumped* network elements start to generate very noisy
+    // spectra from about 11300 Hz on. Maybe the wavelength (= 3 cm)
+    // is getting too short at that frequency, but I am not really sure.
+
+    TL_CUTOFF_FREQ = 10000;
+  }
   
   int i;
   ComplexValue v;
