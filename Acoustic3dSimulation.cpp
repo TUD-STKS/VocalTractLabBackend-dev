@@ -2336,6 +2336,8 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 void Acoustic3dSimulation::runTest()
 {
   ofstream ofs;
+  ofstream log("log.txt", ofstream::app);
+  log << "\nStart test" << endl;
 
   // Generate a circular contour
   Polygon_2 contour;
@@ -2360,7 +2362,9 @@ void Acoustic3dSimulation::runTest()
     scalingFactors);
   m_crossSections[0]->setAreaVariationProfileType(GAUSSIAN);
 
-  // Check the scaling factor
+  log << "Cross-section created" << endl;
+
+  /*// Check the scaling factor
   ofs.open("sc.txt");
   for (int i(0); i < nbAngles; i++)
   {
@@ -2376,7 +2380,7 @@ void Acoustic3dSimulation::runTest()
     ofs << m_crossSections[0]->scalingDerivative((double)(i) / (double)(nbAngles - 1))
       << endl;
   }
-  ofs.close();
+  ofs.close();*/
 
   // Set the proper simulation parameters
   m_simuParams.numIntegrationStep = 165; 
@@ -2384,24 +2388,42 @@ void Acoustic3dSimulation::runTest()
   m_simuParams.wallLosses = false;
   m_maxCutOnFreq = 1000.;
 
+  log << "Parameters set" << endl;
+
   // compute propagation modes
   m_crossSections[0]->buildMesh();
+
+  log << "Mesh generated" << endl;
+  // extract mesh
+  CDT tr(m_crossSections[0]->triangulation());
+  ofs.open("mesh.txt");
+  for (auto it = )
+  {
+      ofs << it.
+
+
   m_crossSections[0]->computeModes(m_simuParams);
-  cout << m_crossSections[0]->numberOfModes() << " modes computed" << endl;
+  log << m_crossSections[0]->numberOfModes() << " modes computed" << endl;
 
   // get the output impedance
   double freq = 1000.;
   Eigen::MatrixXcd characImped;
   m_crossSections[0]->characteristicImpedance(characImped, freq, m_simuParams);
+
+  log << "Characteristic impedance:" << endl;
+  log << characImped << endl;
   
   // Propagate impedance
   m_crossSections[0]->propagateMagnus(characImped, m_simuParams, freq, -1., IMPEDANCE);
+
+  log << "Impedance propagated" << endl;
   
   // Export input impedance
   ofs.open("imp.txt");
   ofs << m_crossSections[0]->Zin() << endl;
   ofs.close();
 
+  log.close();
 }
 
 // ****************************************************************************

@@ -230,6 +230,8 @@ CrossSection2dFEM::CrossSection2dFEM(double maxCutOnFreq, Point2D ctrLinePt, Poi
       m_perimeter += sqrt(it->squared_length());
     }
     m_areaProfile = LINEAR;
+    m_curvatureRadius = 0.;
+    m_circleArcAngle = 0.;
   }
 
 CrossSection2dRadiation::CrossSection2dRadiation(
@@ -372,9 +374,9 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   //// get time of start
   //auto start = std::chrono::system_clock::now();
 
-  //ofstream log;
-  //log.open("log.txt", ofstream::app);
-  //log << "\nStart compute modes" << endl;
+  ofstream log;
+  log.open("log.txt", ofstream::app);
+  log << "\nStart compute modes" << endl;
 
   // declare variables
   bool different;
@@ -534,7 +536,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
     }
   }
 
-  //log << "Matrices R and RY computed" << endl;
+  log << "Matrices R and RY computed" << endl;
 
   //ofstream matrixR;
   //matrixR.open("matrixR.txt");
@@ -641,7 +643,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
     }
   }
 
-  //log << "Stiffness and mass computed" << endl;
+  log << "Stiffness and mass computed" << endl;
 
   //// get time of end
   //auto end = std::chrono::system_clock::now();
@@ -667,18 +669,25 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
 
   //start = std::chrono::system_clock::now();
 
-  //log << "eigen problem solved" << endl;
+  log << "eigen problem solved" << endl;
+  log << eigenSolver.eigenvalues().size() << " eigenvalues" << endl;
+  log << "eigen wavenumbers: " << endl;
+  log << eigenSolver.eigenvalues() << endl;
 
   // extract the eigenfrequencies lower than the maximal
   // cut-on frequency and determine the number of modes
   idx = 0;
   maxWaveNumber = pow(2 * M_PI * m_maxCutOnFreq / simuParams.sndSpeed, 2);
-  while (eigenSolver.eigenvalues()[idx] < maxWaveNumber)
+  log << "maxWaveNumber " << maxWaveNumber << endl;
+  while ((eigenSolver.eigenvalues()[idx] < maxWaveNumber)
+       && (idx < eigenSolver.eigenvalues().size()))
   {
     m_eigenFreqs.push_back(sqrt(eigenSolver.eigenvalues()[idx])* simuParams.sndSpeed / 2 / M_PI);
     idx++;
+    log << "Eigen freq " << idx << endl;
   }
   m_modesNumber = idx;
+  log << "Modes number " << m_modesNumber << endl;
 
   m_maxAmplitude.clear();
   m_maxAmplitude.reserve(m_modesNumber);
@@ -719,7 +728,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
     m_minAmplitude.push_back(m_modes.col(m).minCoeff());
   }
 
-  //log << "Modes computed" << endl;
+  log << "Modes computed" << endl;
 
   // **************************************************************************
   // Compute multimodal matrices
@@ -766,7 +775,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   //log << elapsed_seconds.count() << "\t" << endl;
   
 
-  //log << "Multimodal matrices computed" << endl;
+  log << "Multimodal matrices computed" << endl;
 
   // **************************************************************************
   // Print mesh, modes and matrices in text files
@@ -849,7 +858,8 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   //  matrixKR2 << KR2[s] << endl << endl;
   //}
   //matrixKR2.close();
-  //log.close();
+  
+  log.close();
 }
 
 // **************************************************************************
