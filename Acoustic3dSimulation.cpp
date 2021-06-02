@@ -2339,22 +2339,33 @@ void Acoustic3dSimulation::runTest()
   ofstream log("log.txt", ofstream::app);
   log << "\nStart test" << endl;
 
+  // Set the proper simulation parameters
+  //m_simuParams.numIntegrationStep = 100;
+  m_simuParams.percentageLosses = 0.;
+  m_simuParams.wallLosses = false;
+  m_simuParams.curved = false;
+  //m_maxCutOnFreq = 100.;
+  m_geometryImported = true; // to have the good bounding box for modes plot
+ 
+
   // Generate a circular contour
   Polygon_2 contour;
-  double radius(0.04), angle, area(M_PI*pow(radius, 2)), length(0.3);
-  int nbAngles(101);
+  double radius(4.), angle, area(M_PI*pow(radius, 2)), length(30.);
+  m_maxCSBoundingBox.first = Point2D(-radius, -radius);
+  m_maxCSBoundingBox.second = Point2D(radius, radius);
+  int nbAngles(100);
   vector<int> surfaceIdx(nbAngles, 0);
   double scalingFactors[2] = { 1., 1. };
   for (int i(0); i < nbAngles; i++)
   {
-    angle = 2.*M_PI*(double)(i) / (double)(nbAngles - 1);
+    angle = 2.*M_PI*(double)(i) / (double)(nbAngles);
     contour.push_back(Point(radius * cos(angle), radius * sin(angle)));
   }
 
-  // Check contour
-  ofs.open("cont.txt");
-  for (auto it : contour) { ofs << it.x() << "  " << it.y() << endl; }
-  ofs.close();
+  //// Check contour
+  //ofs.open("cont.txt");
+  //for (auto it : contour) { ofs << it.x() << "  " << it.y() << endl; }
+  //ofs.close();
 
   m_crossSections.clear();
   addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
@@ -2364,7 +2375,7 @@ void Acoustic3dSimulation::runTest()
 
   log << "Cross-section created" << endl;
 
-  /*// Check the scaling factor
+  // Check the scaling factor
   ofs.open("sc.txt");
   for (int i(0); i < nbAngles; i++)
   {
@@ -2380,13 +2391,7 @@ void Acoustic3dSimulation::runTest()
     ofs << m_crossSections[0]->scalingDerivative((double)(i) / (double)(nbAngles - 1))
       << endl;
   }
-  ofs.close();*/
-
-  // Set the proper simulation parameters
-  m_simuParams.numIntegrationStep = 165; 
-  m_simuParams.percentageLosses = 0.;
-  m_simuParams.wallLosses = false;
-  m_maxCutOnFreq = 1000.;
+  ofs.close();
 
   log << "Parameters set" << endl;
 
@@ -2394,34 +2399,60 @@ void Acoustic3dSimulation::runTest()
   m_crossSections[0]->buildMesh();
 
   log << "Mesh generated" << endl;
-  // extract mesh
-  CDT tr(m_crossSections[0]->triangulation());
-  ofs.open("mesh.txt");
-  for (auto it = )
-  {
-      ofs << it.
-
+  //// extract mesh
+  //CDT tr(m_crossSections[0]->triangulation());
+  //ofs.open("mesh.txt");
+  //for (auto it = tr.all_faces_begin(); it != tr.all_faces_end(); it++)
+  //{
+  //  for (int i(0); i < 3; i++)
+  //  {
+  //    ofs << it->vertex(i)->point().x() << "  "
+  //      << it->vertex(i)->point().y() << endl;
+  //  }
+  //  ofs << "nan  nan" << endl;
+  //}
+  //ofs.close();
 
   m_crossSections[0]->computeModes(m_simuParams);
   log << m_crossSections[0]->numberOfModes() << " modes computed" << endl;
 
-  // get the output impedance
-  double freq = 1000.;
   Eigen::MatrixXcd characImped;
-  m_crossSections[0]->characteristicImpedance(characImped, freq, m_simuParams);
-
-  log << "Characteristic impedance:" << endl;
-  log << characImped << endl;
-  
-  // Propagate impedance
-  m_crossSections[0]->propagateMagnus(characImped, m_simuParams, freq, -1., IMPEDANCE);
-
-  log << "Impedance propagated" << endl;
-  
-  // Export input impedance
+  double freq, freqMax(2500.);
+  int nbFreqs(100);
   ofs.open("imp.txt");
-  ofs << m_crossSections[0]->Zin() << endl;
+  for (int i(0); i < nbFreqs; i++)
+  {
+    // get the output impedance
+    freq = max(0.1, freqMax*(double)i/(double)(nbFreqs - 1));
+    log << "f = " << freq << " Hz" << endl;
+    
+    m_crossSections[0]->characteristicImpedance(characImped, freq, m_simuParams);
+
+    // Propagate impedance
+    m_crossSections[0]->propagateMagnus(characImped, m_simuParams, freq, -1., IMPEDANCE);
+
+    ofs << freq << "  " 
+      << abs(
+        //-1i* 2. * M_PI * freq * m_simuParams.volumicMass*
+        m_crossSections[0]->Zin()(0, 0)
+          /characImped(0,0)
+      ) << "  " 
+      << arg(
+        //-1i* 2. * M_PI * freq * m_simuParams.volumicMass*
+        m_crossSections[0]->Zin()(0, 0)
+         /characImped(0, 0)
+      ) << endl;
+  }
   ofs.close();
+  
+  //// Export input impedance
+  //vector<Eigen::MatrixXcd> Z(m_crossSections[0]->Z());
+  //ofs.open("imp.txt");
+  //for (auto it : Z)
+  //{
+  //  ofs << abs(it(0, 0)) << endl;
+  //}
+  //ofs.close();
 
   log.close();
 }

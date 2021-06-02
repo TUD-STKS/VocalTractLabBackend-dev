@@ -131,8 +131,8 @@ public:
   void clearAcPressure() { m_acPressure.clear(); }
 
   // propagation 
-  virtual double scaling(double tau){;}
-  virtual double scalingDerivative(double tau){;}
+  virtual double scaling(double tau){return 1.;}
+  virtual double scalingDerivative(double tau){return 1.;}
   virtual void setAreaVariationProfileType(enum areaVariationProfile profile){;}
   virtual void propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
     double freq, double direction, enum physicalQuantity quant) {;}

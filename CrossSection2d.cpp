@@ -536,7 +536,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
     }
   }
 
-  log << "Matrices R and RY computed" << endl;
+  //log << "Matrices R and RY computed" << endl;
 
   //ofstream matrixR;
   //matrixR.open("matrixR.txt");
@@ -643,7 +643,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
     }
   }
 
-  log << "Stiffness and mass computed" << endl;
+  //log << "Stiffness and mass computed" << endl;
 
   //// get time of end
   //auto end = std::chrono::system_clock::now();
@@ -669,25 +669,23 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
 
   //start = std::chrono::system_clock::now();
 
-  log << "eigen problem solved" << endl;
-  log << eigenSolver.eigenvalues().size() << " eigenvalues" << endl;
-  log << "eigen wavenumbers: " << endl;
-  log << eigenSolver.eigenvalues() << endl;
+  //log << "eigen problem solved" << endl;
+  //log << eigenSolver.eigenvalues().size() << " eigenvalues" << endl;
 
   // extract the eigenfrequencies lower than the maximal
   // cut-on frequency and determine the number of modes
   idx = 0;
+  log << "m_maxCutOnFreq " << m_maxCutOnFreq << endl;
   maxWaveNumber = pow(2 * M_PI * m_maxCutOnFreq / simuParams.sndSpeed, 2);
-  log << "maxWaveNumber " << maxWaveNumber << endl;
   while ((eigenSolver.eigenvalues()[idx] < maxWaveNumber)
        && (idx < eigenSolver.eigenvalues().size()))
   {
     m_eigenFreqs.push_back(sqrt(eigenSolver.eigenvalues()[idx])* simuParams.sndSpeed / 2 / M_PI);
     idx++;
-    log << "Eigen freq " << idx << endl;
   }
   m_modesNumber = idx;
-  log << "Modes number " << m_modesNumber << endl;
+
+  //log << "Modes number " << m_modesNumber << endl;
 
   m_maxAmplitude.clear();
   m_maxAmplitude.reserve(m_modesNumber);
@@ -728,7 +726,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
     m_minAmplitude.push_back(m_modes.col(m).minCoeff());
   }
 
-  log << "Modes computed" << endl;
+  //log << "Modes computed" << endl;
 
   // **************************************************************************
   // Compute multimodal matrices
@@ -775,7 +773,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   //log << elapsed_seconds.count() << "\t" << endl;
   
 
-  log << "Multimodal matrices computed" << endl;
+  //log << "Multimodal matrices computed" << endl;
 
   // **************************************************************************
   // Print mesh, modes and matrices in text files
@@ -1540,7 +1538,7 @@ double CrossSection2dFEM::scaling(double tau)
       + m_scalingFactors[0];
     break;
   case GAUSSIAN:
-    return (0.04*(1. + 0.75*exp(-pow(0.3*(tau - 0.5),2)/2./pow(0.04,2))));
+    return (1. + 0.75*exp(-pow(0.3*(tau - 0.5),2)/2./pow(0.04,2)));
     break;
   }
 }
@@ -1566,7 +1564,7 @@ double CrossSection2dFEM::scalingDerivative(double tau)
     return((m_scalingFactors[1] - m_scalingFactors[0])/ al); 
     break;
   case GAUSSIAN:
-    return(-0.04*0.75*0.3*(tau - 0.5)*
+    return(-0.75*0.3*(tau - 0.5)*
        exp(-pow(0.3*(tau - 0.5),2)/2./pow(0.04,2))
        /pow(0.04, 2));
     break;
@@ -1683,6 +1681,9 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
       l0 = scaling(tau);
       dl0 = scalingDerivative(tau);
 
+      log << "i = " << i << " l0 " << l0 << " dl0 " << dl0 
+        << " dX " << dX << " curv " << curv << endl;
+
       // build matrix K2
       K2.setZero(mn, mn);
       for (int j(0); j < mn; j++)
@@ -1701,6 +1702,9 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
       //  (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(1., 2),
       //  (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
       //  Eigen::MatrixXcd::Zero(mn, mn);
+
+      //log << "A0" << endl;
+      //log << A0 << endl;
 
       //*******************************
       // second point of Magnus scheme
@@ -1735,12 +1739,18 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
       //  (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN)),
       //  Eigen::MatrixXcd::Zero(mn, mn);
 
+      //log << "A1" << endl;
+      //log << A1 << endl;
+
 
       //*******************************
       // compute matrix omega
       //*******************************
 
       omega = (0.5 * dX * (A0 + A1) + sqrt(3) * pow(dX, 2) * (A1 * A0 - A0 * A1) / 12.).exp();
+
+      //log << "omega" << endl;
+      //log << omega << endl;
 
       // compute the propagated quantity at the next point
       switch (quant)
