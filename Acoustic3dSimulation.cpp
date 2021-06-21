@@ -97,7 +97,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_idxSecNoiseSource(46), // for /sh/ 212, for vowels 46
   m_idxConstriction(40),
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
-  m_contInterpMeth(BOUNDING_BOX)
+  m_contInterpMeth(AREA)
 {
   m_simuParams.temperature = 31.4266;
   m_simuParams.volumicMass = STATIC_PRESSURE_CGS * MOLECULAR_MASS / (GAS_CONSTANT *
@@ -3085,26 +3085,24 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   // Create lambda expression to compute the scaling factors
   //*********************************************************
 
-  auto getScalingFactor = [&](int idx1, int idx2)
+  auto getScalingFactor = [bboxes](int idx1, int idx2)
   {
-    log << "Start compute scaling factor idx1 " 
-      << idx1 << " idx2 " << idx2 << endl;
     double meanX((abs(bboxes[idx1][0]) + abs(bboxes[idx1][1])
       + abs(bboxes[idx2][0]) + abs(bboxes[idx2][1])));
     double meanY((abs(bboxes[idx1][2]) + abs(bboxes[idx1][3])
       + abs(bboxes[idx2][2]) + abs(bboxes[idx2][3])));
 
-    log << "mean X " << meanX << " mean Y " << meanY << endl;
+    // a factor 0.999 is added to avoid that points of successive
+    // contours end being exactly the same which cause 
+    // CGAL::intersection to seg fault
     if (meanX > meanY)
     {
-      log << "X" << endl;
-      return min(bboxes[idx2][0] / bboxes[idx1][0],
+      return 0.999*min(bboxes[idx2][0] / bboxes[idx1][0],
         bboxes[idx2][1] / bboxes[idx1][1]);
     }
     else
     {
-      log << "Y" << endl;
-      return min(bboxes[idx2][2] / bboxes[idx1][2],
+      return 0.999*min(bboxes[idx2][2] / bboxes[idx1][2],
         bboxes[idx2][3] / bboxes[idx1][3]);
     }
   };
@@ -3353,7 +3351,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
         for (; itP != prevCont.end(); itP++)
         {
           side = cont.has_on_bounded_side(*itP);
-          log << "Side " << side << endl;
+          // log << "Side " << side << endl;
           // if the previous point and the next point are on
           // different sides
           if (side != sidePrev)
