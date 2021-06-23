@@ -705,7 +705,6 @@ int vtlGetTransferFunction(double* tractParams, int numSpectrumSamples, Transfer
         ComplexSignal radiationSpectrum(0);
         tlModel->getSpectrum(TlModel::RADIATION, &radiationSpectrum, numSpectrumSamples, 0);
         s *= radiationSpectrum;
-        s *= 10.0;
     }
 
     // Separate the transfer function into magnitude and phase.
