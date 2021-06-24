@@ -51,7 +51,8 @@ enum physicalQuantity {
 
 enum areaVariationProfile {
   LINEAR,
-  GAUSSIAN
+  GAUSSIAN,
+  ELEPHANT
 };
 
 struct simulationParameters

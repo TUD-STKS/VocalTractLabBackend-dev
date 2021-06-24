@@ -1974,7 +1974,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   Eigen::VectorXcd radPress;
 
   // Precompute the radiation impedance and admittance at a few frequencies
-  preComputeRadiationMatrices(16);
+  preComputeRadiationMatrices(16, numSec - 2);
 
   end = std::chrono::system_clock::now();
   elapsed_seconds = end - startTot;
@@ -2015,8 +2015,8 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     //m_crossSections[numSec - 1]->characteristicAdmittance(radAdmit,
     //  freq, m_soundSpeed, m_volumicMass, 0);
 
-    interpolateRadiationImpedance(radImped, freq);
-    interpolateRadiationAdmittance(radAdmit, freq);
+    interpolateRadiationImpedance(radImped, freq, numSec - 2);
+    interpolateRadiationAdmittance(radAdmit, freq, numSec - 2);
 
     //radImped.setConstant(mn , mn,complex<double>(0., 0.));
     //radAdmit.setConstant(mn, mn, complex<double>(1.e+10, 0.));
@@ -2333,126 +2333,202 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 // ****************************************************************************
 // Run specific simulation tests
 
-void Acoustic3dSimulation::runTest()
+void Acoustic3dSimulation::runTest(enum testType tType)
 {
   ofstream ofs;
   ofstream log("log.txt", ofstream::app);
   log << "\nStart test" << endl;
 
-  // Set the proper simulation parameters
-  //m_simuParams.numIntegrationStep = 100;
-  m_simuParams.percentageLosses = 0.;
-  m_simuParams.wallLosses = false;
-  m_simuParams.curved = false;
-  //m_maxCutOnFreq = 100.;
-  m_geometryImported = true; // to have the good bounding box for modes plot
- 
-
-  // Generate a circular contour
   Polygon_2 contour;
-  double radius(4.), angle, area(M_PI*pow(radius, 2)), length(30.);
-  m_maxCSBoundingBox.first = Point2D(-radius, -radius);
-  m_maxCSBoundingBox.second = Point2D(radius, radius);
+  double radius, angle, area, length;
   int nbAngles(100);
   vector<int> surfaceIdx(nbAngles, 0);
   double scalingFactors[2] = { 1., 1. };
-  for (int i(0); i < nbAngles; i++)
-  {
-    angle = 2.*M_PI*(double)(i) / (double)(nbAngles);
-    contour.push_back(Point(radius * cos(angle), radius * sin(angle)));
-  }
+  double freq, freqMax;
+  int nbFreqs;
+  Eigen::MatrixXcd characImped, radImped;
 
-  //// Check contour
-  //ofs.open("cont.txt");
-  //for (auto it : contour) { ofs << it.x() << "  " << it.y() << endl; }
-  //ofs.close();
+  switch(tType){
+  case DISCONTINUITY:
 
-  m_crossSections.clear();
-  addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
-    surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
-    scalingFactors);
-  m_crossSections[0]->setAreaVariationProfileType(GAUSSIAN);
-
-  log << "Cross-section created" << endl;
-
-  // Check the scaling factor
-  ofs.open("sc.txt");
-  for (int i(0); i < nbAngles; i++)
-  {
-    ofs << m_crossSections[0]->scaling((double)(i) / (double)(nbAngles - 1))
-      << endl;
-  }
-  ofs.close();
-
-  // Check the scaling factor derivative
-  ofs.open("dsc.txt");
-  for (int i(0); i < nbAngles; i++)
-  {
-    ofs << m_crossSections[0]->scalingDerivative((double)(i) / (double)(nbAngles - 1))
-      << endl;
-  }
-  ofs.close();
-
-  log << "Parameters set" << endl;
-
-  // compute propagation modes
-  m_crossSections[0]->buildMesh();
-
-  log << "Mesh generated" << endl;
-  //// extract mesh
-  //CDT tr(m_crossSections[0]->triangulation());
-  //ofs.open("mesh.txt");
-  //for (auto it = tr.all_faces_begin(); it != tr.all_faces_end(); it++)
-  //{
-  //  for (int i(0); i < 3; i++)
-  //  {
-  //    ofs << it->vertex(i)->point().x() << "  "
-  //      << it->vertex(i)->point().y() << endl;
-  //  }
-  //  ofs << "nan  nan" << endl;
-  //}
-  //ofs.close();
-
-  m_crossSections[0]->computeModes(m_simuParams);
-  log << m_crossSections[0]->numberOfModes() << " modes computed" << endl;
-
-  Eigen::MatrixXcd characImped;
-  double freq, freqMax(2500.);
-  int nbFreqs(100);
-  ofs.open("imp.txt");
-  for (int i(0); i < nbFreqs; i++)
-  {
-    // get the output impedance
-    freq = max(0.1, freqMax*(double)i/(double)(nbFreqs - 1));
-    log << "f = " << freq << " Hz" << endl;
-    
-    m_crossSections[0]->characteristicImpedance(characImped, freq, m_simuParams);
-
-    // Propagate impedance
-    m_crossSections[0]->propagateMagnus(characImped, m_simuParams, freq, -1., IMPEDANCE);
-
-    ofs << freq << "  " 
-      << abs(
-        //-1i* 2. * M_PI * freq * m_simuParams.volumicMass*
-        m_crossSections[0]->Zin()(0, 0)
-          /characImped(0,0)
-      ) << "  " 
-      << arg(
-        //-1i* 2. * M_PI * freq * m_simuParams.volumicMass*
-        m_crossSections[0]->Zin()(0, 0)
-         /characImped(0, 0)
-      ) << endl;
-  }
-  ofs.close();
+    //*********************************************
+    // Discontinuity
+    //*********************************************
   
-  //// Export input impedance
-  //vector<Eigen::MatrixXcd> Z(m_crossSections[0]->Z());
-  //ofs.open("imp.txt");
-  //for (auto it : Z)
-  //{
-  //  ofs << abs(it(0, 0)) << endl;
-  //}
-  //ofs.close();
+    // Set the proper simulation parameters
+    //m_simuParams.numIntegrationStep = 100;
+    m_simuParams.percentageLosses = 0.;
+    m_simuParams.wallLosses = false;
+    m_simuParams.curved = false;
+    //m_maxCutOnFreq = 100.;
+    m_geometryImported = true; // to have the good bounding box for modes plot
+   
+  
+    // Generate a circular contour
+    radius = 4.;
+    m_maxCSBoundingBox.first = Point2D(-radius, -radius);
+    m_maxCSBoundingBox.second = Point2D(radius, radius);
+    for (int i(0); i < nbAngles; i++)
+    {
+      angle = 2.*M_PI*(double)(i) / (double)(nbAngles);
+      contour.push_back(Point(radius * cos(angle), radius * sin(angle)));
+    }
+  
+    //// Check contour
+    //ofs.open("cont.txt");
+    //for (auto it : contour) { ofs << it.x() << "  " << it.y() << endl; }
+    //ofs.close();
+  
+    m_crossSections.clear();
+    area = M_PI*pow(radius, 2);
+    length = 30.;
+    addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
+      surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
+      scalingFactors);
+    m_crossSections[0]->setAreaVariationProfileType(GAUSSIAN);
+  
+    log << "Cross-section created" << endl;
+  
+    // Check the scaling factor
+    ofs.open("sc.txt");
+    for (int i(0); i < nbAngles; i++)
+    {
+      ofs << m_crossSections[0]->scaling((double)(i) / (double)(nbAngles - 1))
+        << endl;
+    }
+    ofs.close();
+  
+    // Check the scaling factor derivative
+    ofs.open("dsc.txt");
+    for (int i(0); i < nbAngles; i++)
+    {
+      ofs << m_crossSections[0]->scalingDerivative((double)(i) / (double)(nbAngles - 1))
+        << endl;
+    }
+    ofs.close();
+  
+    log << "Parameters set" << endl;
+  
+    // compute propagation modes
+    m_crossSections[0]->buildMesh();
+  
+    log << "Mesh generated" << endl;
+    //// extract mesh
+    //CDT tr(m_crossSections[0]->triangulation());
+    //ofs.open("mesh.txt");
+    //for (auto it = tr.all_faces_begin(); it != tr.all_faces_end(); it++)
+    //{
+    //  for (int i(0); i < 3; i++)
+    //  {
+    //    ofs << it->vertex(i)->point().x() << "  "
+    //      << it->vertex(i)->point().y() << endl;
+    //  }
+    //  ofs << "nan  nan" << endl;
+    //}
+    //ofs.close();
+  
+    m_crossSections[0]->computeModes(m_simuParams);
+    log << m_crossSections[0]->numberOfModes() << " modes computed" << endl;
+
+    preComputeRadiationMatrices(16, 0);
+  
+    freqMax = 2500.;
+    nbFreqs = 100;
+    ofs.open("imp.txt");
+    for (int i(0); i < nbFreqs; i++)
+    {
+      // get the output impedance
+      freq = max(0.1, freqMax*(double)i/(double)(nbFreqs - 1));
+      log << "f = " << freq << " Hz" << endl;
+      
+      m_crossSections[0]->characteristicImpedance(characImped, freq, m_simuParams);
+      interpolateRadiationImpedance(radImped, freq, 0);
+  
+      // Propagate impedance
+      m_crossSections[0]->propagateMagnus(radImped, m_simuParams, freq, -1., IMPEDANCE);
+  
+      ofs << freq << "  " 
+        << abs(
+          //-1i* 2. * M_PI * freq * m_simuParams.volumicMass*
+          m_crossSections[0]->Zin()(0, 0)
+            /characImped(0,0)
+        ) << "  " 
+        << arg(
+          //-1i* 2. * M_PI * freq * m_simuParams.volumicMass*
+          m_crossSections[0]->Zin()(0, 0)
+           /characImped(0, 0)
+        ) << endl;
+    }
+    ofs.close();
+    
+    
+    //// Export input impedance
+    //vector<Eigen::MatrixXcd> Z(m_crossSections[0]->Z());
+    //ofs.open("imp.txt");
+    //for (auto it : Z)
+    //{
+    //  ofs << abs(it(0, 0)) << endl;
+    //}
+    //ofs.close();
+  
+    break;
+
+    case ELEPHANT_TRUNK:
+    
+    //*********************************************
+    // Elephant trunk 
+    //*********************************************
+    
+    // Set the proper simulation parameters
+    m_simuParams.percentageLosses = 0.;
+    m_simuParams.wallLosses = false;
+    m_simuParams.curved = false;
+    m_geometryImported = true; // to have the good bounding box for modes plot
+
+    // Generate a circular contour
+    radius = 3.;
+    m_maxCSBoundingBox.first = Point2D(-2.*radius, -2.*radius);
+    m_maxCSBoundingBox.second = Point2D(2.*radius, 2.*radius);
+    for (int i(0); i < nbAngles; i++)
+    {
+      angle = 2.*M_PI*(double)(i) / (double)(nbAngles);
+      contour.push_back(Point(radius * cos(angle), radius * sin(angle)));
+    }
+
+    m_crossSections.clear();
+    area = pow(radius, 2) * M_PI;
+    addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
+      surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
+      scalingFactors);
+    m_crossSections[0]->setAreaVariationProfileType(ELEPHANT);
+  
+    log << "Cross-section created" << endl;
+
+    // Check the scaling factor
+    ofs.open("sc.txt");
+    for (int i(0); i < nbAngles; i++)
+    {
+      ofs << m_crossSections[0]->scaling((double)(i) / (double)(nbAngles - 1))
+        << endl;
+    }
+    ofs.close();
+  
+    // Check the scaling factor derivative
+    ofs.open("dsc.txt");
+    for (int i(0); i < nbAngles; i++)
+    {
+      ofs << m_crossSections[0]->scalingDerivative((double)(i) / (double)(nbAngles - 1))
+        << endl;
+    }
+    ofs.close();
+
+    // compute propagation modes
+    m_crossSections[0]->buildMesh();
+    m_crossSections[0]->computeModes(m_simuParams);
+    log << m_crossSections[0]->numberOfModes() << " modes computed" << endl;
+
+    break;
+  }
 
   log.close();
 }
@@ -3689,10 +3765,10 @@ void Acoustic3dSimulation::exportGeoInCsv(string fileName)
 //*************************************************************************
 // Interpolate the radiation and admittance matrices with splines
 
-void Acoustic3dSimulation::preComputeRadiationMatrices(int nbRadFreqs) {
+void Acoustic3dSimulation::preComputeRadiationMatrices(int nbRadFreqs, int idxRadSec) {
 
   int numSec(m_crossSections.size());
-  int mn(m_crossSections[numSec - 2]->numberOfModes());
+  int mn(m_crossSections[idxRadSec]->numberOfModes());
   double freq;
   double radFreqSteps((double)SAMPLING_RATE / 2. / (double)(nbRadFreqs - 1));
   vector<double> stepRadFreqs;
@@ -3744,7 +3820,7 @@ void Acoustic3dSimulation::preComputeRadiationMatrices(int nbRadFreqs) {
     //radImped = m_crossSections[numSec - 2]->endImpedance();
     //radAdmit = m_crossSections[numSec - 2]->endAdmittance();
 
-    radiationImpedance(radImped, freq, 15.);
+    radiationImpedance(radImped, freq, 15., idxRadSec);
     radAdmit = radImped.inverse();
 
     //prop << radAdmit.imag() << endl;
@@ -3835,7 +3911,8 @@ void Acoustic3dSimulation::preComputeRadiationMatrices(int nbRadFreqs) {
 //*************************************************************************
 // Interpolate the radiation impedance matrix at a given frequency
 
-void Acoustic3dSimulation::interpolateRadiationImpedance(Eigen::MatrixXcd& imped, double freq)
+void Acoustic3dSimulation::interpolateRadiationImpedance(Eigen::MatrixXcd& imped, 
+   double freq, int idxRadSec)
 {
   // find the index corresponding to the coefficient to use for this frequency
   int nbRadFreqs(m_radiationMatrixInterp[0][0][0].size());
@@ -3844,8 +3921,7 @@ void Acoustic3dSimulation::interpolateRadiationImpedance(Eigen::MatrixXcd& imped
   idx = max(0, idx);
 
   // get number of modes of the radiating section
-  int nbCS(m_crossSections.size());
-  int mn(m_crossSections[nbCS - 2]->numberOfModes());
+  int mn(m_crossSections[idxRadSec]->numberOfModes());
 
   imped.setZero(mn, mn);
   for (int m(0); m < mn; m++)
@@ -3867,7 +3943,8 @@ void Acoustic3dSimulation::interpolateRadiationImpedance(Eigen::MatrixXcd& imped
 //*************************************************************************
 // Interpolate the radiation admittance matrix at a given frequency
 
-void Acoustic3dSimulation::interpolateRadiationAdmittance(Eigen::MatrixXcd& admit, double freq)
+void Acoustic3dSimulation::interpolateRadiationAdmittance(Eigen::MatrixXcd& admit, 
+  double freq, int idxRadSec)
 {
   // find the index corresponding to the coefficient to use for this frequency
   int nbRadFreqs(m_radiationMatrixInterp[0][0][0].size());
@@ -3876,8 +3953,7 @@ void Acoustic3dSimulation::interpolateRadiationAdmittance(Eigen::MatrixXcd& admi
   idx = max(0, idx);
 
   // get number of modes of the radiating section
-  int nbCS(m_crossSections.size());
-  int mn(m_crossSections[nbCS - 2]->numberOfModes());
+  int mn(m_crossSections[idxRadSec]->numberOfModes());
 
   admit.setZero(mn, mn);
   for (int m(0); m < mn; m++)
@@ -3901,12 +3977,12 @@ void Acoustic3dSimulation::interpolateRadiationAdmittance(Eigen::MatrixXcd& admi
 // Multimodal radiation impedance of a waveguide with arbitrary
 // cross - sectional shape terminated in an infinite baffle
 
-void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double freq, double gridDensity)
+void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double freq, 
+  double gridDensity, int idxRadSec)
 {
-  int numSec(m_crossSections.size());
-  int mn(m_crossSections[numSec - 2]->numberOfModes());
+  int mn(m_crossSections[idxRadSec]->numberOfModes());
   complex<double> J(0., 1.);
-  double area2(pow(m_crossSections[numSec - 2]->area(),2));
+  double area2(pow(m_crossSections[idxRadSec]->area(),2));
 
   imped = Eigen::MatrixXcd::Zero(mn, mn);
   Eigen::MatrixXcd integral2(mn, mn);
@@ -3920,11 +3996,11 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
 
   // very good precision is obtained with gridDensity = 30
   //  good precision is obtained with gridDensity = 15;
-  double spacing(sqrt(m_crossSections[numSec - 2]->area()) / gridDensity);
+  double spacing(sqrt(m_crossSections[idxRadSec]->area()) / gridDensity);
 
   //log << "Spacing: " << spacing << endl;
 
-  Polygon_2 contour(m_crossSections[numSec - 2]->contour());
+  Polygon_2 contour(m_crossSections[idxRadSec]->contour());
   vector<Point> cartGrid;
   Point pt;
   double xmin(contour.bbox().xmin());
@@ -3946,7 +4022,7 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
   //log << "Cartesian grid generated: " << cartGrid.size() << " points" << endl;
 
   // Interpolate the propagation modes on the cartesian grid
-  Matrix intCartGrid(m_crossSections[numSec - 2]->interpolateModes(cartGrid));
+  Matrix intCartGrid(m_crossSections[idxRadSec]->interpolateModes(cartGrid));
 
   //// export grid
   //ofstream out;
@@ -4038,7 +4114,7 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
     //  << "\nNum points:\t\t" << polGrid.size() << endl;
 
     // interpolate the polar grid
-    Matrix intPolGrid(m_crossSections[numSec - 2]->interpolateModes(polGrid));
+    Matrix intPolGrid(m_crossSections[idxRadSec]->interpolateModes(polGrid));
 
     //// export polar grid
     //if (c == 0) {
@@ -4077,7 +4153,7 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
     imped += - integral2 / sumH / 2. / M_PI / cartGrid.size();
   }
 
-  imped *= pow(m_crossSections[numSec - 2]->area(),2);
+  imped *= pow(m_crossSections[idxRadSec]->area(),2);
 
   //log.close();
 }
