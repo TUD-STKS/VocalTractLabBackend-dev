@@ -2346,7 +2346,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
   double scalingFactors[2] = { 1., 1. };
   double freq, freqMax;
   int nbFreqs;
-  Eigen::MatrixXcd characImped, radImped;
+  Eigen::MatrixXcd characImped, radImped;//, inputVelocity, inputPressure;
 
   switch(tType){
   case DISCONTINUITY:
@@ -2461,16 +2461,6 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     }
     ofs.close();
     
-    
-    //// Export input impedance
-    //vector<Eigen::MatrixXcd> Z(m_crossSections[0]->Z());
-    //ofs.open("imp.txt");
-    //for (auto it : Z)
-    //{
-    //  ofs << abs(it(0, 0)) << endl;
-    //}
-    //ofs.close();
-  
     break;
 
     case ELEPHANT_TRUNK:
@@ -2482,7 +2472,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     // Set the proper simulation parameters
     m_simuParams.percentageLosses = 0.;
     m_simuParams.wallLosses = false;
-    m_simuParams.curved = false;
+    m_simuParams.curved = true;
     m_geometryImported = true; // to have the good bounding box for modes plot
 
     // Generate a circular contour
@@ -2501,6 +2491,10 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
       scalingFactors);
     m_crossSections[0]->setAreaVariationProfileType(ELEPHANT);
+    double inRadius(1.25*2.*radius);
+    m_crossSections[0]->setCurvatureRadius(inRadius);
+    double inAngle(2.26);
+    m_crossSections[0]->setCurvatureAngle(inAngle);
   
     log << "Cross-section created" << endl;
 
@@ -2526,6 +2520,40 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     m_crossSections[0]->buildMesh();
     m_crossSections[0]->computeModes(m_simuParams);
     log << m_crossSections[0]->numberOfModes() << " modes computed" << endl;
+
+    preComputeRadiationMatrices(16, 0);
+
+    freqMax = 2500.;
+    nbFreqs = 100;
+    ofs.open("imp.txt");
+    for (int i(0); i < nbFreqs; i++)
+    {
+      // get the output impedance
+      freq = max(0.1, freqMax*(double)i/(double)(nbFreqs - 1));
+      log << "f = " << freq << " Hz" << endl;
+      
+      m_crossSections[0]->characteristicImpedance(characImped, freq, m_simuParams);
+      interpolateRadiationImpedance(radImped, freq, 0);
+
+      log << "Radiation impedance interpolated" << endl;
+  
+      // Propagate impedance
+      m_crossSections[0]->propagateMagnus(radImped, m_simuParams, freq, -1., IMPEDANCE);
+  
+      ofs << freq << "  " 
+        << abs(
+          -1i* 2. * M_PI * freq * m_simuParams.volumicMass*
+          m_crossSections[0]->Zin()(0, 0)
+          //  /characImped(0,0)
+        ) << "  " 
+        << arg(
+          -1i* 2. * M_PI * freq * m_simuParams.volumicMass*
+          m_crossSections[0]->Zin()(0, 0)
+          // /characImped(0, 0)
+        ) << endl;
+    }
+    ofs.close();
+
 
     break;
   }
@@ -3914,14 +3942,22 @@ void Acoustic3dSimulation::preComputeRadiationMatrices(int nbRadFreqs, int idxRa
 void Acoustic3dSimulation::interpolateRadiationImpedance(Eigen::MatrixXcd& imped, 
    double freq, int idxRadSec)
 {
+  ofstream log("log.txt", ofstream::app);
+  log << "Start interpolate rad imped " << endl;
+
   // find the index corresponding to the coefficient to use for this frequency
   int nbRadFreqs(m_radiationMatrixInterp[0][0][0].size());
   int idx(nbRadFreqs - 2);
   while (m_radiationFreqs[idx] > freq) { idx--; }
   idx = max(0, idx);
 
+  log << "Idx coef " << idx << endl;
+
   // get number of modes of the radiating section
   int mn(m_crossSections[idxRadSec]->numberOfModes());
+
+  log << "Number of modes " << mn << endl;
+  log << "Size m_radiationMatrixInterp " << m_radiationMatrixInterp.size() << endl;
 
   imped.setZero(mn, mn);
   for (int m(0); m < mn; m++)
@@ -3938,6 +3974,7 @@ void Acoustic3dSimulation::interpolateRadiationImpedance(Eigen::MatrixXcd& imped
         m_radiationMatrixInterp[13][m][n][idx] * pow(freq - m_radiationFreqs[idx], 3)));
     }
   }
+  log.close();
 }
 
 //*************************************************************************
@@ -3987,8 +4024,8 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
   imped = Eigen::MatrixXcd::Zero(mn, mn);
   Eigen::MatrixXcd integral2(mn, mn);
 
-  //ofstream log("log.txt", ofstream::app);
-  //log << "\nStart computing radiation impedance" << endl;
+  ofstream log("log.txt", ofstream::app);
+  log << "\nStart computing radiation impedance" << endl;
 
   //******************************
   // generate cartesian grid
@@ -3996,11 +4033,15 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
 
   // very good precision is obtained with gridDensity = 30
   //  good precision is obtained with gridDensity = 15;
-  double spacing(sqrt(m_crossSections[idxRadSec]->area()) / gridDensity);
+  double scaling(m_crossSections[idxRadSec]->scaleIn());
+  double spacing(scaling * sqrt(m_crossSections[idxRadSec]->area()) 
+    / gridDensity);
 
-  //log << "Spacing: " << spacing << endl;
+  log << "scaling: " << scaling << endl;
+  log << "Spacing: " << spacing << endl;
 
-  Polygon_2 contour(m_crossSections[idxRadSec]->contour());
+  Transformation scale(CGAL::SCALING, scaling);
+  Polygon_2 contour(transform(scale, m_crossSections[idxRadSec]->contour()));
   vector<Point> cartGrid;
   Point pt;
   double xmin(contour.bbox().xmin());
@@ -4019,26 +4060,26 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
     }
   }
 
-  //log << "Cartesian grid generated: " << cartGrid.size() << " points" << endl;
+  log << "Cartesian grid generated: " << cartGrid.size() << " points" << endl;
 
   // Interpolate the propagation modes on the cartesian grid
-  Matrix intCartGrid(m_crossSections[idxRadSec]->interpolateModes(cartGrid));
+  Matrix intCartGrid(m_crossSections[idxRadSec]->interpolateModes(cartGrid, scaling));
 
-  //// export grid
-  //ofstream out;
-  //out.open("grid.txt");
-  //for (auto it : cartGrid)
-  //{
-  //  out << it.x() << "  " << it.y() << endl;
-  //}
-  //out.close();
-  //// export contour
-  //out.open("cont.txt");
-  //for (auto it : contour)
-  //{
-  //  out << it.x() << "  " << it.y() << endl;
-  //}
-  //out.close();
+  // export grid
+  ofstream out;
+  out.open("grid.txt");
+  for (auto it : cartGrid)
+  {
+    out << it.x() << "  " << it.y() << endl;
+  }
+  out.close();
+  // export contour
+  out.open("cont.txt");
+  for (auto it : contour)
+  {
+    out << it.x() << "  " << it.y() << endl;
+  }
+  out.close();
 
   // loop over the points of the cartesian grid
   for (int c(0); c < cartGrid.size(); c++)
@@ -4080,13 +4121,11 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
       }
     }
 
-    //log << "Nb points estimate " << nbPts << endl;
+    log << "Nb points estimate " << nbPts << endl;
 
 
     // Rough estimate of the number of needed directions
     numDirections = cartGrid.size() * numDirections / nbPts;
-    //numDirections = cartGrid.size() * contour.size() / nbPts;
-    //numDirections = cartGrid.size() / (int)(avDist / spacing);
 
     // generate angles of the polar grid
     angleSpacing = 2. * M_PI / (double)numDirections;
@@ -4108,23 +4147,23 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
       } 
     }
 
-    //log << "Polar grid generated"
-    //  << "\nspacing:\t" << spacing
-    //  << "\nNum directions:\t\t" << numDirections
-    //  << "\nNum points:\t\t" << polGrid.size() << endl;
+    log << "Polar grid generated"
+      << "\nspacing:\t" << spacing
+      << "\nNum directions:\t\t" << numDirections
+      << "\nNum points:\t\t" << polGrid.size() << endl;
 
     // interpolate the polar grid
-    Matrix intPolGrid(m_crossSections[idxRadSec]->interpolateModes(polGrid));
+    Matrix intPolGrid(m_crossSections[idxRadSec]->interpolateModes(polGrid, scaling));
 
-    //// export polar grid
-    //if (c == 0) {
-    //  out.open("pGrid.txt");
-    //  for (auto it : polGrid)
-    //  {
-    //    out << it.x() << "  " << it.y() << endl;
-    //  }
-    //  out.close();
-    //}
+    // export polar grid
+    if (c == 0) {
+      out.open("pGrid.txt");
+      for (auto it : polGrid)
+      {
+        out << it.x() << "  " << it.y() << endl;
+      }
+      out.close();
+    }
 
     //******************************
     // Compute first integral
