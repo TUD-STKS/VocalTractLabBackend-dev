@@ -2072,28 +2072,28 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     elapsed_seconds = end - start;
     log << "Time velocity pressure " << elapsed_seconds.count() << " s" << endl;
 
-    // extract pressure
-    prop.open("pamp.txt", ofstream::app);
-    for (int c(0); c < numSec - 1; c++)
-    {
-      prop << abs(m_crossSections[c]->Pin()(0, 0)) << "  ";
-    }
-    prop << endl;
-    prop.close();
+    //// extract pressure
+    //prop.open("pamp.txt", ofstream::app);
+    //for (int c(0); c < numSec - 1; c++)
+    //{
+    //  prop << abs(m_crossSections[c]->Pin()(0, 0)) << "  ";
+    //}
+    //prop << endl;
+    //prop.close();
 
-    // extract admittance
-    prop.open("adm.txt", ofstream::app);
-    for (int c(0); c < numSec - 1; c++)
-    {
-      prop << abs(m_crossSections[c]->Yout()(0, 0)) << "  ";
-    }
-    prop << endl;
-    prop.close();
+    //// extract admittance
+    //prop.open("adm.txt", ofstream::app);
+    //for (int c(0); c < numSec - 1; c++)
+    //{
+    //  prop << abs(m_crossSections[c]->Yout()(0, 0)) << "  ";
+    //}
+    //prop << endl;
+    //prop.close();
 
-    // Extract end volume velocity
-    prop.open("uend.txt", ofstream::app);
-    prop << abs(m_crossSections[numSec - 2]->Qout()(0, 0)) << endl;
-    prop.close();
+    //// Extract end volume velocity
+    //prop.open("uend.txt", ofstream::app);
+    //prop << abs(m_crossSections[numSec - 2]->Qout()(0, 0)) << endl;
+    //prop.close();
     
     start = std::chrono::system_clock::now();
 
@@ -2101,7 +2101,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     //  Compute radiated field
     //*****************************************************************************
 
-    RayleighSommerfeldIntegral(radPts, radPress, freq);
+    RayleighSommerfeldIntegral(radPts, radPress, freq, numSec -2);
 
     //// save radiated field
     //prop.open("radR.txt", ofstream::app);
@@ -2345,8 +2345,10 @@ void Acoustic3dSimulation::runTest(enum testType tType)
   vector<int> surfaceIdx(nbAngles, 0);
   double scalingFactors[2] = { 1., 1. };
   double freq, freqMax;
-  int nbFreqs;
-  Eigen::MatrixXcd characImped, radImped;//, inputVelocity, inputPressure;
+  int nbFreqs, mn;
+  Eigen::MatrixXcd characImped, radImped, inputVelocity, inputPressure;
+  vector<Point_3> radPts;
+  Eigen::VectorXcd radPress;
 
   switch(tType){
   case DISCONTINUITY:
@@ -2487,6 +2489,8 @@ void Acoustic3dSimulation::runTest(enum testType tType)
 
     m_crossSections.clear();
     area = pow(radius, 2) * M_PI;
+    scalingFactors[0] = 0.5;
+    scalingFactors[1] = 2.;
     addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
       surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
       scalingFactors);
@@ -2519,17 +2523,24 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     // compute propagation modes
     m_crossSections[0]->buildMesh();
     m_crossSections[0]->computeModes(m_simuParams);
-    log << m_crossSections[0]->numberOfModes() << " modes computed" << endl;
+    mn = m_crossSections[0]->numberOfModes();
+    log << mn << " modes computed" << endl;
+
+    // initialize input pressure and velocity vectors
+    inputPressure.setZero(mn, 1);
+    inputVelocity.setZero(mn, 1);
 
     preComputeRadiationMatrices(16, 0);
 
-    freqMax = 2500.;
-    nbFreqs = 100;
+    // define the position of the radiation point
+    radPts.push_back(Point_3(25., 0., 0.));
+
+    freqMax = m_simuParams.maxComputedFreq;
     ofs.open("imp.txt");
-    for (int i(0); i < nbFreqs; i++)
+    for (int i(0); i < m_numFreq; i++)
     {
       // get the output impedance
-      freq = max(0.1, freqMax*(double)i/(double)(nbFreqs - 1));
+      freq = max(0.1, freqMax*(double)i/(double)(m_numFreq - 1));
       log << "f = " << freq << " Hz" << endl;
       
       m_crossSections[0]->characteristicImpedance(characImped, freq, m_simuParams);
@@ -2539,21 +2550,43 @@ void Acoustic3dSimulation::runTest(enum testType tType)
   
       // Propagate impedance
       m_crossSections[0]->propagateMagnus(radImped, m_simuParams, freq, -1., IMPEDANCE);
-  
-      ofs << freq << "  " 
+
+      // propagate velocity
+      inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass *
+        m_crossSections[0]->area() * pow(m_crossSections[0]->scaling(0.), 2);
+      m_crossSections[0]->propagateMagnus(inputVelocity, m_simuParams, freq, 1., VELOCITY);
+
+      // compute radiated pressure
+      RayleighSommerfeldIntegral(radPts, radPress, freq, 0);
+      spectrum.setValue(i, radPress(0,0));
+
+
+      // export impedance and velocity and radiated pressure
+      ofs << freq << "  "
         << abs(
-          -1i* 2. * M_PI * freq * m_simuParams.volumicMass*
+          -1i * 2. * M_PI * freq * m_simuParams.volumicMass *
           m_crossSections[0]->Zin()(0, 0)
           //  /characImped(0,0)
-        ) << "  " 
+        ) << "  "
         << arg(
-          -1i* 2. * M_PI * freq * m_simuParams.volumicMass*
+          -1i * 2. * M_PI * freq * m_simuParams.volumicMass *
           m_crossSections[0]->Zin()(0, 0)
           // /characImped(0, 0)
-        ) << endl;
+        ) << "  "
+        << abs(m_crossSections[0]->Qout()(0,0)) << "  "
+        << arg(m_crossSections[0]->Qout()(0, 0)) << "  "
+        << abs(radPress(0)) << "  "
+        << arg(radPress(0)) << "  "
+        << endl;
     }
     ofs.close();
 
+    // generate spectra values for negative frequencies
+    for (int i(m_numFreq); i < 2 * m_numFreq; i++)
+    {
+      spectrum.re[i] = spectrum.re[2 * m_numFreq - i - 1];
+      spectrum.im[i] = -spectrum.im[2 * m_numFreq - i - 1];
+    }
 
     break;
   }
@@ -2565,7 +2598,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
 // Compute the Rayleigh-Sommerfeld integral to compute radiated pressure
 
 void Acoustic3dSimulation::RayleighSommerfeldIntegral(vector<Point_3> points,
-  Eigen::VectorXcd& radPress, double freq)
+  Eigen::VectorXcd& radPress, double freq, int radSecIdx)
 {
   int nbPts(points.size());
   double quadPtCoord[3][2]{ {1. / 6., 1. / 6.}, {2. / 3., 1. / 6.}, {1. / 6., 2. / 3.} };
@@ -2574,8 +2607,6 @@ void Acoustic3dSimulation::RayleighSommerfeldIntegral(vector<Point_3> points,
   vector<double> areaFaces;
   double r, k(2.*M_PI*freq/m_simuParams.sndSpeed);
   complex<double> J(0., 1.);
-  // the radiating cross-section is the section before the last one
-  int radSecIdx(m_crossSections.size() - 2);
 
   //ofstream log;
   //log.open("log.txt", ofstream::app);
@@ -4033,7 +4064,7 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
 
   // very good precision is obtained with gridDensity = 30
   //  good precision is obtained with gridDensity = 15;
-  double scaling(m_crossSections[idxRadSec]->scaleIn());
+  double scaling(m_crossSections[idxRadSec]->scaleOut());
   double spacing(scaling * sqrt(m_crossSections[idxRadSec]->area()) 
     / gridDensity);
 
@@ -4062,24 +4093,24 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
 
   log << "Cartesian grid generated: " << cartGrid.size() << " points" << endl;
 
-  // Interpolate the propagation modes on the cartesian grid
-  Matrix intCartGrid(m_crossSections[idxRadSec]->interpolateModes(cartGrid, scaling));
+  //// export grid
+  //ofstream out;
+  //out.open("grid.txt");
+  //for (auto it : cartGrid)
+  //{
+  //  out << it.x() << "  " << it.y() << endl;
+  //}
+  //out.close();
+  //// export contour
+  //out.open("cont.txt");
+  //for (auto it : contour)
+  //{
+  //  out << it.x() << "  " << it.y() << endl;
+  //}
+  //out.close();
 
-  // export grid
-  ofstream out;
-  out.open("grid.txt");
-  for (auto it : cartGrid)
-  {
-    out << it.x() << "  " << it.y() << endl;
-  }
-  out.close();
-  // export contour
-  out.open("cont.txt");
-  for (auto it : contour)
-  {
-    out << it.x() << "  " << it.y() << endl;
-  }
-  out.close();
+  // Interpolate the propagation modes on the cartesian grid
+  Matrix intCartGrid(m_crossSections[idxRadSec]->interpolateModes(cartGrid, 1./scaling));
 
   // loop over the points of the cartesian grid
   for (int c(0); c < cartGrid.size(); c++)
@@ -4153,17 +4184,17 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
       << "\nNum points:\t\t" << polGrid.size() << endl;
 
     // interpolate the polar grid
-    Matrix intPolGrid(m_crossSections[idxRadSec]->interpolateModes(polGrid, scaling));
+    Matrix intPolGrid(m_crossSections[idxRadSec]->interpolateModes(polGrid, 1./scaling));
 
-    // export polar grid
-    if (c == 0) {
-      out.open("pGrid.txt");
-      for (auto it : polGrid)
-      {
-        out << it.x() << "  " << it.y() << endl;
-      }
-      out.close();
-    }
+    //// export polar grid
+    //if (c == 0) {
+    //  out.open("pGrid.txt");
+    //  for (auto it : polGrid)
+    //  {
+    //    out << it.x() << "  " << it.y() << endl;
+    //  }
+    //  out.close();
+    //}
 
     //******************************
     // Compute first integral

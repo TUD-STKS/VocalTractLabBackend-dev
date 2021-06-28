@@ -1159,26 +1159,28 @@ Matrix CrossSection2dFEM::interpolateModes(vector<Point> pts)
   //ofstream val;
   //val.open("val.txt", ofstream::app);
 
-  //ofstream log;
-  //log.open("log.txt", ofstream::app);
-  //log << "Start interpolation" << endl;
-  //log.close();
-  //log.open("points.txt");
-  //for (int i(0); i < pts.size(); i++)
-  //{
-  //  log << pts[i].x() << "  " << pts[i].y() << endl;
-  //}
-  //log.close();
+  ofstream log;
+  log.open("log.txt", ofstream::app);
+  log << "Start interpolation" << endl;
+  log.close();
 
-  //log.open("cont.txt");
-  //auto it = m_contour.begin();
-  //for (; it != m_contour.end(); it++)
-  //{
-  //  log << it->x() << "  " << it->y() << endl;
-  //}
-  //it = m_contour.begin();
-  //log << it->x() << "  " << it->y() << endl;
-  //log.close();
+  
+  log.open("points.txt");
+  for (int i(0); i < pts.size(); i++)
+  {
+    log << pts[i].x() << "  " << pts[i].y() << endl;
+  }
+  log.close();
+
+  log.open("cont.txt");
+  auto it = m_contour.begin();
+  for (; it != m_contour.end(); it++)
+  {
+    log << it->x() << "  " << it->y() << endl;
+  }
+  it = m_contour.begin();
+  log << it->x() << "  " << it->y() << endl;
+  log.close();
 
   // insert triangulation points
   int numTriPts(m_points.size());

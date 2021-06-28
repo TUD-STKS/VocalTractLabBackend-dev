@@ -85,7 +85,7 @@ public:
   void propagatePressure(Eigen::MatrixXcd startVelocity, double freq);
   //void propagateAcPressure(vector<Eigen::MatrixXcd> inputPressure, double freq);
   void RayleighSommerfeldIntegral(vector<Point_3> points,
-    Eigen::VectorXcd &radPress, double freq);
+    Eigen::VectorXcd &radPress, double freq, int radSecIdx);
   void staticSimulation(VocalTract* tract);
   void runTest(enum testType tType);
 
