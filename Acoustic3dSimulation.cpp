@@ -2344,6 +2344,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
   int nbAngles(100);
   vector<int> surfaceIdx(nbAngles, 0);
   double scalingFactors[2] = { 1., 1. };
+  double a(5.2), b(3.);
   double freq, freqMax;
   int nbFreqs, mn;
   Eigen::MatrixXcd characImped, radImped, inputVelocity, inputPressure;
@@ -2351,6 +2352,35 @@ void Acoustic3dSimulation::runTest(enum testType tType)
   Eigen::VectorXcd radPress;
 
   switch(tType){
+  case MATRIX_E:
+    
+    //*********************************************
+    // Matrix E 
+    //*********************************************
+
+    // create contour
+    contour.push_back(Point(0., 0.));
+    contour.push_back(Point(a, 0.));
+    contour.push_back(Point(a, b));
+    contour.push_back(Point(0., b));
+    m_maxCSBoundingBox.first = Point2D(-1.2*a, -1.2*a);
+    m_maxCSBoundingBox.second = Point2D(1.2*a, 1.2*a);
+    m_geometryImported = true; // to have the good bounding box for modes plot
+
+    m_crossSections.clear();
+    area = a*b;
+    length = 20.;
+    surfaceIdx.resize(4);
+    addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
+      surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
+      scalingFactors);
+
+    m_crossSections[0]->buildMesh();
+
+    m_crossSections[0]->computeModes(m_simuParams);
+
+    break;
+
   case DISCONTINUITY:
 
     //*********************************************

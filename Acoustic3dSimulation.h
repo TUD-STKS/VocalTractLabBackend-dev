@@ -30,6 +30,7 @@ enum contourInterpolationMethod {
 };
 
 enum testType {
+    MATRIX_E,
     DISCONTINUITY,
     ELEPHANT_TRUNK
 };
