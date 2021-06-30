@@ -2350,6 +2350,10 @@ void Acoustic3dSimulation::runTest(enum testType tType)
   Eigen::MatrixXcd characImped, radImped, inputVelocity, inputPressure;
   vector<Point_3> radPts;
   Eigen::VectorXcd radPress;
+  // to determine the rectangle mode indexes
+  vector<array<int, 2>> modeIdxs;
+  vector<int> k2;
+  int nCombinations;
 
   switch(tType){
   case MATRIX_E:
@@ -2378,6 +2382,24 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     m_crossSections[0]->buildMesh();
 
     m_crossSections[0]->computeModes(m_simuParams);
+
+    //**********************************************
+    // Compute matrix E from analytical expression
+    //**********************************************
+
+    // generate modes indexes
+    mn = m_crossSections[0]->numberOfModes();
+    nCombinations = 10000;
+    modeIdxs.reserve(nCombinations);
+    k2.reserve(nCombinations);
+    for (int m(0); m < 100; m++)
+    {
+      for (int n(0); n < 100; n++)
+      {
+        k2.push_back(pow((double)m * b / a, 2) + pow((double)n, 2));
+        modeIdxs.push_back({ m,n });
+      }
+    }
 
     break;
 
@@ -2508,7 +2530,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     m_geometryImported = true; // to have the good bounding box for modes plot
 
     // Generate a circular contour
-    radius = 3.;
+    radius = 1.5;
     m_maxCSBoundingBox.first = Point2D(-2.*radius, -2.*radius);
     m_maxCSBoundingBox.second = Point2D(2.*radius, 2.*radius);
     for (int i(0); i < nbAngles; i++)
