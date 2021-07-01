@@ -1705,10 +1705,10 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
         (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
         (-(dl0 / l0) * m_E.transpose());
-      //A0 << Eigen::MatrixXcd::Zero(mn, mn),
-      //  (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(1., 2),
-      //  (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
-      //  Eigen::MatrixXcd::Zero(mn, mn);
+      /*A0 << Eigen::MatrixXcd::Zero(mn, mn),
+        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
+        (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
+        Eigen::MatrixXcd::Zero(mn, mn);*/
 
       //log << "A0" << endl;
       //log << A0 << endl;
@@ -1741,10 +1741,10 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
         (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN)),
         (-(dl1 / l1) * m_E.transpose());
-      //A1 << Eigen::MatrixXcd::Zero(mn, mn),
-      //  (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(1., 2),
-      //  (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN)),
-      //  Eigen::MatrixXcd::Zero(mn, mn);
+      /*A1 << Eigen::MatrixXcd::Zero(mn, mn),
+        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
+        (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN)),
+        Eigen::MatrixXcd::Zero(mn, mn);*/
 
       //log << "A1" << endl;
       //log << A1 << endl;

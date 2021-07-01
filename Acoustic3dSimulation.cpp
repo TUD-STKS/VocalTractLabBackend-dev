@@ -2352,8 +2352,11 @@ void Acoustic3dSimulation::runTest(enum testType tType)
   Eigen::VectorXcd radPress;
   // to determine the rectangle mode indexes
   vector<array<int, 2>> modeIdxs;
-  vector<int> k2;
-  int nCombinations;
+  vector<int> vIdx;
+  vector<double> k2;
+  int nCombinations, ie, je, me, ne;
+  Matrix analyticE;
+  double E1y, E1z, E2y, E2z;
 
   switch(tType){
   case MATRIX_E:
@@ -2361,6 +2364,8 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     //*********************************************
     // Matrix E 
     //*********************************************
+
+    log << "Start matrix E test" << endl;
 
     // create contour
     contour.push_back(Point(0., 0.));
@@ -2392,6 +2397,8 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     nCombinations = 10000;
     modeIdxs.reserve(nCombinations);
     k2.reserve(nCombinations);
+    vIdx.resize(nCombinations);
+    iota(vIdx.begin(), vIdx.end(), 0);
     for (int m(0); m < 100; m++)
     {
       for (int n(0); n < 100; n++)
@@ -2400,6 +2407,58 @@ void Acoustic3dSimulation::runTest(enum testType tType)
         modeIdxs.push_back({ m,n });
       }
     }
+    sort(vIdx.begin(), vIdx.end(), [&](int i, int j){return k2[i]<k2[j];});
+
+/*    for (int i(0); i < 20; i ++)
+    {
+      log << k2[vIdx[i]] << "  " << modeIdxs[vIdx[i]][0] << "  " 
+          << modeIdxs[vIdx[i]][1] << endl;
+    }*/
+
+    analyticE.setZero(mn, mn);
+    for (int m(0); m < mn; m++)
+    {
+      for (int n(0); n < mn; n++)
+      {
+        // extract the indexes of the modes
+        ie = modeIdxs[vIdx[m]][0];
+        je = modeIdxs[vIdx[m]][1];
+        me = modeIdxs[vIdx[n]][0];
+        ne = modeIdxs[vIdx[n]][1];
+
+        // compute E1y
+        if (me == 0) {E1y = 0.;}
+        if ((ie == 0) && (me != 0)) {E1y = sqrt(2.)*cos((double)me*M_PI);}
+        if ((ie == me) && (me != 0)) {E1y = 0.5;}
+        if ((ie != me) && (ie != 0) && (me != 0)){E1y = (double)me*(
+          cos((double)(ie + me)*M_PI)/(double)(ie + me) -
+          cos((double)(ie - me)*M_PI)/(double)(ie - me));}
+
+        // compute E1z
+        if (je == ne) {E1z = 1.;} else {E1z = 0.;}
+
+        // compute E2y
+        if (ie == me){E2y = 1.;} else {E2y = 0.;}
+
+        // compute E2z
+        if (ne == 0) {E2z = 0.;}
+        if ((je == 0) && (ne != 0)) {E2z = sqrt(2.)*cos((double)(ne)*M_PI);}
+        if ((je == ne) && (ne != 0)) {E2z = 0.5;}
+        if ((je != ne) && (je != 0) && (ne != 0)) {E2z = (double)ne*(
+          cos((double)(je + ne)*M_PI)/(double)(je + ne) -
+          cos((double)(je - ne)*M_PI)/(double)(je - ne));} 
+        
+        // Compute E(m,n)
+        analyticE(m,n) = E1y*E1z + E2y*E2z;
+      }
+    }
+
+    ofs.open("anE.txt");
+    ofs << analyticE << endl;
+    ofs.close();
+    ofs.open("nuE.txt");
+    ofs << m_crossSections[0]->getMatrixE() << endl;
+    ofs.close();
 
     break;
 
@@ -2473,6 +2532,8 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     //for (auto it = tr.all_faces_begin(); it != tr.all_faces_end(); it++)
     //{
     //  for (int i(0); i < 3; i++)
+    //  {
+    //    ofs << it->vertex(i)->point().x() << "  "
     //  {
     //    ofs << it->vertex(i)->point().x() << "  "
     //      << it->vertex(i)->point().y() << endl;

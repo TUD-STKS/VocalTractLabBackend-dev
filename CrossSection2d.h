@@ -193,6 +193,7 @@ public:
   virtual vector<Matrix> getMatrixF() const { return vector<Matrix>(); }
   virtual Matrix getMatrixGStart() const { return Matrix(); }
   virtual Matrix getMatrixGEnd() const { return Matrix(); }
+  virtual Matrix getMatrixE() const {return Matrix();}
   virtual double curvRadius() const { return double(); }
   virtual double radius() const { return double(); }
   virtual double PMLThickness() const { return double(); }
@@ -313,6 +314,7 @@ public:
   vector<Matrix> getMatrixF() const;
   Matrix getMatrixGStart() const;
   Matrix getMatrixGEnd() const;
+  Matrix getMatrixE() const {return m_E;}
 
 
   // **************************************************************************
