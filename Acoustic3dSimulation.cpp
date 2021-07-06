@@ -2355,7 +2355,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
   vector<int> vIdx;
   vector<double> k2;
   int nCombinations, ie, je, me, ne;
-  Matrix analyticE;
+  Matrix analyticE, E;
   double E1y, E1z, E2y, E2z;
 
   switch(tType){
@@ -2544,6 +2544,16 @@ void Acoustic3dSimulation::runTest(enum testType tType)
   
     m_crossSections[0]->computeModes(m_simuParams);
     log << m_crossSections[0]->numberOfModes() << " modes computed" << endl;
+
+    // modify matrix E
+    /*E = m_crossSections[0]->getMatrixE();
+    E(0, 5) = -E(0, 5);
+    m_crossSections[0]->setMatrixE(E);*/
+
+    // Export matrix E
+    ofs.open("mE.txt");
+    ofs << m_crossSections[0]->getMatrixE() << endl;
+    ofs.close();
 
     preComputeRadiationMatrices(16, 0);
   

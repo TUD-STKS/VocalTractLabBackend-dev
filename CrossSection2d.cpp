@@ -1555,6 +1555,7 @@ double CrossSection2dFEM::scalingDerivative(double tau)
 {
   // compute the length of the section
   double al;
+  ofstream log("log.txt", ofstream::app);
   if (m_circleArcAngle < MINIMAL_DISTANCE)
   {
       al = m_length;
@@ -1563,15 +1564,20 @@ double CrossSection2dFEM::scalingDerivative(double tau)
   {
       al = m_circleArcAngle * abs(m_curvatureRadius);
   }
+
+  log << "Arc length: " << al << " Scaling factors: " << 
+      m_scalingFactors[0] << "  " << m_scalingFactors[1] << endl;
+  log.close();
+
   switch (m_areaProfile)
   {
   case LINEAR:
     return((m_scalingFactors[1] - m_scalingFactors[0])/ al); 
     break;
   case GAUSSIAN:
-    return(-0.75*0.3*(tau - 0.5)*
+    return(-0.75*0.09*(tau - 0.5)*
        exp(-pow(0.3*(tau - 0.5),2)/2./pow(0.04,2))
-       /pow(0.04, 2));
+       /pow(0.04, 2)/30.);
     break;
   case ELEPHANT:
     return (9.*tau*(1. - tau)/16.95);

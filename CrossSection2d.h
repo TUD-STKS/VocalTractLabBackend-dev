@@ -105,6 +105,7 @@ public:
 
   // scatering  matrices 
   virtual void setMatrixF(vector<Matrix> & F) { ; }
+  virtual void setMatrixE(Matrix & E) {;}
   virtual void setIntersectionsArea(vector<double> areaInt) { ; }
   virtual void setMatrixGstart(Matrix Gs) { ; }
   virtual void setMatrixGend(Matrix Ge) { ; }
@@ -254,6 +255,7 @@ public:
   void computeModes(struct simulationParameters simuParams);
   Matrix interpolateModes(vector<Point> pts);
   void setMatrixF(vector<Matrix> & F) { m_F = F; }
+  void setMatrixE(Matrix & E) {m_E = E;}
   // Set the area of the intersection with the following contour
   void setIntersectionsArea(vector<double> areaInt) { m_intersectionsArea = areaInt; }
   void setMatrixGstart(Matrix & Gs){ m_Gstart = Gs; }
