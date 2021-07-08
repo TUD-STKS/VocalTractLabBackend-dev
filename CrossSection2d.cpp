@@ -1159,28 +1159,28 @@ Matrix CrossSection2dFEM::interpolateModes(vector<Point> pts)
   //ofstream val;
   //val.open("val.txt", ofstream::app);
 
-  ofstream log;
-  log.open("log.txt", ofstream::app);
-  log << "Start interpolation" << endl;
-  log.close();
+  //ofstream log;
+  //log.open("log.txt", ofstream::app);
+  //log << "Start interpolation" << endl;
+  //log.close();
 
   
-  log.open("points.txt");
-  for (int i(0); i < pts.size(); i++)
-  {
-    log << pts[i].x() << "  " << pts[i].y() << endl;
-  }
-  log.close();
+  //log.open("points.txt");
+  //for (int i(0); i < pts.size(); i++)
+  //{
+    //log << pts[i].x() << "  " << pts[i].y() << endl;
+  //}
+  //log.close();
 
-  log.open("cont.txt");
-  auto it = m_contour.begin();
-  for (; it != m_contour.end(); it++)
-  {
-    log << it->x() << "  " << it->y() << endl;
-  }
-  it = m_contour.begin();
-  log << it->x() << "  " << it->y() << endl;
-  log.close();
+  //log.open("cont.txt");
+  //auto it = m_contour.begin();
+  //for (; it != m_contour.end(); it++)
+  //{
+    //log << it->x() << "  " << it->y() << endl;
+  //}
+  //it = m_contour.begin();
+  //log << it->x() << "  " << it->y() << endl;
+  //log.close();
 
   // insert triangulation points
   int numTriPts(m_points.size());
@@ -1555,7 +1555,6 @@ double CrossSection2dFEM::scalingDerivative(double tau)
 {
   // compute the length of the section
   double al;
-  ofstream log("log.txt", ofstream::app);
   if (m_circleArcAngle < MINIMAL_DISTANCE)
   {
       al = m_length;
@@ -1564,10 +1563,6 @@ double CrossSection2dFEM::scalingDerivative(double tau)
   {
       al = m_circleArcAngle * abs(m_curvatureRadius);
   }
-
-  log << "Arc length: " << al << " Scaling factors: " << 
-      m_scalingFactors[0] << "  " << m_scalingFactors[1] << endl;
-  log.close();
 
   switch (m_areaProfile)
   {
@@ -1590,6 +1585,9 @@ double CrossSection2dFEM::scalingDerivative(double tau)
 void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
   double freq, double direction, enum physicalQuantity quant)
 {
+  // track time
+  auto startTot = std::chrono::system_clock::now();
+
   int numX(simuParams.numIntegrationStep);
   int mn(m_modesNumber);
   double theta(m_circleArcAngle);          // angle of the circle arc
@@ -1677,9 +1675,18 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
       KR2 += m_KR2[s] * bndSpecAdm.asDiagonal() + wallAdmittance * m_KR2[s];
     }
 
+    // track time
+    auto start = std::chrono::system_clock::now();
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_preComp, matricesMag, propag, tot;
+    elapsed_preComp = end - startTot;
+
     // discretize X axis
     for (int i(0); i < numX - 1; i++)
     {
+      // tract time  
+      start = std::chrono::system_clock::now();
+
       //*******************************
       // first point of Magnus scheme
       //*******************************
@@ -1694,8 +1701,8 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
       l0 = scaling(tau);
       dl0 = scalingDerivative(tau);
 
-      log << "i = " << i << " l0 " << l0 << " dl0 " << dl0 
-        << " dX " << dX << " curv " << curv << endl;
+      //log << "i = " << i << " l0 " << l0 << " dl0 " << dl0 
+        //<< " dX " << dX << " curv " << curv << endl;
 
       // build matrix K2
       K2.setZero(mn, mn);
@@ -1764,6 +1771,11 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
 
       //log << "omega" << endl;
       //log << omega << endl;
+      
+      // tract time
+      end = std::chrono::system_clock::now();
+      matricesMag += end - start;
+      start = std::chrono::system_clock::now();
 
       // compute the propagated quantity at the next point
       switch (quant)
@@ -1788,7 +1800,16 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
           m_axialVelocity.push_back((omega.block(mn, 0, mn, mn)* m_impedance[numX - 1 - i] +
             omega.block(mn, mn, mn, mn))* m_axialVelocity.back());
       }
+
+      // track time
+      end = std::chrono::system_clock::now();
+      propag += end - start;
     }
+  // track time
+  tot = end - startTot;
+  log << "Time precomputations " << 100.*elapsed_preComp.count() / tot.count() << endl;
+  log << "Time matrices " << 100.*matricesMag.count() / tot.count() << endl;
+  log << "time propa " << 100.*propag.count() / tot.count() << endl;
   }
   log.close();
 }

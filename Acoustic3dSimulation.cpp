@@ -2632,8 +2632,9 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     //*********************************************
     
     // Set the proper simulation parameters
-    m_simuParams.percentageLosses = 0.;
-    m_simuParams.wallLosses = false;
+//    m_simuParams.percentageLosses = 0.;
+//    m_simuParams.freqDepLosses = false;
+//    m_simuParams.wallLosses = false;
     m_simuParams.curved = true;
     m_geometryImported = true; // to have the good bounding box for modes plot
 
@@ -2651,14 +2652,15 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     area = pow(radius, 2) * M_PI;
     scalingFactors[0] = 0.5;
     scalingFactors[1] = 2.;
+    double inRadius(1.25*4.*radius);
+    log << "inRadius " << inRadius << endl;
+    double inAngle(2.26);
+    length = inAngle * inRadius;
     addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
       surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
       scalingFactors);
     m_crossSections[0]->setAreaVariationProfileType(ELEPHANT);
-    double inRadius(1.25*4.*radius);
-    log << "inRadius " << inRadius << endl;
     m_crossSections[0]->setCurvatureRadius(inRadius);
-    double inAngle(2.26);
     m_crossSections[0]->setCurvatureAngle(inAngle);
   
     log << "Cross-section created" << endl;
@@ -3342,7 +3344,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   vector<array<double, 4>> bboxes;
   array<double, 4> arrayZeros = { 0., 0., 0., 0. };
 
-  ofstream log("log.txt", ofstream::app);
+  //ofstream log("log.txt", ofstream::app);
 
   if (m_geometryImported)
   {
@@ -3458,7 +3460,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   // create the cross-sections
   for (int i(1); i < contours.size(); i++)
   {
-    log << "\ni= " << i << endl;
+    //log << "\ni= " << i << endl;
+
     //**********************************
     // Create previous cross-sections
     //**********************************
@@ -3498,21 +3501,21 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
           scalingFactors[0] = (1. - propChg) + propChg * sqrt(totAreas[i - 1] / totAreas[i]);
           break;
         case BOUNDING_BOX:
-          log << "Before compute scaling factor i " << i 
-            << " i-1 " << i-1 << endl;
+          //log << "Before compute scaling factor i " << i 
+            //<< " i-1 " << i-1 << endl;
           scalingFactors[0] = getScalingFactor(i, i-1);
           break;
         }
       }
       scalingFactors[1] = 1.;
     }
-    log << "scalingFactors[0] " << scalingFactors[0] << endl;
-    log << "scalingFactors[1] " << scalingFactors[1] << endl;
+    //log << "scalingFactors[0] " << scalingFactors[0] << endl;
+    //log << "scalingFactors[1] " << scalingFactors[1] << endl;
 
-    log << "i = " << i << " scaling factors " << prevScalingFactors[0]
-      << "  " << prevScalingFactors[1] << " area " 
-      << totAreas[i-1]<< " radius " << prevCurvRadius
-      << " angle " << prevAngle << endl;
+    //log << "i = " << i << " scaling factors " << prevScalingFactors[0]
+      //<< "  " << prevScalingFactors[1] << " area " 
+      //<< totAreas[i-1]<< " radius " << prevCurvRadius
+      //<< " angle " << prevAngle << endl;
 
     // loop over the created contours
     for (int c(0); c < contours[i-1].size(); c++)
@@ -3538,7 +3541,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       // set the curvature angle
       m_crossSections[secIdx]->setCurvatureAngle(prevAngle);
 
-      log << "Section " << secIdx << " created" << endl;
+      //log << "Section " << secIdx << " created" << endl;
       secIdx++;
     }
 
@@ -3554,7 +3557,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     Transformation translate(CGAL::TRANSLATION, Vector(0., shift));
     for (auto cont : contours[i]) {cont = transform(translate, cont);}
 
-    log << "Contour shifted" << endl;
+    //log << "Contour shifted" << endl;
 
     // if the area is equal to the minimal area, the contours
     // are defined as the scaled previous contours
@@ -3586,7 +3589,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       }
     }
 
-    log << "Minimal area checked" << endl;
+    //log << "Minimal area checked" << endl;
 
     //**********************************
     // Create intermediate 0 length
@@ -3622,8 +3625,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       Transformation scale(CGAL::SCALING, scalingFactors[0]);
       Polygon_2 cont(transform(scale, contours[i][c]));
 
-      log << "Contour extracted and scaled sc = " 
-        << scalingFactors[0] << endl;
+      //log << "Contour extracted and scaled sc = " 
+        //<< scalingFactors[0] << endl;
 
       // loop over the contours of the previous cross-section
       for (int cp(0); cp < contours[i-1].size(); cp++)
@@ -3632,8 +3635,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
         Transformation scale(CGAL::SCALING, prevScalingFactors[1]);
         Polygon_2 prevCont(transform(scale, contours[i - 1][cp]));
 
-        log << "Prev Contour extracted and scaled sc = " 
-          << prevScalingFactors[1] << endl;
+        //log << "Prev Contour extracted and scaled sc = " 
+          //<< prevScalingFactors[1] << endl;
 
         // Check if the current and previous contour intersect:
         // check if the first point of the previous contour
@@ -3641,7 +3644,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
         auto itP = prevCont.begin();
         sidePrev = cont.has_on_bounded_side(*itP);
 
-        log << "Sideprev " << sidePrev << endl;
+        //log << "Sideprev " << sidePrev << endl;
 
         // loop over the points of the previous contour
         for (; itP != prevCont.end(); itP++)
@@ -3652,7 +3655,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
           // different sides
           if (side != sidePrev)
           {
-            log << "side != sidePrev" << endl;
+            //log << "side != sidePrev" << endl;
 
             ofstream os("cont.txt");
             for (auto pt : cont) { os << pt.x() << "  " << pt.y() << endl; }
@@ -3665,7 +3668,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
             intersections.clear();
             CGAL::intersection(prevCont, cont, back_inserter(intersections));
 
-            log << intersections.size() << " intersections computed" << endl;
+            //log << intersections.size() << " intersections computed" << endl;
 
             // loop over the intersection polygons created
             for (auto pol = intersections.begin();
@@ -3715,7 +3718,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       prevSections.push_back(tmpPrevSection);
     }
 
-    log << "Intersection computed" << endl;
+    //log << "Intersection computed" << endl;
 
     // set the next section indexes to the previous section 
     nextSecIdx = secIdx + intSecIdx; // index of the first next section
@@ -3737,7 +3740,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       }
     }
 
-    log << "Connections set" << endl;
+    //log << "Connections set" << endl;
 
     // if intermediate contours have been created, add corresponding
     // cross-sections
@@ -3764,18 +3767,16 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     }
 
     // set current cross-section as previous cross-section
-    log << "Copy data" << endl;
     std::copy(begin(scalingFactors), end(scalingFactors), begin(prevScalingFactors));
     prevCurvRadius = curvRadius;
     prevAngle = angle;
-    log << "Data copied" << endl;
   }
 
   //********************************
   // create last cross-sections
   //********************************
 
-  log << "Create last cross-section" << endl;
+  //log << "Create last cross-section" << endl;
 
   radius = 0.;  // initalise the radius of the radiation cross-section
   tmpPrevSection.clear(); // the list of section connected to the radiation section
@@ -3822,7 +3823,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
   if (createRadSection)
   {
-    log << "Create radiation cross-section" << endl;
+    //log << "Create radiation cross-section" << endl;
 
     double PMLThickness = radius;
     radius *= 2.1;
@@ -3838,7 +3839,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     }
   }
   return true;
-  log.close();
+  //log.close();
 }
 
 //*************************************************************************
@@ -4160,8 +4161,8 @@ void Acoustic3dSimulation::preComputeRadiationMatrices(int nbRadFreqs, int idxRa
 void Acoustic3dSimulation::interpolateRadiationImpedance(Eigen::MatrixXcd& imped, 
    double freq, int idxRadSec)
 {
-  ofstream log("log.txt", ofstream::app);
-  log << "Start interpolate rad imped " << endl;
+  //ofstream log("log.txt", ofstream::app);
+  //log << "Start interpolate rad imped " << endl;
 
   // find the index corresponding to the coefficient to use for this frequency
   int nbRadFreqs(m_radiationMatrixInterp[0][0][0].size());
@@ -4169,13 +4170,13 @@ void Acoustic3dSimulation::interpolateRadiationImpedance(Eigen::MatrixXcd& imped
   while (m_radiationFreqs[idx] > freq) { idx--; }
   idx = max(0, idx);
 
-  log << "Idx coef " << idx << endl;
+  //log << "Idx coef " << idx << endl;
 
   // get number of modes of the radiating section
   int mn(m_crossSections[idxRadSec]->numberOfModes());
 
-  log << "Number of modes " << mn << endl;
-  log << "Size m_radiationMatrixInterp " << m_radiationMatrixInterp.size() << endl;
+  //log << "Number of modes " << mn << endl;
+  //log << "Size m_radiationMatrixInterp " << m_radiationMatrixInterp.size() << endl;
 
   imped.setZero(mn, mn);
   for (int m(0); m < mn; m++)
@@ -4192,7 +4193,7 @@ void Acoustic3dSimulation::interpolateRadiationImpedance(Eigen::MatrixXcd& imped
         m_radiationMatrixInterp[13][m][n][idx] * pow(freq - m_radiationFreqs[idx], 3)));
     }
   }
-  log.close();
+  //log.close();
 }
 
 //*************************************************************************
@@ -4242,8 +4243,8 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
   imped = Eigen::MatrixXcd::Zero(mn, mn);
   Eigen::MatrixXcd integral2(mn, mn);
 
-  ofstream log("log.txt", ofstream::app);
-  log << "\nStart computing radiation impedance" << endl;
+  //ofstream log("log.txt", ofstream::app);
+  //log << "\nStart computing radiation impedance" << endl;
 
   //******************************
   // generate cartesian grid
@@ -4255,8 +4256,8 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
   double spacing(scaling * sqrt(m_crossSections[idxRadSec]->area()) 
     / gridDensity);
 
-  log << "scaling: " << scaling << endl;
-  log << "Spacing: " << spacing << endl;
+  //log << "scaling: " << scaling << endl;
+  //log << "Spacing: " << spacing << endl;
 
   Transformation scale(CGAL::SCALING, scaling);
   Polygon_2 contour(transform(scale, m_crossSections[idxRadSec]->contour()));
@@ -4278,7 +4279,7 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
     }
   }
 
-  log << "Cartesian grid generated: " << cartGrid.size() << " points" << endl;
+  //log << "Cartesian grid generated: " << cartGrid.size() << " points" << endl;
 
   //// export grid
   //ofstream out;
@@ -4339,7 +4340,7 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
       }
     }
 
-    log << "Nb points estimate " << nbPts << endl;
+    //log << "Nb points estimate " << nbPts << endl;
 
 
     // Rough estimate of the number of needed directions
@@ -4365,10 +4366,10 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
       } 
     }
 
-    log << "Polar grid generated"
-      << "\nspacing:\t" << spacing
-      << "\nNum directions:\t\t" << numDirections
-      << "\nNum points:\t\t" << polGrid.size() << endl;
+    //log << "Polar grid generated"
+      //<< "\nspacing:\t" << spacing
+      //<< "\nNum directions:\t\t" << numDirections
+      //<< "\nNum points:\t\t" << polGrid.size() << endl;
 
     // interpolate the polar grid
     Matrix intPolGrid(m_crossSections[idxRadSec]->interpolateModes(polGrid, 1./scaling)/scaling);
