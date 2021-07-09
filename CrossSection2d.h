@@ -94,8 +94,8 @@ public:
   void setNextSects(vector<int> nextSects) { m_nextSections = nextSects; }
   void clearPrevSects() { m_previousSections.clear(); }
   void clearNextSects() { m_nextSections.clear(); }
-  virtual void setCurvatureRadius(double& radius) { ; }
-  virtual void setCurvatureAngle(double& angle) { ; }
+  virtual void setCurvatureRadius(double radius) { ; }
+  virtual void setCurvatureAngle(double angle) { ; }
 
   // cross section mesh and modes
   virtual void buildMesh() { ; }
@@ -248,8 +248,8 @@ public:
   ~CrossSection2dFEM();
 
   void setJunctionSection(bool junction);
-  void setCurvatureRadius(double& radius);
-  void setCurvatureAngle(double& angle);
+  void setCurvatureRadius(double radius);
+  void setCurvatureAngle(double angle);
 
   void buildMesh();
   void computeModes(struct simulationParameters simuParams);

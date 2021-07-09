@@ -32,7 +32,8 @@ enum contourInterpolationMethod {
 enum testType {
     MATRIX_E,
     DISCONTINUITY,
-    ELEPHANT_TRUNK
+    ELEPHANT_TRUNK,
+    SCALE_RAD_IMP
 };
 
 class Acoustic3dSimulation

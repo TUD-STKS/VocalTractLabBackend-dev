@@ -276,14 +276,14 @@ void CrossSection2d::setNextSection(int nextSec)
 // ****************************************************************************
 // Set the radius of curvature of the section
 
-void CrossSection2dFEM::setCurvatureRadius(double& radius) {
+void CrossSection2dFEM::setCurvatureRadius(double radius) {
   m_curvatureRadius = radius;
 }
 
 // ****************************************************************************
 // Set the angle of curvature of the section
 
-void CrossSection2dFEM::setCurvatureAngle(double& angle) {
+void CrossSection2dFEM::setCurvatureAngle(double angle) {
   m_circleArcAngle = angle;
 }
 
@@ -483,7 +483,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
     }
     meshContSurfIdx = m_surfaceIdx[ptIdx];
 
-    //log << "Surface identified" << endl;
+    //log << "Surface identified " << meshContSurfIdx << endl;
 
     // determine the index of the submatrix to which add the elements corresponding
     // to the current segment
@@ -495,7 +495,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
       }
     }
 
-    //log << "Submatrix identified" << endl;
+    //log << "Submatrix identified: " << idx << endl;
 
     // compute the length of the segment
     segLength = sqrt(pow(m_points[m_meshContourSeg[s][0]][0] -
@@ -1543,7 +1543,7 @@ double CrossSection2dFEM::scaling(double tau)
     return (1. + 0.75*exp(-pow(0.3*(tau - 0.5),2)/2./pow(0.04,2)));
     break;
   case ELEPHANT:
-    return (0.5*(1 + 9.*pow(tau, 2) - 6.*pow(tau, 3)));
+    return (0.25*(1 + 9.*pow(tau, 2) - 6.*pow(tau, 3)));
     break;
   }
 }
@@ -1575,7 +1575,7 @@ double CrossSection2dFEM::scalingDerivative(double tau)
        /pow(0.04, 2)/30.);
     break;
   case ELEPHANT:
-    return (9.*tau*(1. - tau)/16.95);
+    return (9.*tau*(1. - tau)/16.95/2.);
   }
 }
 
