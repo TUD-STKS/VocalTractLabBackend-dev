@@ -1142,6 +1142,61 @@ void CrossSection2dRadiation::computeModes(struct simulationParameters simuParam
 }
 
 // **************************************************************************
+// Select some modes and remove the other ones
+
+void CrossSection2dFEM::selectModes(vector<int> modesIdx)
+{
+  int nPt = m_modes.rows();
+  m_modesNumber = modesIdx.size();
+  Matrix tmpModes(nPt, m_modesNumber);
+  vector<double> tmpEigenFreqs;
+  tmpEigenFreqs.reserve(m_modesNumber);
+  Matrix tmpC(m_modesNumber, m_modesNumber),
+    tmpDN(Matrix::Zero(m_modesNumber, m_modesNumber)),
+    tmpE(Matrix::Zero(m_modesNumber, m_modesNumber));
+  vector<Matrix> tmpKR2;
+  for (int i(0); i < m_KR2.size(); i++)
+  {
+    tmpKR2.push_back(Matrix::Zero(m_modesNumber, m_modesNumber));
+  }
+  int m(0), n(0);
+
+  for (auto i : modesIdx)
+  {
+    for (int j(0); j < nPt; j++)
+    {
+      tmpModes(j, n) = m_modes(j, i);
+    }
+    n++;
+
+    tmpEigenFreqs.push_back(m_eigenFreqs[i]);
+  }
+  m_eigenFreqs = tmpEigenFreqs;
+  m_modes = tmpModes;
+
+  for (auto i : modesIdx)
+  {
+    n = 0;
+    for (auto j : modesIdx)
+    {
+      tmpC(m, n) = m_C(i, j);
+      tmpDN(m, n) = m_DN(i, j);
+      tmpE(m, n) = m_E(i, j);
+      for (int k(0); k < m_KR2.size(); k++)
+      {
+        tmpKR2[k](m, n) = m_KR2[k](i, j);
+      }
+      n++;
+    }
+    m++;
+  }
+  m_C = tmpC;
+  m_DN = tmpDN;
+  m_E = tmpE;
+  m_KR2 = tmpKR2;
+}
+
+// **************************************************************************
 // Interpolate the propagation modes
 Matrix CrossSection2dFEM::interpolateModes(vector<Point> pts)
 {
@@ -1543,6 +1598,7 @@ double CrossSection2dFEM::scaling(double tau)
     return (1. + 0.75*exp(-pow(0.3*(tau - 0.5),2)/2./pow(0.04,2)));
     break;
   case ELEPHANT:
+    //return (0.5 * (1 + 9. * pow(tau, 2) - 6. * pow(tau, 3)));
     return (0.25*(1 + 9.*pow(tau, 2) - 6.*pow(tau, 3)));
     break;
   }
@@ -1575,6 +1631,7 @@ double CrossSection2dFEM::scalingDerivative(double tau)
        /pow(0.04, 2)/30.);
     break;
   case ELEPHANT:
+    //return (9. * tau * (1. - tau) / 16.95 );
     return (9.*tau*(1. - tau)/16.95/2.);
   }
 }
@@ -1607,7 +1664,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
   double k(2 * M_PI * freq / simuParams.sndSpeed);
   double tau, l0, l1, dl0, dl1;
   // parameters of the coefficient l evolution
-  double dl((m_scalingFactors[1] - m_scalingFactors[0])/ al);
   Eigen::MatrixXcd A0(2 * mn, 2 * mn), A1(2 * mn, 2 * mn), omega(2 * mn, 2 * mn);
   Eigen::MatrixXcd K2(Eigen::MatrixXcd::Zero(mn, mn));
   complex<double> wallAdmittance;
@@ -1681,102 +1737,148 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
     std::chrono::duration<double> elapsed_preComp, matricesMag, propag, tot;
     elapsed_preComp = end - startTot;
 
-    // discretize X axis
-    for (int i(0); i < numX - 1; i++)
-    {
-      // tract time  
-      start = std::chrono::system_clock::now();
-
-      //*******************************
-      // first point of Magnus scheme
-      //*******************************
-
-      if (dX < 0.) {
-          tau = ((double)(numX - i)-1.5 + sqrt(3)/6.)/(double)(numX - 1);
-      }
-      else
+      // discretize X axis
+      for (int i(0); i < numX - 1; i++)
       {
-        tau = (double)(i + 0.5 - sqrt(3) / 6.) / (double)(numX - 1);
-      }
-      l0 = scaling(tau);
-      dl0 = scalingDerivative(tau);
 
-      //log << "i = " << i << " l0 " << l0 << " dl0 " << dl0 
-        //<< " dX " << dX << " curv " << curv << endl;
+        switch (simuParams.orderMagnusScheme)
+        {
+      //****************************
+      // Magnus scheme order 2
+      //****************************
 
-      // build matrix K2
-      K2.setZero(mn, mn);
-      for (int j(0); j < mn; j++)
-      {
-        K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
-        //K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k, 2);
-      }
-      K2 += 1i * k * KR2;
+      case 2:
 
-      // build matrix A0
-      A0 << ((dl0 / l0) * m_E),
-        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
-        (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
-        (-(dl0 / l0) * m_E.transpose());
-      /*A0 << Eigen::MatrixXcd::Zero(mn, mn),
-        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
-        (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
-        Eigen::MatrixXcd::Zero(mn, mn);*/
+        if (dX < 0.)
+        {
+          tau = ((double)(numX - i) - 1.5) / (double)(numX - 1);
+        }
+        else
+        {
+          tau = ((double)(i)+0.5) / (double)(numX - 1);
+        }
+        l0 = scaling(tau);
+        dl0 = scalingDerivative(tau);
 
-      //log << "A0" << endl;
-      //log << A0 << endl;
+        // build matrix K2
+        K2.setZero(mn, mn);
+        for (int j(0); j < mn; j++)
+        {
+          K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
+        }
+        K2 += 1i * k * KR2;
 
-      //*******************************
-      // second point of Magnus scheme
-      //*******************************
+        // build matrix A0
+        omega << ((dl0 / l0)* m_E),
+          (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
+          (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
+          (-(dl0 / l0) * m_E.transpose());
 
-      if (dX < 0.)
-      {
-        tau = ((double)(numX - i) - 1.5 - sqrt(3) / 6.) / (double)(numX - 1);
-      }
-      else
-      {
-        tau =(double)(i + 0.5 + sqrt(3) / 6.) / (double)(numX - 1);
-      }
-      l1 = scaling(tau);
-      dl1 = scalingDerivative(tau);
+        omega = (dX * omega).exp();
 
-      // build matrix K
-      K2.setZero(mn, mn);
-      for (int j(0); j < mn; j++)
-      {
-        K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l1, 2);
-        //K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k, 2);
-      }
-      K2 += 1i * k * KR2;
-      // build matrix A1
-      A1 << ((dl1 / l1) * m_E),
-        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
-        (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN)),
-        (-(dl1 / l1) * m_E.transpose());
-      /*A1 << Eigen::MatrixXcd::Zero(mn, mn),
-        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
-        (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN)),
-        Eigen::MatrixXcd::Zero(mn, mn);*/
+        break;
 
-      //log << "A1" << endl;
-      //log << A1 << endl;
+      //****************************
+      // Magnus scheme order 4
+      //****************************
+
+      case 4:
+
+          //*******************************
+          // first point of Magnus scheme
+          //*******************************
+
+          if (dX < 0.) {
+            tau = ((double)(numX - i) - 1.5 + sqrt(3) / 6.) / (double)(numX - 1);
+          }
+          else
+          {
+            tau = (double)(i + 0.5 - sqrt(3) / 6.) / (double)(numX - 1);
+          }
+          l0 = scaling(tau);
+          dl0 = scalingDerivative(tau);
+
+          //log << "i = " << i << " l0 " << l0 << " dl0 " << dl0 
+            //<< " dX " << dX << " curv " << curv << endl;
+
+          // build matrix K2
+          K2.setZero(mn, mn);
+          for (int j(0); j < mn; j++)
+          {
+            K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
+            //K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k, 2);
+          }
+          K2 += 1i * k * KR2;
+
+          // build matrix A0
+          A0 << ((dl0 / l0) * m_E),
+            (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
+            (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
+            (-(dl0 / l0) * m_E.transpose());
+          /*A0 << Eigen::MatrixXcd::Zero(mn, mn),
+            (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
+            (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
+            Eigen::MatrixXcd::Zero(mn, mn);*/
+
+            //log << "A0" << endl;
+            //log << A0 << endl;
+
+            //*******************************
+            // second point of Magnus scheme
+            //*******************************
+
+          if (dX < 0.)
+          {
+            tau = ((double)(numX - i) - 1.5 - sqrt(3) / 6.) / (double)(numX - 1);
+          }
+          else
+          {
+            tau = (double)(i + 0.5 + sqrt(3) / 6.) / (double)(numX - 1);
+          }
+          l1 = scaling(tau);
+          dl1 = scalingDerivative(tau);
+
+          // build matrix K
+          K2.setZero(mn, mn);
+          for (int j(0); j < mn; j++)
+          {
+            K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l1, 2);
+            //K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k, 2);
+          }
+          K2 += 1i * k * KR2;
+          // build matrix A1
+          A1 << ((dl1 / l1) * m_E),
+            (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
+            (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN)),
+            (-(dl1 / l1) * m_E.transpose());
+          /*A1 << Eigen::MatrixXcd::Zero(mn, mn),
+            (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
+            (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN)),
+            Eigen::MatrixXcd::Zero(mn, mn);*/
+
+            //log << "A1" << endl;
+            //log << A1 << endl;
 
 
-      //*******************************
-      // compute matrix omega
-      //*******************************
+            //*******************************
+            // compute matrix omega
+            //*******************************
 
-      omega = (0.5 * dX * (A0 + A1) + sqrt(3) * pow(dX, 2) * (A1 * A0 - A0 * A1) / 12.).exp();
+            // tract time  
+          start = std::chrono::system_clock::now();
 
-      //log << "omega" << endl;
-      //log << omega << endl;
-      
-      // tract time
-      end = std::chrono::system_clock::now();
-      matricesMag += end - start;
-      start = std::chrono::system_clock::now();
+          omega = (0.5 * dX * (A0 + A1) + sqrt(3) * pow(dX, 2) * (A1 * A0 - A0 * A1) / 12.).exp();
 
+          //log << "omega" << endl;
+          //log << omega << endl;
+
+          // tract time
+          end = std::chrono::system_clock::now();
+          matricesMag += end - start;
+          start = std::chrono::system_clock::now();
+
+          break;
+        }
       // compute the propagated quantity at the next point
       switch (quant)
       {
@@ -1808,7 +1910,7 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
   // track time
   tot = end - startTot;
   log << "Time precomputations " << 100.*elapsed_preComp.count() / tot.count() << endl;
-  log << "Time matrices " << 100.*matricesMag.count() / tot.count() << endl;
+  log << "Time matrix omega " << 100.*matricesMag.count() / tot.count() << endl;
   log << "time propa " << 100.*propag.count() / tot.count() << endl;
   }
   log.close();

@@ -61,6 +61,7 @@ struct simulationParameters
   double volumicMass;
   double sndSpeed;
   int numIntegrationStep;
+  int orderMagnusScheme;
   complex<double> viscousBndSpecAdm;
   complex<double> thermalBndSpecAdm;
   bool freqDepLosses;
@@ -100,6 +101,7 @@ public:
   // cross section mesh and modes
   virtual void buildMesh() { ; }
   virtual void computeModes(struct simulationParameters simuParams) { ; }
+  virtual void selectModes(vector<int> modesIdx) { ; }
   virtual Matrix interpolateModes(vector<Point> pts) { return Matrix(); }
   Matrix interpolateModes(vector<Point> pts, double scaling);
 
@@ -194,7 +196,10 @@ public:
   virtual vector<Matrix> getMatrixF() const { return vector<Matrix>(); }
   virtual Matrix getMatrixGStart() const { return Matrix(); }
   virtual Matrix getMatrixGEnd() const { return Matrix(); }
+  virtual Matrix getMatrixC() const { return Matrix(); }
+  virtual Matrix getMatrixD() const { return Matrix(); }
   virtual Matrix getMatrixE() const {return Matrix();}
+  virtual Matrix getMatrixKR2(int idx) const { return Matrix(); }
   virtual double curvRadius() const { return double(); }
   virtual double radius() const { return double(); }
   virtual double PMLThickness() const { return double(); }
@@ -253,6 +258,7 @@ public:
 
   void buildMesh();
   void computeModes(struct simulationParameters simuParams);
+  void selectModes(vector<int> modesIdx);
   Matrix interpolateModes(vector<Point> pts);
   void setMatrixF(vector<Matrix> & F) { m_F = F; }
   void setMatrixE(Matrix & E) {m_E = E;}
@@ -316,7 +322,10 @@ public:
   vector<Matrix> getMatrixF() const;
   Matrix getMatrixGStart() const;
   Matrix getMatrixGEnd() const;
+  Matrix getMatrixC() const { return m_C; }
+  Matrix getMatrixD() const { return m_DN; }
   Matrix getMatrixE() const {return m_E;}
+  Matrix getMatrixKR2(int idx) const { return m_KR2[idx]; }
 
 
   // **************************************************************************
@@ -388,6 +397,7 @@ public:
   //  double radius, double PMLThickness);
 
   void computeModes(struct simulationParameters simuParams);
+  void selectModes(vector<int> modesIdx) { ; }
   Matrix interpolateModes(vector<Point> pts);
 
   void characteristicImpedance(

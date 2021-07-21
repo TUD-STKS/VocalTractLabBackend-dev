@@ -103,6 +103,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_simuParams.volumicMass = STATIC_PRESSURE_CGS * MOLECULAR_MASS / (GAS_CONSTANT *
     (m_simuParams.temperature + KELVIN_SHIFT));
   m_simuParams.numIntegrationStep = 3;
+  m_simuParams.orderMagnusScheme = 2;
   m_simuParams.propMethod = MAGNUS;
   m_simuParams.freqDepLosses = true;
   m_simuParams.wallLosses = true;
@@ -209,6 +210,100 @@ void Acoustic3dSimulation::setSimulationParameters(double meshDensity, double ma
   spectrumConst.reset(2 * m_numFreq);
 
   setBoundarySpecificAdmittance();
+}
+
+// ****************************************************************************
+// Clean the log file and print the simulation parameters
+
+void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
+
+  double freq, freqSteps((double)SAMPLING_RATE / 2. / (double)m_numFreq);
+  int numFreqComputed((int)ceil(m_simuParams.maxComputedFreq / freqSteps));
+
+  ofstream log;
+  if (cleanLog) {
+    log.open("log.txt", ofstream::out | ofstream::trunc);
+    log.close();
+  }
+
+  log.open("log.txt", ofstream::app);
+
+  // print the date of the simulation
+  time_t start_time = std::chrono::system_clock::to_time_t(chrono::system_clock::now());
+  log << ctime(&start_time) << endl;
+  log << "Start simulation\n" << endl;
+  log << "Air volumic mass: " << m_simuParams.volumicMass << " g/cm^3" << endl;
+  log << "Sound speed: " << m_simuParams.sndSpeed << " cm/s" << endl;
+  log << "viscous boundary specific admittance " << m_simuParams.viscousBndSpecAdm
+    << " g.cm^-2 .s^-1" << endl;
+  log << "thermal boundary specific admittance " << m_simuParams.thermalBndSpecAdm
+    << " g.cm^-2 .s^-1" << endl;
+  log << "Percentage losses " << m_simuParams.percentageLosses * 100. << " %" << endl;
+  log << "Frequency dependant losses: ";
+  if (m_simuParams.freqDepLosses)
+  {
+    log << "yes" << endl;
+  }
+  else
+  {
+    log << "no" << endl;
+  }
+  log << "Wall losses: ";
+  if (m_simuParams.wallLosses)
+  {
+    log << "yes" << endl;
+  }
+  else
+  {
+    log << "no" << endl;
+  }
+  log << "glottis boundary condition: ";
+  switch (m_glottisBoundaryCond)
+  {
+  case HARD_WALL:
+    log << "HARD_WALL" << endl;
+    break;
+  case IFINITE_WAVGUIDE:
+    log << "IFINITE_WAVGUIDE" << endl;
+    break;
+  }
+  log << "Mesh density: " << m_meshDensity << endl;
+  log << "Max cut-on frequency: " << m_maxCutOnFreq << " Hz" << endl;
+  log << "Number of integration steps: " << m_simuParams.numIntegrationStep << endl;
+  log << "Index of noise source section: " << m_idxSecNoiseSource << endl;
+  log << "Index of constriction section: " << m_idxConstriction << endl;
+  log << "Maximal computed frequency: " << m_simuParams.maxComputedFreq
+    << " Hz" << endl;
+  log << "Number of simulated frequencies: " << numFreqComputed << endl << endl;
+  log << "Varying cross-sectional area: ";
+  if (m_simuParams.varyingArea)
+  {
+    log << "yes" << endl;
+  }
+  else
+  {
+    log << "no" << endl;
+  }
+  log << "Propagation mmethod: ";
+  switch (m_simuParams.propMethod)
+  {
+  case MAGNUS:
+    log << "MAGNUS" << endl;
+    break;
+  case STRAIGHT_TUBES:
+    log << "STRAIGHT_TUBES" << endl;
+    break;
+  }
+
+  if (m_geometryImported)
+  {
+    log << "Geometry imported from csv file " << m_geometryFile << endl;
+  }
+  else
+  {
+    log << "Geometry is from vocal tract lab" << endl;
+  }
+  log.close();
 }
 
 // ****************************************************************************
@@ -1711,75 +1806,10 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     radAdmit, radImped, upStreamImpAdm, totalImped, prevVelo, prevPress
     ,pp ,pm;
   Matrix F;
-
-
   ofstream prop;
-  ofstream log("log.txt", ofstream::out | ofstream::trunc);
-  log.close();
-  log.open("log.txt", ofstream::app);
-  log << "Start simulation\n" << endl;
-  log << "Air volumic mass: " << m_simuParams.volumicMass << " g/cm^3" << endl;
-  log << "Sound speed: " << m_simuParams.sndSpeed << " cm/s" << endl;
-  log << "viscous boundary specific admittance " << m_simuParams.viscousBndSpecAdm 
-    << " g.cm^-2 .s^-1"<< endl;
-  log << "thermal boundary specific admittance " << m_simuParams.thermalBndSpecAdm
-    << " g.cm^-2 .s^-1" << endl;
-  log << "Percentage losses " << m_simuParams.percentageLosses * 100. << " %" << endl;
-  log << "Frequency dependant losses: ";
-  if (m_simuParams.freqDepLosses)
-  {
-    log << "yes" << endl;
-  }
-  else
-  {
-    log << "no" << endl;
-  }
-  log << "Wall losses: ";
-  if (m_simuParams.wallLosses)
-  {
-    log << "yes" << endl;
-  }
-  else
-  {
-    log << "no" << endl;
-  }
-  log << "glottis boundary condition: ";
-  switch (m_glottisBoundaryCond)
-  {
-  case HARD_WALL:
-    log << "HARD_WALL" << endl;
-    break;
-  case IFINITE_WAVGUIDE:
-    log << "IFINITE_WAVGUIDE" << endl;
-    break;
-  }
-  log << "Mesh density: " << m_meshDensity << endl;
-  log << "Max cut-on frequency: " << m_maxCutOnFreq << " Hz" << endl;
-  log << "Number of integration steps: " << m_simuParams.numIntegrationStep << endl;
-  log << "Index of noise source section: " << m_idxSecNoiseSource << endl;
-  log << "Index of constriction section: " << m_idxConstriction << endl;
-  log << "Maximal computed frequency: " << m_simuParams.maxComputedFreq 
-    << " Hz" << endl;
-  log << "Number of simulated frequencies: " << numFreqComputed << endl << endl;
-  log << "Varying cross-sectional area: ";
-  if (m_simuParams.varyingArea)
-  {
-    log << "yes" << endl;
-  }
-  else
-  {
-    log << "no" << endl;
-  }
-  log << "Propagation mmethod: ";
-  switch (m_simuParams.propMethod)
-  {
-  case MAGNUS:
-    log << "MAGNUS" << endl;
-    break;
-  case STRAIGHT_TUBES:
-    log << "STRAIGHT_TUBES" << endl;
-    break;
-  }
+
+  generateLogFileHeader(true);
+  ofstream log("log.txt", ofstream::app);
 
   auto startTot = std::chrono::system_clock::now();
 
@@ -1787,14 +1817,6 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   // create the cross-sections
   //******************************
 
-  if (m_geometryImported)
-  {
-    log << "Geometry imported from csv file " << m_geometryFile << endl;
-  }
-  else
-  {
-    log << "Geometry is from vocal tract lab" << endl;
-  }
   if (createCrossSections(tract, true))
   {
     log << "Geometry successfully imported" << endl;
@@ -2372,27 +2394,31 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 
 void Acoustic3dSimulation::runTest(enum testType tType)
 {
-  ofstream ofs;
+  ofstream ofs, ofs2, ofs3;
+  stringstream strs;
   ofstream log("log.txt", ofstream::app);
   log << "\nStart test" << endl;
 
   Polygon_2 contour;
-  double radius, angle, area, length, inRadius, inAngle;
+  double radius, angle, area, length, inRadius, inAngle, sc;
   int nbAngles(100);
-  vector<int> surfaceIdx(nbAngles, 0);
+  vector<int> surfaceIdx(nbAngles, 0), slectedModesIdx;
   double scalingFactors[2] = { 1., 1. };
-  double a(5.2), b(3.);
+  double a(5.5), b(3.);
   double freq, freqMax;
   int nbFreqs, mn;
   Eigen::MatrixXcd characImped, radImped, inputVelocity, inputPressure;
   vector<Point_3> radPts;
+  vector<array<double, 2>> pts;
+  vector<array<int, 3>> triangles;
   Eigen::VectorXcd radPress;
+  vector<Eigen::MatrixXcd> Q;
   // to determine the rectangle mode indexes
   vector<array<int, 2>> modeIdxs;
   vector<int> vIdx;
   vector<double> k2;
   int nCombinations, ie, je, me, ne;
-  Matrix analyticE, E;
+  Matrix analyticE, E, modes;
   double E1y, E1z, E2y, E2z;
 
   switch(tType){
@@ -2423,7 +2449,81 @@ void Acoustic3dSimulation::runTest(enum testType tType)
 
     m_crossSections[0]->buildMesh();
 
+    //*******************
+    // export mesh
+    //*******************
+
+    // export points
+    strs << "points_rec_" << m_meshDensity << ".txt";
+    ofs.open(strs.str());
+    pts = m_crossSections[0]->getPoints();
+    for (auto it : pts)
+    {
+      ofs << it[0] << "  " << it[1] << endl;
+    }
+    ofs.close();
+
+    // export triangles
+    strs.str("");
+    strs << "triangles_rec_" << m_meshDensity << ".txt";
+    ofs.open(strs.str());
+    triangles = m_crossSections[0]->getTriangles();
+    for (auto it : triangles)
+    {
+      for (int i(0); i < 3; i++) { ofs << it[i] + 1 << "  "; }
+      ofs << endl;
+    }
+    ofs.close();
+
     m_crossSections[0]->computeModes(m_simuParams);
+
+    //***************************************
+    // Export modes and propagation matrices
+    //***************************************
+
+    modes = m_crossSections[0]->getModes();
+    strs.str("");
+    strs << "modes_rec_" << m_meshDensity << ".txt";
+    ofs.open(strs.str());
+    ofs << modes << endl;
+    ofs.close();
+
+    strs.str("");
+    strs << "eigen_freqs_rec_" << m_meshDensity << ".txt";
+    ofs.open(strs.str());
+    for (int i(0); i < 100; i++)
+    {
+      ofs << m_crossSections[0]->eigenFrequency(i) << endl;
+    }
+    ofs.close();
+
+    modes = m_crossSections[0]->getMatrixC();
+    strs.str("");
+    strs << "C_rec_" << m_meshDensity << ".txt";
+    ofs.open(strs.str());
+    ofs << modes << endl;
+    ofs.close();
+
+    modes = m_crossSections[0]->getMatrixD();
+    strs.str("");
+    strs << "D_rec_" << m_meshDensity << ".txt";
+    ofs.open(strs.str());
+    ofs << modes << endl;
+    ofs.close();
+
+    modes = m_crossSections[0]->getMatrixE();
+    strs.str("");
+    strs << "E_rec_" << m_meshDensity << ".txt";
+    ofs.open(strs.str());
+    ofs << modes << endl;
+    ofs.close();
+
+    modes = m_crossSections[0]->getMatrixKR2(0);
+    strs.str("");
+    strs << "KR2_rec_" << m_meshDensity << ".txt";
+    ofs.open(strs.str());
+    ofs << modes << endl;
+    ofs.close();
 
     //**********************************************
     // Compute matrix E from analytical expression
@@ -2506,13 +2606,16 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     //*********************************************
   
     // Set the proper simulation parameters
-    //m_simuParams.numIntegrationStep = 100;
+    m_simuParams.numIntegrationStep = 165;
+    m_meshDensity = 20.;
     m_simuParams.percentageLosses = 0.;
     m_simuParams.wallLosses = false;
     m_simuParams.curved = false;
-    //m_maxCutOnFreq = 100.;
+    m_maxCutOnFreq = 30000.;
     m_geometryImported = true; // to have the good bounding box for modes plot
-   
+    m_simuParams.sndSpeed = 34400;
+
+    generateLogFileHeader(true);
   
     // Generate a circular contour
     radius = 4.;
@@ -2582,45 +2685,64 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     m_crossSections[0]->computeModes(m_simuParams);
     log << m_crossSections[0]->numberOfModes() << " modes computed" << endl;
 
+    slectedModesIdx.push_back(0);
+    slectedModesIdx.push_back(5);
+    slectedModesIdx.push_back(16);
+    slectedModesIdx.push_back(31);
+    slectedModesIdx.push_back(52);
+    slectedModesIdx.push_back(106);
+
+    m_crossSections[0]->selectModes(slectedModesIdx);
+
+    // Extract value of the 1st mode
+    E = m_crossSections[0]->getModes();
+    log << "1st mode: " << E(0, 0) << endl;
+
     // modify matrix E
     /*E = m_crossSections[0]->getMatrixE();
     E(0, 5) = -E(0, 5);
     m_crossSections[0]->setMatrixE(E);*/
 
-    // Export matrix E
-    ofs.open("mE.txt");
-    ofs << m_crossSections[0]->getMatrixE() << endl;
-    ofs.close();
+    //// Export matrix E
+    //ofs.open("mE.txt");
+    //ofs << m_crossSections[0]->getMatrixE() << endl;
+    //ofs.close();
 
     preComputeRadiationMatrices(16, 0);
   
     freqMax = 2500.;
-    nbFreqs = 100;
+    nbFreqs = 1500;
     ofs.open("imp.txt");
+    ofs2.open("freqs.txt");
+    ofs3.open("rad.txt");
     for (int i(0); i < nbFreqs; i++)
     {
       // get the output impedance
       freq = max(0.1, freqMax*(double)i/(double)(nbFreqs - 1));
       log << "f = " << freq << " Hz" << endl;
       
-      m_crossSections[0]->characteristicImpedance(characImped, freq, m_simuParams);
+      //m_crossSections[0]->characteristicImpedance(characImped, freq, m_simuParams);
       interpolateRadiationImpedance(radImped, freq, 0);
+      ofs3 << radImped.imag() << endl;
   
       // Propagate impedance
       m_crossSections[0]->propagateMagnus(radImped, m_simuParams, freq, -1., IMPEDANCE);
   
-      ofs << freq << "  " 
-        << abs(
-          //-1i* 2. * M_PI * freq * m_simuParams.volumicMass*
-          m_crossSections[0]->Zin()(0, 0)
-            /characImped(0,0)
-        ) << "  " 
-        << arg(
-          //-1i* 2. * M_PI * freq * m_simuParams.volumicMass*
-          m_crossSections[0]->Zin()(0, 0)
-           /characImped(0, 0)
-        ) << endl;
+      ofs2 << freq << endl;
+      ofs << m_crossSections[0]->Zin().cwiseAbs() << endl;
+      //  //-1i* 2. * M_PI * freq * m_simuParams.volumicMass*
+      //  m_crossSections[0]->Zin()(0, 0)
+      //  /// characImped(0,0)
+      //) << "  "
+      //  << arg(
+      //    //-1i* 2. * M_PI * freq * m_simuParams.volumicMass*
+      //    m_crossSections[0]->Zin()(0, 0)
+      //    /// characImped(0, 0)
+      //  ) << endl;
+
     }
+    ofs3.close();
+    ofs2.close();
     ofs.close();
     
     break;
@@ -2638,6 +2760,8 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     m_simuParams.curved = true;
     m_geometryImported = true; // to have the good bounding box for modes plot
 
+    generateLogFileHeader(true);
+
     // Generate a circular contour
     radius = 3.;
     m_maxCSBoundingBox.first = Point2D(-2.*radius, -2.*radius);
@@ -2650,12 +2774,13 @@ void Acoustic3dSimulation::runTest(enum testType tType)
 
     m_crossSections.clear();
     area = pow(radius, 2) * M_PI;
-    scalingFactors[0] = 0.5;
-    scalingFactors[1] = 2.;
-    inRadius = 1.25*4.*radius;
+    scalingFactors[0] = 0.25;
+    scalingFactors[1] = 1.;
+    inRadius = 1.25*4.*1.5;
     log << "inRadius " << inRadius << endl;
     inAngle = 2.26;
     length = inAngle * inRadius;
+    log << "length: " << length << endl;
     addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
       surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
       scalingFactors);
@@ -2700,6 +2825,8 @@ void Acoustic3dSimulation::runTest(enum testType tType)
 
     freqMax = m_simuParams.maxComputedFreq;
     ofs.open("imp.txt");
+    ofs2.open("radR.txt");
+    ofs3.open("radI.txt");
     for (int i(0); i < m_numFreq; i++)
     {
       freq = max(0.1, freqMax*(double)i/(double)(m_numFreq - 1));
@@ -2708,14 +2835,18 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       m_crossSections[0]->characteristicImpedance(characImped, freq, m_simuParams);
       interpolateRadiationImpedance(radImped, freq, 0);
 
+      ofs2 << radImped.real() << endl;
+      ofs3 << radImped.imag() << endl;
+
       log << "Radiation impedance interpolated" << endl;
   
       // Propagate impedance
       m_crossSections[0]->propagateMagnus(radImped, m_simuParams, freq, -1., IMPEDANCE);
 
       // propagate velocity
-      inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass *
-        m_crossSections[0]->area() * pow(m_crossSections[0]->scaling(0.), 2);
+      inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass
+       //* m_crossSections[0]->area() * pow(m_crossSections[0]->scaling(0.), 2)
+        ;
       m_crossSections[0]->propagateMagnus(inputVelocity, m_simuParams, freq, 1., VELOCITY);
 
       // compute radiated pressure
@@ -2740,6 +2871,19 @@ void Acoustic3dSimulation::runTest(enum testType tType)
         << abs(radPress(0)) << "  "
         << arg(radPress(0)) << "  "
         << endl;
+    }
+    ofs3.close();
+    ofs2.close();
+    ofs.close();
+
+    // extract the amplitude of the acoustic pressure along the guide
+    ofs.open("amp.txt");
+    Q = m_crossSections[0]->Z();
+    log << "Size Q " << Q.size() << endl;
+    for (int i(0); i < Q.size(); i++)
+    {
+      sc = m_crossSections[0]->scaling((double)i / (double)(Q.size() - 1));
+      ofs << abs(Q[i](0, 0)) << "  " << sc << endl;
     }
     ofs.close();
 
@@ -4370,8 +4514,6 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
   double gridDensity, int idxRadSec)
 {
   int mn(m_crossSections[idxRadSec]->numberOfModes());
-  complex<double> J(0., 1.);
-  //double area2(pow(m_crossSections[idxRadSec]->area(),2));
 
   imped = Eigen::MatrixXcd::Zero(mn, mn);
   Eigen::MatrixXcd integral2(mn, mn);
@@ -4536,7 +4678,7 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
         for (int n(0); n < mn; n++)
         {
           integral2(m, n) += intPolGrid(p, m) * intCartGrid(c, n) *
-            exp(-J * 2. * M_PI * freq * radius[p] / m_simuParams.sndSpeed);
+            exp(-1i * 2. * M_PI * freq * radius[p] / m_simuParams.sndSpeed);
         }
       }
     }

@@ -51,6 +51,7 @@ public:
   void setSimulationParameters(double meshDensity, double maxCutOnFreq, 
     int secNoiseSource, int secConstriction,
     int expSpectrumLgth, struct simulationParameters simuParams);
+  void generateLogFileHeader(bool cleanLog);
 
   void setGeometryImported(bool isImported) {
     m_geometryImported = isImported;
