@@ -1598,8 +1598,8 @@ double CrossSection2dFEM::scaling(double tau)
     return (1. + 0.75*exp(-pow(0.3*(tau - 0.5),2)/2./pow(0.04,2)));
     break;
   case ELEPHANT:
-    //return (0.5 * (1 + 9. * pow(tau, 2) - 6. * pow(tau, 3)));
-    return (0.25*(1 + 9.*pow(tau, 2) - 6.*pow(tau, 3)));
+    //return (0.5 * (1 + 9. * pow(tau, 2) - 6. * pow(tau, 3))); // l = [0.5 2]
+    return (0.25*(1 + 9.*pow(tau, 2) - 6.*pow(tau, 3))); // l = [0.25 1]
     break;
   }
 }
@@ -1631,8 +1631,8 @@ double CrossSection2dFEM::scalingDerivative(double tau)
        /pow(0.04, 2)/30.);
     break;
   case ELEPHANT:
-    //return (9. * tau * (1. - tau) / 16.95 );
-    return (9.*tau*(1. - tau)/16.95/2.);
+    //return (9. * tau * (1. - tau) / 16.95 ); // l = [0.5 2]
+    return (9.*tau*(1. - tau)/16.95/2.); // l = [0.25 1]
   }
 }
 
@@ -1774,7 +1774,13 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
           (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
           (-(dl0 / l0) * m_E.transpose());
 
+        start = std::chrono::system_clock::now();
+
         omega = (dX * omega).exp();
+
+        end = std::chrono::system_clock::now();
+        matricesMag += end - start;
+        start = std::chrono::system_clock::now();
 
         break;
 
