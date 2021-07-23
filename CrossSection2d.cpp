@@ -1598,8 +1598,9 @@ double CrossSection2dFEM::scaling(double tau)
     return (1. + 0.75*exp(-pow(0.3*(tau - 0.5),2)/2./pow(0.04,2)));
     break;
   case ELEPHANT:
-    //return (0.5 * (1 + 9. * pow(tau, 2) - 6. * pow(tau, 3))); // l = [0.5 2]
-    return (0.25*(1 + 9.*pow(tau, 2) - 6.*pow(tau, 3))); // l = [0.25 1]
+    return (0.5 * (1 + 9. * pow(tau, 2) - 6. * pow(tau, 3))); // l = [0.5 2]
+    //return (0.25*(1 + 9.*pow(tau, 2) - 6.*pow(tau, 3))); // l = [0.25 1]
+    //return 2.; // uniform waveguide
     break;
   }
 }
@@ -1631,8 +1632,9 @@ double CrossSection2dFEM::scalingDerivative(double tau)
        /pow(0.04, 2)/30.);
     break;
   case ELEPHANT:
-    //return (9. * tau * (1. - tau) / 16.95 ); // l = [0.5 2]
-    return (9.*tau*(1. - tau)/16.95/2.); // l = [0.25 1]
+    return (9. * tau * (1. - tau) / 16.95 ); // l = [0.5 2]
+    //return (9.*tau*(1. - tau)/16.95/2.); // l = [0.25 1]
+    //return 0.; // uniform waveguide
   }
 }
 
