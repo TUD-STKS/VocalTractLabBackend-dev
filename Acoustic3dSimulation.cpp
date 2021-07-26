@@ -40,6 +40,7 @@ typedef CGAL::Polygon_2<K>                            Polygon_2;
 typedef CGAL::Polygon_with_holes_2<K>                 Polygon_with_holes_2;
 typedef std::list<Polygon_with_holes_2>               Pwh_list_2;
 typedef CGAL::Aff_transformation_2<K>        Transformation;
+typedef CGAL::Aff_transformation_3<K>         Transformation3;
 typedef CGAL::Delaunay_mesher_no_edge_refinement_2<CDT, Criteria> MesherNoRefine;
 typedef CGAL::Polyline_simplification_2::Stop_below_count_ratio_threshold Stop;
 typedef CGAL::Polyline_simplification_2::Squared_distance_cost Cost;
@@ -3039,15 +3040,13 @@ void Acoustic3dSimulation::RayleighSommerfeldIntegral(vector<Point_3> points,
   double quadPtWeight = 1. / 3.;
   vector<Point> gaussPts;
   vector<double> areaFaces;
-  double r, k(2.*M_PI*freq/m_simuParams.sndSpeed), scaling, scaling2;
-  complex<double> J(0., 1.);
+  double r, k(2.*M_PI*freq/m_simuParams.sndSpeed), scaling;
 
   //ofstream log;
   //log.open("log.txt", ofstream::app);
 
   // get scaling
   scaling = m_crossSections[radSecIdx]->scaleOut();
-  scaling2 = pow(scaling, 2);
 
   // get velocity mode amplitude (v_x = j * q / w / rho)
   auto Vm = m_crossSections[radSecIdx]->Qout();
@@ -3058,19 +3057,13 @@ void Acoustic3dSimulation::RayleighSommerfeldIntegral(vector<Point_3> points,
 
   // interpolate modes
   Matrix interpolatedModes = m_crossSections[radSecIdx]->
-    interpolateModes(gaussPts)/ scaling;
+    interpolateModes(gaussPts);
 
   // scale the position of the integration points
-  Transformation scale(CGAL::SCALING, scaling);
-  for (int i(0); i < gaussPts.size(); i++)
+  Transformation3 scale(CGAL::SCALING, 1./scaling);
+  for (int i(0); i < points.size(); i++)
   {
-    gaussPts[i] = scale(gaussPts[i]);
-  }
-
-  // scale the surface of the area faces 
-  for (int i(0); i < areaFaces.size(); i++)
-  {
-    areaFaces[i] *= scaling2;
+    points[i] = scale(points[i]);
   }
 
   // compute Guauss integral
@@ -3093,10 +3086,7 @@ void Acoustic3dSimulation::RayleighSommerfeldIntegral(vector<Point_3> points,
 
           // compute integral
           radPress(p) -= areaFaces[f] * quadPtWeight *
-            Vm(m) * interpolatedModes(f * 3 + g, m) * exp(-J * k * r) / r;
-          //radPress(p) += J * areaFaces[f] * quadPtWeight * 
-          //  (Vm(m).real() - J*Vm(m).imag()) *
-          //  interpolatedModes(f * 3 + g, m) * exp(-J * k * r) / r;
+            Vm(m) * interpolatedModes(f * 3 + g, m) * exp(-1i * k * scaling * r) / r;
         }
       }
     }
@@ -4357,7 +4347,7 @@ void Acoustic3dSimulation::preComputeRadiationMatrices(int nbRadFreqs, int idxRa
     //radImped = m_crossSections[numSec - 2]->endImpedance();
     //radAdmit = m_crossSections[numSec - 2]->endAdmittance();
 
-    radiationImpedance(radImped, freq, 20., idxRadSec);
+    radiationImpedance(radImped, freq, 15., idxRadSec);
     radAdmit = radImped.inverse();
 
     //prop << radAdmit.imag() << endl;
