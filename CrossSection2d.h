@@ -360,7 +360,7 @@ private:
   Matrix m_Gend;
   Matrix m_C;
   Matrix m_DN;
-  //vector<Matrix> m_DR;
+  vector<Matrix> m_DR;
   Matrix m_E;
   vector<Matrix> m_KR2;
 

@@ -2408,7 +2408,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
   double a(5.5), b(3.);
   double freq, freqMax;
   int nbFreqs, mn;
-  Eigen::MatrixXcd characImped, radImped, inputVelocity, inputPressure;
+  Eigen::MatrixXcd characImped, radImped, radAdmit, inputVelocity, inputPressure;
   vector<Point_3> radPts;
   vector<array<double, 2>> pts;
   vector<array<int, 3>> triangles;
@@ -2768,7 +2768,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     generateLogFileHeader(true);
 
     // Generate a circular contour
-    radius = 1.5;
+    radius = 3.;
     m_maxCSBoundingBox.first = Point2D(-2.*radius, -2.*radius);
     m_maxCSBoundingBox.second = Point2D(2.*radius, 2.*radius);
     for (int i(0); i < nbAngles; i++)
@@ -2779,8 +2779,8 @@ void Acoustic3dSimulation::runTest(enum testType tType)
 
     m_crossSections.clear();
     area = pow(radius, 2) * M_PI;
-    scalingFactors[0] = 0.5;
-    scalingFactors[1] = 2.;
+    scalingFactors[0] = 0.25;
+    scalingFactors[1] = 1.;
     inRadius = 1.25*4.*1.5;
     log << "inRadius " << inRadius << endl;
     inAngle = 2.26;
@@ -3024,6 +3024,113 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       ofs.close();
 
     break;
+
+    case JUNCTION:
+
+      //**********************
+      // create first section
+      //**********************
+
+      m_geometryImported = true; // to have the good bounding box for modes plot
+
+      generateLogFileHeader(true);
+      log << "Start test junction" << endl;
+
+      // Generate a circular contour
+      radius = 1.5;
+      for (int i(0); i < nbAngles; i++)
+      {
+        angle = 2. * M_PI * (double)(i) / (double)(nbAngles);
+        contour.push_back(Point(radius * cos(angle), radius * sin(angle)));
+      }
+
+      log << "Contour 1 created" << endl;
+
+      m_crossSections.clear();
+      area = pow(radius, 2) * M_PI;
+      scalingFactors[0] = 1.;
+      scalingFactors[1] = 1.;
+      length = 8.;
+      inRadius = 0.;
+      inAngle = 0.;
+      addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
+        surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
+        scalingFactors);
+      m_crossSections[0]->setCurvatureRadius(inRadius);
+      m_crossSections[0]->setCurvatureAngle(inAngle);
+      m_crossSections[0]->setNextSection(1);
+
+      log << "First section created" << endl;
+
+      //**********************
+      // create second section
+      //**********************
+
+      // Generate a circular contour
+        radius = 3.;
+        m_maxCSBoundingBox.first = Point2D(-2. * radius, -2. * radius);
+        m_maxCSBoundingBox.second = Point2D(2. * radius, 2. * radius);
+        contour.clear();
+      for (int i(0); i < nbAngles; i++)
+      {
+        angle = 2. * M_PI * (double)(i) / (double)(nbAngles);
+        contour.push_back(Point(radius * cos(angle), radius * sin(angle)));
+      }
+
+      log << "Contour 2 created" << endl;
+
+      area = pow(radius, 2) * M_PI;
+      scalingFactors[0] = 1.;
+      scalingFactors[1] = 1.;
+      length = 8.;
+      inRadius = 0.;
+      inAngle = 0.;
+      addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
+        surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
+        scalingFactors);
+      m_crossSections[1]->setCurvatureRadius(inRadius);
+      m_crossSections[1]->setCurvatureAngle(inAngle);
+      m_crossSections[1]->setPreviousSection(0);
+
+      log << "Section created" << endl;
+
+      //*********************
+      // solve wave problem
+      //*********************
+
+      computeMeshAndModes();
+      computeJunctionMatrices(false);
+      preComputeRadiationMatrices(16, 0);
+
+      freqMax = m_simuParams.maxComputedFreq;
+      ofs.open("imp.txt");
+      //characImped.setZero(mn, mn);
+      for (int i(0); i < m_numFreq; i++)
+      {
+        freq = max(0.1, freqMax * (double)i / (double)(m_numFreq - 1));
+        log << "f = " << freq << " Hz" << endl;
+
+        interpolateRadiationImpedance(radImped, freq, 1);
+        interpolateRadiationAdmittance(radAdmit, freq, 1);
+
+        propagateImpedAdmit(radImped, radAdmit, freq, 1, 0);
+
+        ofs << freq << "  "
+          << abs(
+            -1i * 2. * M_PI * freq * m_simuParams.volumicMass *
+            m_crossSections[0]->Zin()(0, 0)
+            //  /characImped(0,0)
+          ) << "  "
+          << arg(
+            -1i * 2. * M_PI * freq * m_simuParams.volumicMass *
+            m_crossSections[0]->Zin()(0, 0)
+            // /characImped(0, 0)
+          )
+          << endl;
+      }
+      ofs.close();
+
+      break;
   }
 
   log.close();

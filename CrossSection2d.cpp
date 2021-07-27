@@ -382,10 +382,10 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   bool different;
   int numVert, numSurf, numTri, idxM, idxN, ptIdx, idx, meshContSurfIdx;
   Matrix mass, massY, stiffness, stiffnessY, B, C, E
-    //DN
+    ,DN
     ;
   vector<Matrix> R, KR2
-    //RY, DR
+    ,RY, DR
     ;
   double signFirstMode, faceArea, dist, oldDist, segLength, maxWaveNumber;
   Point2D midSeg;
@@ -423,8 +423,8 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   numSurf = 1;
   R.clear();
   R.push_back(Matrix::Zero(numVert, numVert));
-  //RY.clear();
-  //RY.push_back(Matrix::Zero(numVert, numVert));
+  RY.clear();
+  RY.push_back(Matrix::Zero(numVert, numVert));
   m_surfIdxList.clear();
   m_surfIdxList.push_back(m_surfaceIdx[0]);
   
@@ -446,7 +446,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
     if (different) { 
       m_surfIdxList.push_back(m_surfaceIdx[ptIdx]);
       R.push_back(Matrix::Zero(numVert, numVert));
-      //RY.push_back(Matrix::Zero(numVert, numVert));
+      RY.push_back(Matrix::Zero(numVert, numVert));
       numSurf++;
     }
   }
@@ -514,24 +514,24 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
 
         R[idx](idxM, idxN) += (1. + (double)(j == k)) * segLength / 6.;
 
-        //if ((j == k) && (k == 0))
-        //{
-        //  // L*(Yn + 3Ym)/12
-        //  RY[idx](idxM, idxN) += segLength * (m_points[m_meshContourSeg[s][k]][1] +
-        //    3 * m_points[m_meshContourSeg[s][j]][1]) / 12.;
-        //}
-        //else if ((j == k) && (k == 1))
-        //{
-        //  // L*(3Yn + Ym)/12
-        //  RY[idx](idxM, idxN) += segLength * (3 * m_points[m_meshContourSeg[s][k]][1] +
-        //    m_points[m_meshContourSeg[s][j]][1]) / 12.;
-        //}
-        //else
-        //{
-        //  // L*(Yn + Ym)/12
-        //  RY[idx](idxM, idxN) += segLength * ( m_points[m_meshContourSeg[s][k]][1] +
-        //    m_points[m_meshContourSeg[s][j]][1]) / 12.;
-        //}
+        if ((j == k) && (k == 0))
+        {
+          // L*(Yn + 3Ym)/12
+          RY[idx](idxM, idxN) += segLength * (m_points[m_meshContourSeg[s][k]][1] +
+            3 * m_points[m_meshContourSeg[s][j]][1]) / 12.;
+        }
+        else if ((j == k) && (k == 1))
+        {
+          // L*(3Yn + Ym)/12
+          RY[idx](idxM, idxN) += segLength * (3 * m_points[m_meshContourSeg[s][k]][1] +
+            m_points[m_meshContourSeg[s][j]][1]) / 12.;
+        }
+        else
+        {
+          // L*(Yn + Ym)/12
+          RY[idx](idxM, idxN) += segLength * ( m_points[m_meshContourSeg[s][k]][1] +
+            m_points[m_meshContourSeg[s][j]][1]) / 12.;
+        }
       }
     }
   }
@@ -702,8 +702,6 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   // set the first eigen frequency to 0 since it cannot have other value
   m_eigenFreqs[0] = 0.;
 
-
-
   // get the sign of the first mode to set them all positiv later
   if (eigenSolver.eigenvectors().col(0)[0] > 0)
   {
@@ -748,19 +746,19 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   }
 
   // compute matrices DR and KR2
-  //m_DR.clear(); 
+  m_DR.clear(); 
   m_KR2.clear();
   // loop over surfaces
   //log << "Nb surf " << m_surfIdxList.size() << endl;
   for (int s(0); s < m_surfIdxList.size(); s++)
   {
-    //m_DR.push_back(Matrix::Zero(m_modesNumber, m_modesNumber));
+    m_DR.push_back(Matrix::Zero(m_modesNumber, m_modesNumber));
     m_KR2.push_back(Matrix::Zero(m_modesNumber, m_modesNumber));
     for (int m(0); m < m_modesNumber; m++)
     {
       for (int n(0); n < m_modesNumber; n++)
       {
-        //m_DR.back()(m,n) = (m_modes.col(m)).transpose() * RY[s] * m_modes.col(n);
+        m_DR.back()(m,n) = (m_modes.col(m)).transpose() * RY[s] * m_modes.col(n);
         m_KR2.back()(m,n) = (m_modes.col(m)).transpose() * R[s] * m_modes.col(n);
       }
     }
@@ -1598,9 +1596,9 @@ double CrossSection2dFEM::scaling(double tau)
     return (1. + 0.75*exp(-pow(0.3*(tau - 0.5),2)/2./pow(0.04,2)));
     break;
   case ELEPHANT:
-    return (0.5 * (1 + 9. * pow(tau, 2) - 6. * pow(tau, 3))); // l = [0.5 2]
+    //return (0.5 * (1 + 9. * pow(tau, 2) - 6. * pow(tau, 3))); // l = [0.5 2]
     //return (0.25*(1 + 9.*pow(tau, 2) - 6.*pow(tau, 3))); // l = [0.25 1]
-    //return 2.; // uniform waveguide
+    return 1.; // uniform waveguide
     break;
   }
 }
@@ -1632,9 +1630,9 @@ double CrossSection2dFEM::scalingDerivative(double tau)
        /pow(0.04, 2)/30.);
     break;
   case ELEPHANT:
-    return (9. * tau * (1. - tau) / 16.95 ); // l = [0.5 2]
+    //return (9. * tau * (1. - tau) / 16.95 ); // l = [0.5 2]
     //return (9.*tau*(1. - tau)/16.95/2.); // l = [0.25 1]
-    //return 0.; // uniform waveguide
+    return 0.; // uniform waveguide
   }
 }
 
@@ -1728,9 +1726,11 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
 
     // compute matrix KR2
     Eigen::MatrixXcd KR2(Eigen::MatrixXcd::Zero(mn, mn));
+    Eigen::MatrixXcd DR(Eigen::MatrixXcd::Zero(mn, mn));
     for (int s(0); s < m_KR2.size(); s++)
     {
       KR2 += m_KR2[s] * bndSpecAdm.asDiagonal() + wallAdmittance * m_KR2[s];
+      DR += m_DR[s] * bndSpecAdm.asDiagonal() + wallAdmittance * m_DR[s];
     }
 
     // track time
@@ -1768,12 +1768,14 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         {
           K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
         }
-        K2 += 1i * k * KR2;
+        K2 += 1i * k * l0 * KR2;
 
         // build matrix A0
         omega << ((dl0 / l0)* m_E),
           (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
-          (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
+          (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN
+            //-1i*k*l0*l0*DR
+            )),
           (-(dl0 / l0) * m_E.transpose());
 
         start = std::chrono::system_clock::now();
@@ -1814,22 +1816,16 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
           for (int j(0); j < mn; j++)
           {
             K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
-            //K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k, 2);
           }
-          K2 += 1i * k * KR2;
+          K2 += 1i * k * l0 * KR2;
 
           // build matrix A0
           A0 << ((dl0 / l0) * m_E),
             (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
-            (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
+            (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN
+              //-1i*k*l0*l0*DR
+              )),
             (-(dl0 / l0) * m_E.transpose());
-          /*A0 << Eigen::MatrixXcd::Zero(mn, mn),
-            (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
-            (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
-            Eigen::MatrixXcd::Zero(mn, mn);*/
-
-            //log << "A0" << endl;
-            //log << A0 << endl;
 
             //*******************************
             // second point of Magnus scheme
@@ -1851,22 +1847,15 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
           for (int j(0); j < mn; j++)
           {
             K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l1, 2);
-            //K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k, 2);
           }
-          K2 += 1i * k * KR2;
+          K2 += 1i * k * l1 * KR2;
           // build matrix A1
           A1 << ((dl1 / l1) * m_E),
             (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
-            (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN)),
+            (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN
+              //-1i*k*l1*l1*DR
+              )),
             (-(dl1 / l1) * m_E.transpose());
-          /*A1 << Eigen::MatrixXcd::Zero(mn, mn),
-            (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
-            (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN)),
-            Eigen::MatrixXcd::Zero(mn, mn);*/
-
-            //log << "A1" << endl;
-            //log << A1 << endl;
-
 
             //*******************************
             // compute matrix omega
@@ -1876,9 +1865,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
           start = std::chrono::system_clock::now();
 
           omega = (0.5 * dX * (A0 + A1) + sqrt(3) * pow(dX, 2) * (A1 * A0 - A0 * A1) / 12.).exp();
-
-          //log << "omega" << endl;
-          //log << omega << endl;
 
           // tract time
           end = std::chrono::system_clock::now();
@@ -1937,7 +1923,6 @@ void CrossSection2dFEM::propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0, Eigen::
   struct simulationParameters simuParams,
   double freq, double direction, std::chrono::duration<double> &time)
 {
-  
   int mn(m_modesNumber);
   double volMass(simuParams.volumicMass);
   double da(m_circleArcAngle);          // angle of the circle arc

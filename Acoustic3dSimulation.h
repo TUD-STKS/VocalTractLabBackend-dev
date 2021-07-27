@@ -33,7 +33,8 @@ enum testType {
     MATRIX_E,
     DISCONTINUITY,
     ELEPHANT_TRUNK,
-    SCALE_RAD_IMP
+    SCALE_RAD_IMP,
+    JUNCTION
 };
 
 class Acoustic3dSimulation
