@@ -339,7 +339,7 @@ void Acoustic3dSimulation::computeMeshAndModes()
     m_crossSections.size(), NULL,
     wxPD_CAN_ABORT | wxPD_AUTO_HIDE | wxPD_ELAPSED_TIME);
 
-  ofstream mesh;
+  //ofstream mesh;
   ofstream log;
   CDT cdt;
   log.open("log.txt", ofstream::app);
@@ -1277,8 +1277,8 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
   }
   
 
-  //ofstream log;
-  //log.open("log.txt", ofstream::app);
+  ofstream log;
+  log.open("log.txt", ofstream::app);
   //log << "start propagating admittance" << endl;
   //log << "Direction " << direction << endl;
 
@@ -1304,9 +1304,11 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
     m_crossSections[startSection]->setImpedance(inputImped);
     break;
   case STRAIGHT_TUBES:
+    log << "Before propagate straight" << endl;
     m_crossSections[startSection]->propagateImpedAdmitStraight(startImped, startAdmit,
       freq, m_simuParams, 100.,
-      m_crossSections[startSection+direction]->area());
+      m_crossSections[max(0, min(numSec, startSection+direction))]->area());
+    log << "Propagated" << endl;
     break;
   }
   
@@ -1316,7 +1318,7 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
   for (int i(startSection + direction); i != (endSection + direction); i += direction)
   {
     //log << "sec " << i << " " << typeid(*m_crossSections[i]).name() << endl;
-    //log << "sec " << i << endl;
+    log << "sec " << i << endl;
 
     prevSec = i - direction;
     m_crossSections[i]->clearImpedance();
@@ -1417,10 +1419,10 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
         prevAdmit += prevImped.fullPivLu().inverse();
       }
 
-      //prevImped /= pow(m_crossSections[i]->scaleOut(), 2);
-      //prevAdmit *= pow(m_crossSections[i]->scaleOut(), 2);
-      //prevImped *= 1i*2.*M_PI*freq*pow(m_crossSections[i]->scaleOut(), 2)/m_simuParams.sndSpeed;
-      //prevAdmit /= 1i * 2. * M_PI * freq * pow(m_crossSections[i]->scaleOut(), 2) / m_simuParams.sndSpeed;
+      //prevImped *= pow(m_crossSections[i]->scaleOut(), 2);
+      //prevAdmit /= pow(m_crossSections[i]->scaleOut(), 2);
+      //prevImped /= 2.*M_PI*freq*pow(m_crossSections[i]->scaleOut(), 2)/m_simuParams.sndSpeed;
+      //prevAdmit *= 2. * M_PI * freq * pow(m_crossSections[i]->scaleOut(), 2) / m_simuParams.sndSpeed;
 
 
       break;
@@ -1449,7 +1451,7 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
       break;
     }
 
-    //log << "prevImped computed" << endl;
+    log << "prevImped computed" << endl;
 
     // propagate admittance in the section
     switch (m_simuParams.propMethod) {
@@ -1469,13 +1471,13 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
     case STRAIGHT_TUBES:
       m_crossSections[i]->propagateImpedAdmitStraight(prevImped, prevAdmit,
         freq, m_simuParams, m_crossSections[prevSec]->area(),
-        m_crossSections[i + direction]->area());
+        m_crossSections[max(0,min(numSec, i + direction))]->area());
       break;
     }
 
     //log << "section " << i << " propagated" << endl;
   }
-  //log.close();
+  log.close();
 }
 
 // **************************************************************************
@@ -2430,7 +2432,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
 
   switch(tType){
   case MATRIX_E:
-    
+    /////////////////////////////////////////////////////////////////////////////////
     //*********************************************
     // Matrix E 
     //*********************************************
@@ -2605,7 +2607,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     ofs.close();
 
     break;
-
+    /////////////////////////////////////////////////////////////////////////////////
   case DISCONTINUITY:
 
     //*********************************************
@@ -2753,7 +2755,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     ofs.close();
     
     break;
-
+    /////////////////////////////////////////////////////////////////////////////////
     case ELEPHANT_TRUNK:
     
     //*********************************************
@@ -2913,7 +2915,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     }
 
     break;
-
+    /////////////////////////////////////////////////////////////////////////////////
     case SCALE_RAD_IMP:
 
     //*****************************************************
@@ -2923,11 +2925,13 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     // Generate reference radiation impedance
     //***************************************
 
-      log << "Start test scale rad imped" << endl;
 
       // Set the proper simulation parameters
       m_geometryImported = true; // to have the good bounding box for modes plot
-      m_maxCutOnFreq = 1.;
+      //m_maxCutOnFreq = 1.;
+
+      generateLogFileHeader(true);
+      log << "Start test scale rad imped" << endl;
 
       // Generate a circular contour
       radius = 3.;
@@ -2973,7 +2977,9 @@ void Acoustic3dSimulation::runTest(enum testType tType)
         interpolateRadiationImpedance(radImped, freq, 0);
 
         ofs << freq << "  " << radImped(0, 0).real() << "  "
-          << radImped(0, 0).imag() << endl;
+          << radImped(0, 0).imag() << "  "
+          << radImped(1, 1).real() << "  "
+          << radImped(1, 1).imag() << endl;
       }
       ofs.close();
 
@@ -3025,38 +3031,38 @@ void Acoustic3dSimulation::runTest(enum testType tType)
         interpolateRadiationImpedance(radImped, freq, 0);
 
         ofs << freq << "  " << radImped(0, 0).real() << "  "
-          << radImped(0, 0).imag() << endl;
+          << radImped(0, 0).imag() << "  " 
+          << radImped(1, 1).real() << "  "
+          << radImped(1, 1).imag() << endl;
       }
       ofs.close();
 
     break;
-
+    /////////////////////////////////////////////////////////////////////////////////
     case JUNCTION:
 
-      //**********************
-      // create first section
-      //**********************
-
       m_geometryImported = true; // to have the good bounding box for modes plot
+      m_simuParams.sndSpeed = 34400;
 
       generateLogFileHeader(true);
       log << "Start test junction" << endl;
 
-      // Generate a circular contour
-      radius = 1.5;
+      //************************
+      // Create excitation hole
+      //************************
+
+      radius = 1.45 / 2.;
       for (int i(0); i < nbAngles; i++)
       {
         angle = 2. * M_PI * (double)(i) / (double)(nbAngles);
         contour.push_back(Point(radius * cos(angle), radius * sin(angle)));
       }
 
-      log << "Contour 1 created" << endl;
-
       m_crossSections.clear();
       area = pow(radius, 2) * M_PI;
       scalingFactors[0] = 1.;
       scalingFactors[1] = 1.;
-      length = 8.;
+      length = 0.;
       inRadius = 0.;
       inAngle = 0.;
       addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
@@ -3066,6 +3072,35 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       m_crossSections[0]->setCurvatureAngle(inAngle);
       m_crossSections[0]->setNextSection(1);
 
+      //**********************
+      // create first section
+      //**********************
+
+      // Generate a circular contour
+      radius = 1.45/2.;
+      contour.clear();
+      for (int i(0); i < nbAngles; i++)
+      {
+        angle = 2. * M_PI * (double)(i) / (double)(nbAngles);
+        contour.push_back(Point(radius * cos(angle), radius * sin(angle)));
+      }
+
+      log << "Contour 1 created" << endl;
+
+      area = pow(radius, 2) * M_PI;
+      scalingFactors[0] = 1.;
+      scalingFactors[1] = 1.;
+      length = 8.5;
+      inRadius = 0.;
+      inAngle = 0.;
+      addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
+        surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
+        scalingFactors);
+      m_crossSections[1]->setCurvatureRadius(inRadius);
+      m_crossSections[1]->setCurvatureAngle(inAngle);
+      m_crossSections[1]->setPreviousSection(0);
+      m_crossSections[1]->setNextSection(2);
+
       log << "First section created" << endl;
 
       //**********************
@@ -3073,7 +3108,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       //**********************
 
       // Generate a circular contour
-        radius = 3.;
+        radius = 2.95/2.;
         m_maxCSBoundingBox.first = Point2D(-2. * radius, -2. * radius);
         m_maxCSBoundingBox.second = Point2D(2. * radius, 2. * radius);
         contour.clear();
@@ -3088,15 +3123,15 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       area = pow(radius, 2) * M_PI;
       scalingFactors[0] = 1.;
       scalingFactors[1] = 1.;
-      length = 8.;
+      length = 8.5;
       inRadius = 0.;
       inAngle = 0.;
       addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
         surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
         scalingFactors);
-      m_crossSections[1]->setCurvatureRadius(inRadius);
-      m_crossSections[1]->setCurvatureAngle(inAngle);
-      m_crossSections[1]->setPreviousSection(0);
+      m_crossSections[2]->setCurvatureRadius(inRadius);
+      m_crossSections[2]->setCurvatureAngle(inAngle);
+      m_crossSections[2]->setPreviousSection(1);
 
       log << "Section created" << endl;
 
@@ -3105,14 +3140,24 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       //*********************
 
       computeMeshAndModes();
+
+      // extract wavenumbers of the small tube
+      ofs.open("kn2.txt");
+      for (int i(0); i < m_crossSections[1]->numberOfModes(); i++)
+      {
+        ofs << 2 * M_PI * m_crossSections[1]->eigenFrequency(i) /
+          m_simuParams.sndSpeed << endl;
+      }
+      ofs.close();
+
       computeJunctionMatrices(false);
 
       // export junction matrix
       ofs.open("F.txt");
-      ofs << m_crossSections[0]->getMatrixF()[0] << endl;
+      ofs << m_crossSections[1]->getMatrixF()[0] << endl;
       ofs.close();
 
-      preComputeRadiationMatrices(16, 1);
+      preComputeRadiationMatrices(16, 2);
 
       freqMax = m_simuParams.maxComputedFreq;
       ofs.open("imp.txt");
@@ -3122,12 +3167,20 @@ void Acoustic3dSimulation::runTest(enum testType tType)
         freq = max(0.1, freqMax * (double)i / (double)(m_numFreq - 1));
         log << "f = " << freq << " Hz" << endl;
 
-        interpolateRadiationImpedance(radImped, freq, 1);
-        interpolateRadiationAdmittance(radAdmit, freq, 1);
+        interpolateRadiationImpedance(radImped, freq, 2);
+        interpolateRadiationAdmittance(radAdmit, freq, 2);
+
+        if (m_simuParams.propMethod == STRAIGHT_TUBES)
+        {
+          radImped *= -1i * 2. * M_PI * freq * m_simuParams.volumicMass
+            / m_crossSections[2]->area();
+          radAdmit /= -1i * 2. * M_PI * freq * m_simuParams.volumicMass
+            / m_crossSections[2]->area();
+        }
 
         log << "Radiation impedance interpolated" << endl;
 
-        propagateImpedAdmit(radImped, radAdmit, freq, 1, 0);
+        propagateImpedAdmit(radImped, radAdmit, freq, 2, 0);
 
         ofs << freq << "  "
           << abs(
@@ -3140,10 +3193,12 @@ void Acoustic3dSimulation::runTest(enum testType tType)
             m_crossSections[0]->Zin()(0, 0)
             // /characImped(0, 0)
           )
-          << "  " << abs(m_crossSections[0]->Zout()(0, 0))
-          << "  " << arg(m_crossSections[0]->Zout()(0, 0))
-          << "  " << abs(m_crossSections[1]->Zin()(0, 0))
-          << "  " << arg(m_crossSections[1]->Zin()(0, 0))
+          << "  " << abs(m_crossSections[1]->Zout()(0, 0))
+          << "  " << arg(m_crossSections[1]->Zout()(0, 0))
+          << "  " << abs(m_crossSections[2]->Zin()(0, 0))
+          << "  " << arg(m_crossSections[2]->Zin()(0, 0))
+          << "  " << abs(m_crossSections[2]->Zout()(0, 0))
+          << "  " << arg(m_crossSections[2]->Zout()(0, 0))
           << endl;
       }
       ofs.close();

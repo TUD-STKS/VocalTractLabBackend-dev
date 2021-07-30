@@ -310,13 +310,20 @@ void CrossSection2dFEM::buildMesh()
 
   //ofstream log("log.txt", ofstream::app);
   //log << "Start build mesh" << endl;
+  //log << "spacing " << m_spacing << endl;
 
   m_mesh.clear();
   m_mesh.insert_constraint(m_contour.vertices_begin(), m_contour.vertices_end(), true);
   //log << "Contour point inserted" << endl;
+  //ofstream ofs("cont.txt");
+  //for (auto pt : m_contour) { ofs << pt.x() << "  " << pt.y() << endl; }
+  //ofs.close();
   Mesher mesher(m_mesh);
+  //log << "mesher created" << endl;
   mesher.set_criteria(Criteria(0.125, m_spacing));
+  //log << "Creteria set" << endl;
   mesher.refine_mesh();
+  //log << "mesh refined" << endl;
   CGAL::lloyd_optimize_mesh_2(m_mesh,
     CGAL::parameters::max_iteration_number = 10);
   //log << "Mesh generated" << endl;
