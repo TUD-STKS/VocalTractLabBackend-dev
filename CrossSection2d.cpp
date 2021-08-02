@@ -1531,7 +1531,7 @@ complex<double> CrossSection2dFEM::getWallAdmittance(
 {
   if (simuParams.wallLosses)
   {
-    return(-(-simuParams.volumicMass * simuParams.sndSpeed *
+    return(-simuParams.percentageLosses*(-simuParams.volumicMass * simuParams.sndSpeed *
       (1. / (complex<double>(Tube::STANDARD_WALL_RESISTANCE_CGS,
         2. * M_PI * freq * Tube::STANDARD_WALL_MASS_CGS -
         Tube::STANDARD_WALL_STIFFNESS_CGS / 2. / M_PI / freq)
@@ -1678,6 +1678,8 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
 
   ofstream log("log.txt", ofstream::app);
   log << "Start propagate magnus, numX " << numX << endl;
+  //log << "al: " << al << "  "
+  //  << " dX: " << dX << endl;
 
   if (m_length == 0.)
   {
@@ -1768,6 +1770,9 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         }
         l0 = scaling(tau);
         dl0 = scalingDerivative(tau);
+
+        //log << "tau " << tau << endl;
+        //log << "l " << l0 << " dl " << dl0 << endl;
 
         // build matrix K2
         K2.setZero(mn, mn);

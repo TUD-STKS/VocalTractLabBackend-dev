@@ -157,7 +157,7 @@ void Acoustic3dSimulation::setBoundarySpecificAdmittance()
     //********************************************
 
     m_simuParams.viscousBndSpecAdm = complex<double>(0., 0.);
-    m_simuParams.thermalBndSpecAdm = complex<double>(0.005, 0.);
+    m_simuParams.thermalBndSpecAdm = complex<double>(0.0001, 0.);
 
   }
 }
@@ -285,6 +285,9 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   {
     log << "no" << endl;
   }
+  log << "Take into account curvature: ";
+  if (m_simuParams.curved) { log << "yes" << endl; }
+  else { log << "no" << endl; }
   log << "Propagation mmethod: ";
   switch (m_simuParams.propMethod)
   {
@@ -1419,11 +1422,8 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
         prevAdmit += prevImped.fullPivLu().inverse();
       }
 
-      //prevImped *= pow(m_crossSections[i]->scaleOut(), 2);
-      //prevAdmit /= pow(m_crossSections[i]->scaleOut(), 2);
-      //prevImped /= 2.*M_PI*freq*pow(m_crossSections[i]->scaleOut(), 2)/m_simuParams.sndSpeed;
-      //prevAdmit *= 2. * M_PI * freq * pow(m_crossSections[i]->scaleOut(), 2) / m_simuParams.sndSpeed;
-
+      prevImped /= pow(m_crossSections[i]->scaleOut(), 2) / pow(m_crossSections[prevSec]->scaleIn(), 2);
+      prevAdmit *= pow(m_crossSections[i]->scaleOut(), 2) / pow(m_crossSections[prevSec]->scaleIn(), 2);
 
       break;
     case STRAIGHT_TUBES:
@@ -3051,7 +3051,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       // Create excitation hole
       //************************
 
-      radius = 1.45 / 2.;
+      radius = 0.1;
       for (int i(0); i < nbAngles; i++)
       {
         angle = 2. * M_PI * (double)(i) / (double)(nbAngles);
@@ -3077,7 +3077,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       //**********************
 
       // Generate a circular contour
-      radius = 1.45/2.;
+      radius = 1.45;
       contour.clear();
       for (int i(0); i < nbAngles; i++)
       {
@@ -3088,11 +3088,11 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       log << "Contour 1 created" << endl;
 
       area = pow(radius, 2) * M_PI;
-      scalingFactors[0] = 1.;
-      scalingFactors[1] = 1.;
+      scalingFactors[0] =  0.25;
+      scalingFactors[1] =  0.5;
       length = 8.5;
-      inRadius = 0.;
-      inAngle = 0.;
+      inAngle = M_PI/4.;
+      inRadius = length / inAngle;
       addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
         surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
         scalingFactors);
@@ -3108,7 +3108,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       //**********************
 
       // Generate a circular contour
-        radius = 2.95/2.;
+      radius = (5. / 4.) * 2.95 / 2.;
         m_maxCSBoundingBox.first = Point2D(-2. * radius, -2. * radius);
         m_maxCSBoundingBox.second = Point2D(2. * radius, 2. * radius);
         contour.clear();
@@ -3121,11 +3121,11 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       log << "Contour 2 created" << endl;
 
       area = pow(radius, 2) * M_PI;
-      scalingFactors[0] = 1.;
-      scalingFactors[1] = 1.;
+      scalingFactors[0] =  4. / 5.;
+      scalingFactors[1] =  1.;
       length = 8.5;
-      inRadius = 0.;
-      inAngle = 0.;
+      inAngle = M_PI / 4.;
+      inRadius = length / inAngle;
       addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
         surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
         scalingFactors);
@@ -3159,6 +3159,12 @@ void Acoustic3dSimulation::runTest(enum testType tType)
 
       preComputeRadiationMatrices(16, 2);
 
+      // initialize input pressure and velocity vectors
+      mn = m_crossSections[0]->numberOfModes();
+      inputPressure.setZero(mn, 1);
+      inputVelocity.setZero(mn, 1);
+
+      radPts.push_back(Point_3(100., 0., 0.));
       freqMax = m_simuParams.maxComputedFreq;
       ofs.open("imp.txt");
       //characImped.setZero(mn, mn);
@@ -3182,6 +3188,17 @@ void Acoustic3dSimulation::runTest(enum testType tType)
 
         propagateImpedAdmit(radImped, radAdmit, freq, 2, 0);
 
+        log << "Impedance propagated" << endl;
+
+        inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass;
+        inputPressure = m_crossSections[0]->Zin() * inputVelocity;
+        log << "input pressure and velocity computed" << endl;
+        propagateVelocityPress(inputVelocity, inputPressure, freq, 0, 2);
+        log << "Velocity and pressure propagated" << endl;
+
+        // compute radiated pressure
+        RayleighSommerfeldIntegral(radPts, radPress, freq, 2);
+
         ofs << freq << "  "
           << abs(
             //-1i * 2. * M_PI * freq * m_simuParams.volumicMass *
@@ -3199,6 +3216,8 @@ void Acoustic3dSimulation::runTest(enum testType tType)
           << "  " << arg(m_crossSections[2]->Zin()(0, 0))
           << "  " << abs(m_crossSections[2]->Zout()(0, 0))
           << "  " << arg(m_crossSections[2]->Zout()(0, 0))
+          << "  " << abs(radPress(0))
+          << "  " << arg(radPress(0))
           << endl;
       }
       ofs.close();
