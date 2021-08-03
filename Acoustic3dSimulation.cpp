@@ -3077,7 +3077,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       //**********************
 
       // Generate a circular contour
-      radius = 1.45;
+      radius = 2.*1.45;
       contour.clear();
       for (int i(0); i < nbAngles; i++)
       {
@@ -3088,8 +3088,8 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       log << "Contour 1 created" << endl;
 
       area = pow(radius, 2) * M_PI;
-      scalingFactors[0] =  0.25;
-      scalingFactors[1] =  0.5;
+      scalingFactors[0] = 0.25;
+      scalingFactors[1] = 0.5*0.75;
       length = 8.5;
       inAngle = M_PI/4.;
       inRadius = length / inAngle;
@@ -3108,7 +3108,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       //**********************
 
       // Generate a circular contour
-      radius = (5. / 4.) * 2.95 / 2.;
+      radius = 1.45; // (5. / 4.) * 2.95 / 2.;
         m_maxCSBoundingBox.first = Point2D(-2. * radius, -2. * radius);
         m_maxCSBoundingBox.second = Point2D(2. * radius, 2. * radius);
         contour.clear();
@@ -3121,8 +3121,8 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       log << "Contour 2 created" << endl;
 
       area = pow(radius, 2) * M_PI;
-      scalingFactors[0] =  4. / 5.;
-      scalingFactors[1] =  1.;
+      scalingFactors[0] = 0.75;
+      scalingFactors[1] = 1.;//4. / 5.;
       length = 8.5;
       inAngle = M_PI / 4.;
       inRadius = length / inAngle;
