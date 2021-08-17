@@ -100,6 +100,7 @@ public:
 
   // cross section mesh and modes
   virtual void buildMesh() { ; }
+  void setModesNumber(int nb) { m_modesNumber = nb; }
   virtual void computeModes(struct simulationParameters simuParams) { ; }
   virtual void selectModes(vector<int> modesIdx) { ; }
   virtual Matrix interpolateModes(vector<Point> pts) { return Matrix(); }
@@ -200,6 +201,7 @@ public:
   virtual Matrix getMatrixD() const { return Matrix(); }
   virtual Matrix getMatrixE() const {return Matrix();}
   virtual Matrix getMatrixKR2(int idx) const { return Matrix(); }
+  virtual vector<Matrix> getMatrixKR2() const { return vector<Matrix>(); }
   virtual double curvRadius() const { return double(); }
   virtual double radius() const { return double(); }
   virtual double PMLThickness() const { return double(); }
@@ -326,6 +328,7 @@ public:
   Matrix getMatrixD() const { return m_DN; }
   Matrix getMatrixE() const {return m_E;}
   Matrix getMatrixKR2(int idx) const { return m_KR2[idx]; }
+  vector<Matrix> getMatrixKR2() const { return m_KR2; }
 
 
   // **************************************************************************

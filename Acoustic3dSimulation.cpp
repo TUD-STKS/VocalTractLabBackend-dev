@@ -157,7 +157,7 @@ void Acoustic3dSimulation::setBoundarySpecificAdmittance()
     //********************************************
 
     m_simuParams.viscousBndSpecAdm = complex<double>(0., 0.);
-    m_simuParams.thermalBndSpecAdm = complex<double>(0.0001, 0.);
+    m_simuParams.thermalBndSpecAdm = complex<double>(0.005, 0.);
 
   }
 }
@@ -641,7 +641,7 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
                     {
                       F(m, n) += areaFaces[f] * interpolation1(f * 3 + g,m) *
                         interpolation2(f * 3 + g,n) * quadPtWeight
-                         / scaling[0] / scaling[1]
+                           / scaling[0] / scaling[1]
                         ;
                     }
                   }
@@ -1280,8 +1280,8 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
   }
   
 
-  ofstream log;
-  log.open("log.txt", ofstream::app);
+  //ofstream log;
+  //log.open("log.txt", ofstream::app);
   //log << "start propagating admittance" << endl;
   //log << "Direction " << direction << endl;
 
@@ -1307,11 +1307,9 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
     m_crossSections[startSection]->setImpedance(inputImped);
     break;
   case STRAIGHT_TUBES:
-    log << "Before propagate straight" << endl;
     m_crossSections[startSection]->propagateImpedAdmitStraight(startImped, startAdmit,
       freq, m_simuParams, 100.,
       m_crossSections[max(0, min(numSec, startSection+direction))]->area());
-    log << "Propagated" << endl;
     break;
   }
   
@@ -1321,7 +1319,7 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
   for (int i(startSection + direction); i != (endSection + direction); i += direction)
   {
     //log << "sec " << i << " " << typeid(*m_crossSections[i]).name() << endl;
-    log << "sec " << i << endl;
+    //log << "sec " << i << endl;
 
     prevSec = i - direction;
     m_crossSections[i]->clearImpedance();
@@ -1373,8 +1371,10 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
         if (direction == -1) // ps = i + 1, n_X > 0
         { 
           //log << "area(i) > area(ps), dir = -1" << endl;
-          prevAdmit += F[0] *
-            m_crossSections[prevSec]->Yin()
+          prevAdmit += 
+            (1./(pow(m_crossSections[prevSec]->scaleIn(), 2) / 
+              pow(m_crossSections[i]->scaleOut(), 2)))*
+            F[0] * m_crossSections[prevSec]->Yin()
             * (F[0].transpose())
             //- wallInterfaceAdmit*
             //////m_crossSections[i]->curvature() *
@@ -1385,7 +1385,10 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
         else // ps = i - 1, n_X < 0
         {
           //log << "area(i) > area(ps), dir = 1" << endl;
-          prevAdmit += (F[0].transpose()) *
+          prevAdmit += 
+            (1./(pow(m_crossSections[prevSec]->scaleOut(), 2) / 
+              pow(m_crossSections[i]->scaleIn(), 2))) *
+            (F[0].transpose()) *
             m_crossSections[prevSec]->Yin() * F[0]
             //+ wallInterfaceAdmit * 
             //////m_crossSections[i]->curvature() * 
@@ -1400,30 +1403,38 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
       {
         if (direction == -1) // ps = i + 1; n_X < 0
         {
-          prevImped += F[0] * m_crossSections[prevSec]->Zin()
+          prevImped += 
+            (1./(pow(m_crossSections[i]->scaleOut(), 2) / 
+              pow(m_crossSections[prevSec]->scaleIn(),2))) *
+            F[0] * m_crossSections[prevSec]->Zin()
             //*(Matrix::Identity(nPs, nPs) - 
             //  wallInterfaceAdmit * 
             //  ////m_crossSections[prevSec]->curvature() * 
             //  G*m_crossSections[prevSec]->Zin()).inverse()
-            * (F[0].transpose());
+            * (F[0].transpose())
+            ;
           //m_crossSections[i]->setComputImpedance(false);
         }
         else // ps = i - 1; n_X > 0
         {
           //log << "area(i) < area(ps), dir = 1" << endl;
-          prevImped += (F[0].transpose()) * m_crossSections[prevSec]->Zin()
+          prevImped += 
+            (1./(pow(m_crossSections[i]->scaleIn(),2) / 
+              pow(m_crossSections[prevSec]->scaleOut(),2)))*
+            (F[0].transpose()) * m_crossSections[prevSec]->Zin()
             //*(Matrix::Identity(nPs, nPs) + 
             //  wallInterfaceAdmit *
             //  ////m_crossSections[prevSec]->curvature() * 
             //  G*m_crossSections[prevSec]->Zin()).inverse()
-            * F[0];
+            * F[0]
+            ;
           //m_crossSections[i]->setComputImpedance(false);
         }
         prevAdmit += prevImped.fullPivLu().inverse();
       }
 
-      prevImped /= pow(m_crossSections[i]->scaleOut(), 2) / pow(m_crossSections[prevSec]->scaleIn(), 2);
-      prevAdmit *= pow(m_crossSections[i]->scaleOut(), 2) / pow(m_crossSections[prevSec]->scaleIn(), 2);
+      //prevImped *= pow(m_crossSections[i]->scaleOut(), 2) / pow(m_crossSections[prevSec]->scaleIn(), 2);
+      //prevAdmit /= pow(m_crossSections[i]->scaleOut(), 2) / pow(m_crossSections[prevSec]->scaleIn(), 2);
 
       break;
     case STRAIGHT_TUBES:
@@ -1451,7 +1462,7 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
       break;
     }
 
-    log << "prevImped computed" << endl;
+    //log << "prevImped computed" << endl;
 
     // propagate admittance in the section
     switch (m_simuParams.propMethod) {
@@ -1477,7 +1488,7 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
 
     //log << "section " << i << " propagated" << endl;
   }
-  log.close();
+  //log.close();
 }
 
 // **************************************************************************
@@ -1562,9 +1573,9 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
     m_simuParams.thermalBndSpecAdm / m_simuParams.sndSpeed);
 
   //ofstream ar;
-  //ofstream log;
-  //log.open("log.txt", ofstream::app);
-  //log << "\n\nStart velocity propagation" << endl;
+  ofstream log;
+  log.open("log.txt", ofstream::app);
+  log << "\n\nStart velocity propagation" << endl;
 
   // determine the direction of the propagation
   if (startSection > endSection)
@@ -1584,7 +1595,7 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
 
     nextSec = i + direction;
 
-    //log << "section " << i << " next sec " << nextSec << endl;
+    log << "section " << i << " next sec " << nextSec << endl;
 
     m_crossSections[i]->clearAxialVelocity();
     m_crossSections[i]->clearAcPressure();
@@ -1674,6 +1685,9 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
             //  + wallInterfaceAdmit *
             //  ////m_crossSections[nextSec]->curvature()*
             //  G * m_crossSections[nextSec]->Zin()).inverse() *
+
+            //(pow(m_crossSections[i]->scaleIn(), 2) / 
+            //  pow(m_crossSections[nextSec]->scaleOut(),2)) *
             F[0] * m_crossSections[i]->Qout();
         }
         else
@@ -1683,11 +1697,19 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
             //  - wallInterfaceAdmit *
             //  ////m_crossSections[nextSec]->curvature() * 
             //  G * m_crossSections[nextSec]->Zin()).inverse() *
+
+            //(pow(m_crossSections[i]->scaleOut(),2) /
+            //  pow(m_crossSections[nextSec]->scaleIn(), 2)) *
               (F[0].transpose()) * m_crossSections[i]->Qout();
         }
         prevPress +=
           m_crossSections[nextSec]->Zin() * prevVelo;
       }
+
+      log << "Pout " << abs(m_crossSections[i]->Pout()(0))
+        << " Pin " << abs(prevPress(0))
+        << " Qout " << abs(m_crossSections[i]->Qout()(0))
+        << " Qin " << abs(prevVelo(0)) << endl;
 
       break;
     case STRAIGHT_TUBES:
@@ -1745,7 +1767,7 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
     break;
   }
 
-  //log.close();
+  log.close();
 }
 
 void Acoustic3dSimulation::propagatePressure(Eigen::MatrixXcd startPress, double freq)
@@ -2403,7 +2425,10 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 
 void Acoustic3dSimulation::runTest(enum testType tType)
 {
-  ofstream ofs, ofs2, ofs3;
+  ofstream ofs, ofs2, ofs3, ofs4;
+  ifstream ifs;
+  string line, str;
+  char separator(';');
   stringstream strs;
   ofstream log("log.txt", ofstream::app);
   log << "\nStart test" << endl;
@@ -2414,7 +2439,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
   vector<int> surfaceIdx(nbAngles, 0), slectedModesIdx;
   double scalingFactors[2] = { 1., 1. };
   double a(5.5), b(3.);
-  double freq, freqMax;
+  double freq, freqMax, endAdmit;
   int nbFreqs, mn;
   Eigen::MatrixXcd characImped, radImped, radAdmit, inputVelocity, inputPressure;
   vector<Point_3> radPts;
@@ -2422,10 +2447,11 @@ void Acoustic3dSimulation::runTest(enum testType tType)
   vector<array<int, 3>> triangles;
   Eigen::VectorXcd radPress;
   vector<Eigen::MatrixXcd> Q;
+  vector<Matrix> KR2;
   // to determine the rectangle mode indexes
   vector<array<int, 2>> modeIdxs;
   vector<int> vIdx;
-  vector<double> k2;
+  vector<double> k2, rads, shifts, scaleIn, scaleOut, lengths, curvAngles;
   int nCombinations, ie, je, me, ne;
   Matrix analyticE, E, modes;
   double E1y, E1z, E2y, E2z;
@@ -3047,15 +3073,110 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       generateLogFileHeader(true);
       log << "Start test junction" << endl;
 
-      //************************
-      // Create excitation hole
-      //************************
+      //***************************
+      // load geometry parameters
+      //***************************
+
+      ifs.open("param_test_geo.csv");
+      if (!ifs.is_open())
+      {
+        log << "failed to opened parameters file" << endl;
+      }
+      else
+      {
+        // extract number of modes
+        vIdx.clear();
+        getline(ifs, line); // to remove comment line
+        getline(ifs, line);
+        stringstream strSt(line);
+        while (getline(strSt, str, separator))
+        {
+          vIdx.push_back(stoi(str));
+        }
+
+        // extract radius
+        rads.clear();
+        getline(ifs, line); // to remove comment line
+        getline(ifs, line);
+        strSt.clear();
+        strSt.str(line);
+        while (getline(strSt, str, separator))
+        {
+          rads.push_back(stod(str));
+        }
+
+        // extract contour shift
+        shifts.clear();
+        getline(ifs, line); // to remove comment line
+        getline(ifs, line);
+        strSt.clear();
+        strSt.str(line);
+        while (getline(strSt, str, separator))
+        {
+          shifts.push_back(stod(str));
+        }
+
+        // extract scaling in
+        scaleIn.clear();
+        getline(ifs, line); // to remove comment line
+        getline(ifs, line);
+        strSt.clear();
+        strSt.str(line);
+        while (getline(strSt, str, separator))
+        {
+          scaleIn.push_back(stod(str));
+        }
+
+        // extract scaling out
+        scaleOut.clear();
+        getline(ifs, line); // to remove comment line
+        getline(ifs, line);
+        strSt.clear();
+        strSt.str(line);
+        while (getline(strSt, str, separator))
+        {
+          scaleOut.push_back(stod(str));
+        }
+
+        // extract length
+        lengths.clear();
+        getline(ifs, line); // to remove comment line
+        getline(ifs, line);
+        strSt.clear();
+        strSt.str(line);
+        while (getline(strSt, str, separator))
+        {
+          lengths.push_back(stod(str));
+        }
+
+        // extract curvature angle
+        curvAngles.clear();
+        getline(ifs, line); // to remove comment line
+        getline(ifs, line);
+        strSt.clear();
+        strSt.str(line);
+        while (getline(strSt, str, separator))
+        {
+          curvAngles.push_back(stod(str));
+        }
+
+        // extract end admittance
+        getline(ifs, line); // to remove comment line
+        getline(ifs, line);
+        endAdmit = stod(line);
+      }
+
+      log << "Geometry parameters extracted" << endl;
+
+      //***************************
+      // Create excitation section
+      //***************************
 
       radius = 0.1;
       for (int i(0); i < nbAngles; i++)
       {
         angle = 2. * M_PI * (double)(i) / (double)(nbAngles);
-        contour.push_back(Point(radius * cos(angle), radius * sin(angle)));
+        contour.push_back(Point(radius * cos(angle), radius * (sin(angle) + shifts[0])));
       }
 
       m_crossSections.clear();
@@ -3071,27 +3192,33 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       m_crossSections[0]->setCurvatureRadius(inRadius);
       m_crossSections[0]->setCurvatureAngle(inAngle);
       m_crossSections[0]->setNextSection(1);
+      m_crossSections[0]->setModesNumber(1);
 
       //**********************
       // create first section
       //**********************
 
       // Generate a circular contour
-      radius = 2.*1.45;
+      //radius = 1.45/2.;
       contour.clear();
       for (int i(0); i < nbAngles; i++)
       {
         angle = 2. * M_PI * (double)(i) / (double)(nbAngles);
-        contour.push_back(Point(radius * cos(angle), radius * sin(angle)));
+        contour.push_back(Point(rads[0] * cos(angle), rads[0] * (sin(angle) + shifts[1])));
       }
 
       log << "Contour 1 created" << endl;
 
-      area = pow(radius, 2) * M_PI;
-      scalingFactors[0] = 0.25;
-      scalingFactors[1] = 0.5*0.75;
-      length = 8.5;
-      inAngle = M_PI/4.;
+      // extract contour 1
+      ofs.open("cont1.txt");
+      for (auto it : contour) { ofs << it.x() << "  " << it.y() << endl; }
+      ofs.close();
+
+      area = pow(rads[0], 2) * M_PI;
+      scalingFactors[0] = scaleIn[0];
+      scalingFactors[1] = scaleOut[0];
+      length = lengths[0];
+      inAngle = curvAngles[0];
       inRadius = length / inAngle;
       addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
         surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
@@ -3100,6 +3227,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       m_crossSections[1]->setCurvatureAngle(inAngle);
       m_crossSections[1]->setPreviousSection(0);
       m_crossSections[1]->setNextSection(2);
+      m_crossSections[1]->setModesNumber(vIdx[0]);
 
       log << "First section created" << endl;
 
@@ -3108,23 +3236,28 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       //**********************
 
       // Generate a circular contour
-      radius = 1.45; // (5. / 4.) * 2.95 / 2.;
-        m_maxCSBoundingBox.first = Point2D(-2. * radius, -2. * radius);
-        m_maxCSBoundingBox.second = Point2D(2. * radius, 2. * radius);
+      //radius = 1.45/2.; 
+        m_maxCSBoundingBox.first = Point2D(-2. * rads[1], -2. * rads[1]);
+        m_maxCSBoundingBox.second = Point2D(2. * rads[1], 2. * rads[1]);
         contour.clear();
       for (int i(0); i < nbAngles; i++)
       {
         angle = 2. * M_PI * (double)(i) / (double)(nbAngles);
-        contour.push_back(Point(radius * cos(angle), radius * sin(angle)));
+        contour.push_back(Point(rads[1] * cos(angle), rads[1] * sin(angle)));
       }
 
       log << "Contour 2 created" << endl;
 
-      area = pow(radius, 2) * M_PI;
-      scalingFactors[0] = 0.75;
-      scalingFactors[1] = 1.;//4. / 5.;
-      length = 8.5;
-      inAngle = M_PI / 4.;
+      // extract contour 2 
+      ofs.open("cont2.txt");
+      for (auto it : contour) { ofs << it.x() << "  " << it.y() << endl; }
+      ofs.close();
+
+      area = pow(rads[1], 2) * M_PI;
+      scalingFactors[0] = scaleIn[1];
+      scalingFactors[1] = scaleOut[1];
+      length = lengths[0];
+      inAngle = curvAngles[1];
       inRadius = length / inAngle;
       addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
         surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
@@ -3132,6 +3265,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       m_crossSections[2]->setCurvatureRadius(inRadius);
       m_crossSections[2]->setCurvatureAngle(inAngle);
       m_crossSections[2]->setPreviousSection(1);
+      m_crossSections[2]->setModesNumber(vIdx[1]);
 
       log << "Section created" << endl;
 
@@ -3157,6 +3291,29 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       ofs << m_crossSections[1]->getMatrixF()[0] << endl;
       ofs.close();
 
+      // export matrix E
+      ofs.open("E.txt");
+      ofs << m_crossSections[1]->getMatrixE() << endl;
+      ofs.close();
+
+      // export matrix C
+      ofs.open("C.txt");
+      ofs << m_crossSections[1]->getMatrixC() << endl;
+      ofs.close();
+
+      // export matrix D
+      ofs.open("D.txt");
+      ofs << m_crossSections[1]->getMatrixD() << endl;
+      ofs.close();
+
+      // export matrix KR2
+      KR2 = m_crossSections[1]->getMatrixKR2();
+      E = Matrix::Zero(vIdx[0], vIdx[0]);
+      for (auto it : KR2) { E += it; }
+      ofs.open("KR2.txt");
+      ofs << E << endl;
+      ofs.close();
+
       preComputeRadiationMatrices(16, 2);
 
       // initialize input pressure and velocity vectors
@@ -3167,6 +3324,9 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       radPts.push_back(Point_3(100., 0., 0.));
       freqMax = m_simuParams.maxComputedFreq;
       ofs.open("imp.txt");
+      ofs2.open("q.txt");
+      ofs3.open("Y.txt");
+      ofs4.open("p.txt");
       //characImped.setZero(mn, mn);
       for (int i(0); i < m_numFreq; i++)
       {
@@ -3175,6 +3335,12 @@ void Acoustic3dSimulation::runTest(enum testType tType)
 
         interpolateRadiationImpedance(radImped, freq, 2);
         interpolateRadiationAdmittance(radAdmit, freq, 2);
+        //radAdmit.setZero(vIdx[1], vIdx[1]);
+        //radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx[1], endAdmit);
+        //radImped = radAdmit.inverse();
+
+        log << "radAdmit: \n" << radAdmit << endl;
+        log << "radImped: \n" << radImped << endl;
 
         if (m_simuParams.propMethod == STRAIGHT_TUBES)
         {
@@ -3219,8 +3385,30 @@ void Acoustic3dSimulation::runTest(enum testType tType)
           << "  " << abs(radPress(0))
           << "  " << arg(radPress(0))
           << endl;
+
+        // exctract potential q
+        for (int s(0); s < 3; s++)
+        {
+          for (auto it : m_crossSections[s]->Q())
+          {
+            ofs2 << abs(it(0)) << "  ";
+          }
+          Q = m_crossSections[s]->Y();
+          for (int p(Q.size() - 1); p >= 0; p--)
+          {
+            ofs3 << abs(Q[p](0, 0)) << "  ";
+          }
+          for (auto it : m_crossSections[s]->P())
+          {
+            ofs4 << abs(it(0)) << "  ";
+          }
+        }
+        ofs2 << endl;
+        ofs3 << endl;
+        ofs4 << endl;
       }
       ofs.close();
+      ofs2.close();
 
       // extract admittance at both sides of the junction
       ofs.open("Zin.txt");

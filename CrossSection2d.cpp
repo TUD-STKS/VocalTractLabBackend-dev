@@ -206,7 +206,11 @@ void BesselJDerivativeZero(int v, int n, map<double, pair<int,int>> &zeros)
 // ****************************************************************************
 
 CrossSection2d::CrossSection2d(double maxCutOnFreq, Point2D ctrLinePt, Point2D normal)
-  : m_maxCutOnFreq(maxCutOnFreq), m_ctrLinePt(ctrLinePt), m_normal(normal) {}
+  : m_maxCutOnFreq(maxCutOnFreq), 
+  m_ctrLinePt(ctrLinePt),
+  m_normal(normal),
+  m_modesNumber(0)
+{}
 
 CrossSection2dFEM::CrossSection2dFEM(double maxCutOnFreq, Point2D ctrLinePt, Point2D normal,
   double area, double spacing,
@@ -219,6 +223,7 @@ CrossSection2dFEM::CrossSection2dFEM(double maxCutOnFreq, Point2D ctrLinePt, Poi
   m_spacing(spacing),
   m_contour(contour),
   m_surfaceIdx(surfacesIdx)
+  
   {
     for (int i(0); i < 2; i++) { m_scalingFactors[i] = scalingFactors[i]; }
     m_area = area;
@@ -679,18 +684,30 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   //log << "eigen problem solved" << endl;
   //log << eigenSolver.eigenvalues().size() << " eigenvalues" << endl;
 
+
+  if (m_modesNumber == 0)
   // extract the eigenfrequencies lower than the maximal
   // cut-on frequency and determine the number of modes
-  idx = 0;
-  log << "m_maxCutOnFreq " << m_maxCutOnFreq << endl;
-  maxWaveNumber = pow(2 * M_PI * m_maxCutOnFreq / simuParams.sndSpeed, 2);
-  while ((eigenSolver.eigenvalues()[idx] < maxWaveNumber)
-       && (idx < eigenSolver.eigenvalues().size()))
   {
-    m_eigenFreqs.push_back(sqrt(eigenSolver.eigenvalues()[idx])* simuParams.sndSpeed / 2 / M_PI);
-    idx++;
+    idx = 0;
+    maxWaveNumber = pow(2 * M_PI * m_maxCutOnFreq / simuParams.sndSpeed, 2);
+    while ((eigenSolver.eigenvalues()[idx] < maxWaveNumber)
+      && (idx < eigenSolver.eigenvalues().size()))
+    {
+      m_eigenFreqs.push_back(sqrt(eigenSolver.eigenvalues()[idx]) * simuParams.sndSpeed / 2. / M_PI);
+      idx++;
+    }
+    m_modesNumber = idx;
   }
-  m_modesNumber = idx;
+  else
+  // Extract the eigen frequencies of the number of modes previously specified
+  {
+    m_eigenFreqs.reserve(m_modesNumber);
+    for (int i(0); i < m_modesNumber; i++)
+    {
+      m_eigenFreqs.push_back(sqrt(eigenSolver.eigenvalues()[i])* simuParams.sndSpeed / 2. / M_PI);
+    }
+  }
 
   //log << "Modes number " << m_modesNumber << endl;
 
@@ -1678,8 +1695,8 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
 
   ofstream log("log.txt", ofstream::app);
   log << "Start propagate magnus, numX " << numX << endl;
-  //log << "al: " << al << "  "
-  //  << " dX: " << dX << endl;
+  log << "al: " << al << "  "
+    << " dX: " << dX << endl;
 
   if (m_length == 0.)
   {
@@ -1771,8 +1788,8 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         l0 = scaling(tau);
         dl0 = scalingDerivative(tau);
 
-        //log << "tau " << tau << endl;
-        //log << "l " << l0 << " dl " << dl0 << endl;
+        log << "tau " << tau << endl;
+        log << "l " << l0 << " dl " << dl0 << endl;
 
         // build matrix K2
         K2.setZero(mn, mn);
@@ -1780,7 +1797,8 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         {
           K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
         }
-        K2 += 1i * k * l0 * KR2;
+        K2 += 1i * k * KR2;
+        //K2 += 1i * k * l0 * KR2;
 
         // build matrix A0
         omega << ((dl0 / l0)* m_E),
