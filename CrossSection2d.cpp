@@ -1693,10 +1693,10 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
   complex<double> wallAdmittance;
   Eigen::VectorXcd bndSpecAdm(Eigen::VectorXcd::Zero(mn));
 
-  ofstream log("log.txt", ofstream::app);
-  log << "Start propagate magnus, numX " << numX << endl;
-  log << "al: " << al << "  "
-    << " dX: " << dX << endl;
+  //ofstream log("log.txt", ofstream::app);
+  //log << "Start propagate magnus, numX " << numX << endl;
+  //log << "al: " << al << "  "
+    //<< " dX: " << dX << endl;
 
   if (m_length == 0.)
   {
@@ -1788,8 +1788,8 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         l0 = scaling(tau);
         dl0 = scalingDerivative(tau);
 
-        log << "tau " << tau << endl;
-        log << "l " << l0 << " dl " << dl0 << endl;
+        //log << "tau " << tau << endl;
+        //log << "l " << l0 << " dl " << dl0 << endl;
 
         // build matrix K2
         K2.setZero(mn, mn);
@@ -1933,11 +1933,11 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
     }
   // track time
   tot = end - startTot;
-  log << "Time precomputations " << 100.*elapsed_preComp.count() / tot.count() << endl;
-  log << "Time matrix omega " << 100.*matricesMag.count() / tot.count() << endl;
-  log << "time propa " << 100.*propag.count() / tot.count() << endl;
+  //log << "Time precomputations " << 100.*elapsed_preComp.count() / tot.count() << endl;
+  //log << "Time matrix omega " << 100.*matricesMag.count() / tot.count() << endl;
+  //log << "time propa " << 100.*propag.count() / tot.count() << endl;
   }
-  log.close();
+  //log.close();
 }
 
 void CrossSection2dRadiation::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
@@ -2803,6 +2803,39 @@ void CrossSection2dRadiation::radiatePressure(double distance, double freq,
 
   pressAmp = m_eigVec * propa.asDiagonal() * m_invEigVec 
     * m_acPressure[0];
+}
+
+// **************************************************************************
+// Acoustic field computation
+
+
+complex<double> CrossSection2dFEM::pin(Point pt)
+{
+  vector<Point> pts;
+  pts.push_back(pt);
+  return((interpolateModes(pts) * Pin())(0,0));
+} 
+complex<double> CrossSection2dFEM::pout(Point pt) 
+{
+  vector<Point> pts;
+  pts.push_back(pt);
+  return((interpolateModes(pts) * Pout())(0,0));
+}
+complex<double> CrossSection2dFEM::qin(Point pt)
+{
+  vector<Point> pts;
+  pts.push_back(pt);
+  return((interpolateModes(pts) * Qin())(0,0));
+}
+complex<double> CrossSection2dFEM::qout(Point pt)
+{
+  vector<Point> pts;
+  pts.push_back(pt);
+  ofstream log("log.txt", ofstream::app);
+  log << "interpolateModes" << endl;
+  log << interpolateModes(pts) << endl;
+  log.close();
+  return((interpolateModes(pts) * Qout())(0,0));
 }
 
 // **************************************************************************

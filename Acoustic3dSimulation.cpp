@@ -3172,15 +3172,15 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       // Create excitation section
       //***************************
 
-      radius = 0.1;
+      // radius = 0.1;
       for (int i(0); i < nbAngles; i++)
       {
         angle = 2. * M_PI * (double)(i) / (double)(nbAngles);
-        contour.push_back(Point(radius * cos(angle), radius * (sin(angle) + shifts[0])));
+        contour.push_back(Point(rads[0] * cos(angle), rads[0] * sin(angle)));
       }
 
       m_crossSections.clear();
-      area = pow(radius, 2) * M_PI;
+      area = pow(rads[0], 2) * M_PI;
       scalingFactors[0] = 1.;
       scalingFactors[1] = 1.;
       length = 0.;
@@ -3199,12 +3199,11 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       //**********************
 
       // Generate a circular contour
-      //radius = 1.45/2.;
       contour.clear();
       for (int i(0); i < nbAngles; i++)
       {
         angle = 2. * M_PI * (double)(i) / (double)(nbAngles);
-        contour.push_back(Point(rads[0] * cos(angle), rads[0] * (sin(angle) + shifts[1])));
+        contour.push_back(Point(rads[0] * cos(angle), rads[0] * (sin(angle) + shifts[0])));
       }
 
       log << "Contour 1 created" << endl;
@@ -3243,7 +3242,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       for (int i(0); i < nbAngles; i++)
       {
         angle = 2. * M_PI * (double)(i) / (double)(nbAngles);
-        contour.push_back(Point(rads[1] * cos(angle), rads[1] * sin(angle)));
+        contour.push_back(Point(rads[1] * cos(angle), rads[1] * (sin(angle) + shifts[1])));
       }
 
       log << "Contour 2 created" << endl;
@@ -3268,12 +3267,14 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       m_crossSections[2]->setModesNumber(vIdx[1]);
 
       log << "Section created" << endl;
-
+      
       //*********************
       // solve wave problem
       //*********************
 
       computeMeshAndModes();
+
+      log << "Modes computed" << endl;
 
       // extract wavenumbers of the small tube
       ofs.open("kn2.txt");
@@ -3285,6 +3286,8 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       ofs.close();
 
       computeJunctionMatrices(false);
+
+      log << "Junctions computed" << endl;
 
       // export junction matrix
       ofs.open("F.txt");
@@ -3314,7 +3317,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       ofs << E << endl;
       ofs.close();
 
-      preComputeRadiationMatrices(16, 2);
+      //preComputeRadiationMatrices(16, 2);
 
       // initialize input pressure and velocity vectors
       mn = m_crossSections[0]->numberOfModes();
@@ -3333,11 +3336,11 @@ void Acoustic3dSimulation::runTest(enum testType tType)
         freq = max(0.1, freqMax * (double)i / (double)(m_numFreq - 1));
         log << "f = " << freq << " Hz" << endl;
 
-        interpolateRadiationImpedance(radImped, freq, 2);
-        interpolateRadiationAdmittance(radAdmit, freq, 2);
-        //radAdmit.setZero(vIdx[1], vIdx[1]);
-        //radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx[1], endAdmit);
-        //radImped = radAdmit.inverse();
+        //interpolateRadiationImpedance(radImped, freq, 2);
+        //interpolateRadiationAdmittance(radAdmit, freq, 2);
+        radAdmit.setZero(vIdx[1], vIdx[1]);
+        radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx[1], endAdmit);
+        radImped = radAdmit.inverse();
 
         log << "radAdmit: \n" << radAdmit << endl;
         log << "radImped: \n" << radImped << endl;
@@ -3382,9 +3385,15 @@ void Acoustic3dSimulation::runTest(enum testType tType)
           << "  " << arg(m_crossSections[2]->Zin()(0, 0))
           << "  " << abs(m_crossSections[2]->Zout()(0, 0))
           << "  " << arg(m_crossSections[2]->Zout()(0, 0))
-          << "  " << abs(radPress(0))
-          << "  " << arg(radPress(0))
+          << "  " << abs(-m_crossSections[2]->qout(Point(0., 0.)))
+                  ///1i/2./M_PI/freq/m_simuParams.volumicMass) 
+          << "  " << arg(-m_crossSections[2]->qout(Point(0., 0.)))
+                  ///1i/2./M_PI/freq/m_simuParams.volumicMass) 
           << endl;
+
+        // check Qout
+        log << "Qout" << endl;
+        log << m_crossSections[2]->Qout() << endl;
 
         // exctract potential q
         for (int s(0); s < 3; s++)

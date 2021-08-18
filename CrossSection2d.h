@@ -156,9 +156,14 @@ public:
     double prevArea, double nextArea) {;}
   virtual void propagatePressureVelocityStraight(Eigen::MatrixXcd V0,
     Eigen::MatrixXcd P0, double freq, struct simulationParameters simuParams, double nextArea) {;}
-  // to get the amplitude of the pressure modes at a given distance from the exit
+
+  // for acoustic field computation
   virtual void radiatePressure(double distance, double freq,
     struct simulationParameters simuParams, Eigen::MatrixXcd& pressAmp) { ; }
+  virtual complex<double> pin(Point pt) {complex<double>();}
+  virtual complex<double> pout(Point pt) {complex<double>();}
+  virtual complex<double> qin(Point pt) {complex<double>();}
+  virtual complex<double> qout(Point pt) {complex<double>();}
 
   // **************************************************************************
   // accessors
@@ -298,6 +303,12 @@ public:
   void propagatePressureVelocityStraight(Eigen::MatrixXcd V0,
     Eigen::MatrixXcd P0, double freq, struct simulationParameters simuParams,
     double nextArea);
+
+  // for acoustic field computation
+  virtual complex<double> pin(Point pt); 
+  virtual complex<double> pout(Point pt); 
+  virtual complex<double> qin(Point pt); 
+  virtual complex<double> qout(Point pt);
 
   // **************************************************************************
   // accessors
