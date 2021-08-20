@@ -1797,8 +1797,8 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         {
           K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
         }
-        K2 += 1i * k * KR2;
-        //K2 += 1i * k * l0 * KR2;
+        //K2 += 1i * k * KR2;
+        K2 += 1i * k * l0 * KR2;
 
         // build matrix A0
         omega << ((dl0 / l0)* m_E),

@@ -3163,7 +3163,12 @@ void Acoustic3dSimulation::runTest(enum testType tType)
         // extract end admittance
         getline(ifs, line); // to remove comment line
         getline(ifs, line);
-        endAdmit = stod(line);
+        strSt.clear();
+        strSt.str(line);
+        getline(strSt, str, separator);
+        endAdmit = stod(str);
+        getline(strSt, str, separator);
+        m_simuParams.thermalBndSpecAdm = complex<double>(stod(str), 0.);
       }
 
       log << "Geometry parameters extracted" << endl;
@@ -3255,7 +3260,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       area = pow(rads[1], 2) * M_PI;
       scalingFactors[0] = scaleIn[1];
       scalingFactors[1] = scaleOut[1];
-      length = lengths[0];
+      length = lengths[1];
       inAngle = curvAngles[1];
       inRadius = length / inAngle;
       addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
@@ -3339,7 +3344,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
         //interpolateRadiationImpedance(radImped, freq, 2);
         //interpolateRadiationAdmittance(radAdmit, freq, 2);
         radAdmit.setZero(vIdx[1], vIdx[1]);
-        radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx[1], endAdmit);
+        radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx[1], complex<double>(endAdmit,0.));
         radImped = radAdmit.inverse();
 
         log << "radAdmit: \n" << radAdmit << endl;
@@ -3366,7 +3371,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
         log << "Velocity and pressure propagated" << endl;
 
         // compute radiated pressure
-        RayleighSommerfeldIntegral(radPts, radPress, freq, 2);
+        //RayleighSommerfeldIntegral(radPts, radPress, freq, 2);
 
         ofs << freq << "  "
           << abs(
@@ -3385,10 +3390,10 @@ void Acoustic3dSimulation::runTest(enum testType tType)
           << "  " << arg(m_crossSections[2]->Zin()(0, 0))
           << "  " << abs(m_crossSections[2]->Zout()(0, 0))
           << "  " << arg(m_crossSections[2]->Zout()(0, 0))
-          << "  " << abs(-m_crossSections[2]->qout(Point(0., 0.)))
-                  ///1i/2./M_PI/freq/m_simuParams.volumicMass) 
-          << "  " << arg(-m_crossSections[2]->qout(Point(0., 0.)))
-                  ///1i/2./M_PI/freq/m_simuParams.volumicMass) 
+          << "  " << abs(-m_crossSections[2]->qout(Point(0., shifts[1]*rads[1]))
+                  /1i/2./M_PI/freq/m_simuParams.volumicMass) 
+          << "  " << arg(-m_crossSections[2]->qout(Point(0., shifts[1]*rads[1]))
+                  /1i/2./M_PI/freq/m_simuParams.volumicMass) 
           << endl;
 
         // check Qout
