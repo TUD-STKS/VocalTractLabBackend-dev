@@ -34,6 +34,7 @@ typedef CGAL::Triangulation_data_structure_2<Vb, Fb> Tds;
 typedef CGAL::Exact_intersections_tag                     Itag;
 typedef CGAL::Constrained_Delaunay_triangulation_2<K, Tds, Itag> CDT;
 typedef CDT::Point                  Point;
+typedef CGAL::Point_3<K>                Point_3;
 
 typedef CGAL::Polygon_2<K>                          Polygon_2;
 
@@ -160,10 +161,17 @@ public:
   // for acoustic field computation
   virtual void radiatePressure(double distance, double freq,
     struct simulationParameters simuParams, Eigen::MatrixXcd& pressAmp) { ; }
-  virtual complex<double> pin(Point pt) {complex<double>();}
-  virtual complex<double> pout(Point pt) {complex<double>();}
-  virtual complex<double> qin(Point pt) {complex<double>();}
-  virtual complex<double> qout(Point pt) {complex<double>();}
+  virtual complex<double> pin(Point pt) {return complex<double>();}
+  virtual complex<double> pout(Point pt) {return complex<double>();}
+  virtual complex<double> qin(Point pt) {return complex<double>();}
+  virtual complex<double> qout(Point pt) {return complex<double>();}
+  virtual complex<double> p(Point_3 pt, struct simulationParameters simuParams)
+    {return complex<double>();}
+  virtual complex<double> q(Point_3 pt, struct simulationParameters simuParams)
+    {return complex<double>();}
+  virtual complex<double> interiorField(Point_3 pt, struct simulationParameters simuParams,
+          enum physicalQuantity quant)
+    {return complex<double>();}
 
   // **************************************************************************
   // accessors
@@ -305,10 +313,14 @@ public:
     double nextArea);
 
   // for acoustic field computation
-  virtual complex<double> pin(Point pt); 
-  virtual complex<double> pout(Point pt); 
-  virtual complex<double> qin(Point pt); 
-  virtual complex<double> qout(Point pt);
+  complex<double> pin(Point pt); 
+  complex<double> pout(Point pt); 
+  complex<double> qin(Point pt); 
+  complex<double> qout(Point pt);
+  complex<double> p(Point_3 pt, struct simulationParameters simuParams);
+  complex<double> q(Point_3 pt, struct simulationParameters simuParams);
+  complex<double> interiorField(Point_3 pt, struct simulationParameters simuParams,
+          enum physicalQuantity quant);
 
   // **************************************************************************
   // accessors

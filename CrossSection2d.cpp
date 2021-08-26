@@ -43,6 +43,7 @@ typedef CGAL::Delaunay_mesh_size_criteria_2<CDT> Criteria;
 typedef CGAL::Delaunay_mesher_2<CDT, Criteria> Mesher;
 
 typedef CDT::Point                    Point;
+typedef CGAL::Point_3<K>                Point_3;
 typedef CGAL::Vector_2<K>                Vector;
 typedef CDT::Triangulation::Finite_faces_iterator    Finite_faces_iterator;
 
@@ -1581,6 +1582,14 @@ void CrossSection2dFEM::getSpecificBndAdm(struct simulationParameters simuParams
   }
   else
   {
+    //bndSpecAdm = Eigen::MatrixXcd::Zero(m_modesNumber, m_modesNumber);
+    //double k(2. * M_PI * freq / simuParams.sndSpeed);
+    //for (int m(0); m < m_modesNumber; m++)
+    //{
+      //bndSpecAdm(m) = simuParams.percentageLosses * 
+          //(1. - pow(2 * M_PI * m_eigenFreqs[m] / simuParams.sndSpeed, 2) / pow(k, 2)) *
+          //(simuParams.viscousBndSpecAdm + simuParams.thermalBndSpecAdm);
+    //}
     bndSpecAdm = simuParams.percentageLosses * (
       Eigen::MatrixXcd::Constant(m_modesNumber, m_modesNumber,
       simuParams.viscousBndSpecAdm + simuParams.thermalBndSpecAdm));
@@ -1662,7 +1671,7 @@ double CrossSection2dFEM::scalingDerivative(double tau)
 
 // **************************************************************************
 // Propagate impedance, admittance, pressure or velocity using the 
-// order 4 Magnu-Moebius scheme
+// order 2 or 4 Magnu-Moebius scheme
 void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
   double freq, double direction, enum physicalQuantity quant)
 {
@@ -1671,18 +1680,7 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
 
   int numX(simuParams.numIntegrationStep);
   int mn(m_modesNumber);
-  double theta(m_circleArcAngle);          // angle of the circle arc
-  double R(abs(m_curvatureRadius));        // radius of the circle arc
-  // set arc length
-  double al;
-  if (theta < MINIMAL_DISTANCE)
-  {
-    al = m_length;
-  }
-  else
-  {
-    al = theta * R;
-  }            
+  double al(length()); // arc length
   double dX(direction * al / (double)(numX - 1));
   double curv(curvature(simuParams.curved));
   double k(2 * M_PI * freq / simuParams.sndSpeed);
@@ -2808,34 +2806,78 @@ void CrossSection2dRadiation::radiatePressure(double distance, double freq,
 // **************************************************************************
 // Acoustic field computation
 
-
 complex<double> CrossSection2dFEM::pin(Point pt)
 {
   vector<Point> pts;
   pts.push_back(pt);
   return((interpolateModes(pts) * Pin())(0,0));
 } 
+// **************************************************************************
 complex<double> CrossSection2dFEM::pout(Point pt) 
 {
   vector<Point> pts;
   pts.push_back(pt);
   return((interpolateModes(pts) * Pout())(0,0));
 }
+// **************************************************************************
 complex<double> CrossSection2dFEM::qin(Point pt)
 {
   vector<Point> pts;
   pts.push_back(pt);
   return((interpolateModes(pts) * Qin())(0,0));
 }
+// **************************************************************************
 complex<double> CrossSection2dFEM::qout(Point pt)
 {
   vector<Point> pts;
   pts.push_back(pt);
-  ofstream log("log.txt", ofstream::app);
-  log << "interpolateModes" << endl;
-  log << interpolateModes(pts) << endl;
-  log.close();
   return((interpolateModes(pts) * Qout())(0,0));
+}
+// **************************************************************************
+complex<double> CrossSection2dFEM::p(Point_3 pt, struct simulationParameters simuParams)
+{
+  return(interiorField(pt, simuParams, PRESSURE));
+}
+
+// **************************************************************************
+complex<double> CrossSection2dFEM::q(Point_3 pt, struct simulationParameters simuParams)
+{
+  return(interiorField(pt, simuParams, VELOCITY));
+}
+
+// **************************************************************************
+// Compute the pressure or the velocity inside
+
+complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationParameters simuParams,
+          enum physicalQuantity quant)
+{
+  // get arc length
+  double al(length());
+  double dx = al/(double)(simuParams.numIntegrationStep - 1); // distance btw pts
+  // locate indexes of previous and following points
+  double x_dx(pt.x() / dx);
+  int idx[2] = {(int)floor(x_dx), (int)ceil(x_dx)};
+  // interpolate quantity
+  double x_0((double)(idx[0])*dx );
+  Eigen::MatrixXcd Q;
+  switch (quant)
+     {
+      case PRESSURE:
+        Q = (pt.x() - x_0)*(m_acPressure[idx[1]] - m_acPressure[idx[0]])/dx 
+        + m_acPressure[idx[0]];
+        break;
+      case VELOCITY:
+        Q = (pt.x() - x_0)*(m_axialVelocity[idx[1]] - m_axialVelocity[idx[0]])/dx 
+        + m_axialVelocity[idx[0]];
+        break;
+     }
+
+  vector<Point> pts;
+  pts.push_back(Point(pt.y(), pt.z()));
+
+  //log.close();
+
+  return((interpolateModes(pts) * Q)(0,0));
 }
 
 // **************************************************************************
@@ -2849,7 +2891,11 @@ Point2D CrossSection2d::ctrLinePt() const { return(m_ctrLinePt); }
 Point2D CrossSection2d::normal() const { return(m_normal); }
 double CrossSection2d::area() const { return(m_area); }
 
-double CrossSection2dFEM::length() const { return(m_length); }
+double CrossSection2dFEM::length() const { 
+  if (m_circleArcAngle < MINIMAL_DISTANCE)
+  {return(m_length);}
+  else {return(m_circleArcAngle * abs(m_curvatureRadius));}            
+ }
 vector<double> CrossSection2dFEM::intersectionsArea() const { return m_intersectionsArea; }
 double CrossSection2dFEM::spacing() const { return m_spacing; }
 int CrossSection2dFEM::numberOfVertices() const { return m_mesh.number_of_vertices(); }
