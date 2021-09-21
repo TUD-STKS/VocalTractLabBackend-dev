@@ -2851,33 +2851,58 @@ complex<double> CrossSection2dFEM::q(Point_3 pt, struct simulationParameters sim
 complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationParameters simuParams,
           enum physicalQuantity quant)
 {
+  ofstream log("log.txt", ofstream::app);
+
   // get arc length
   double al(length());
   double dx = al/(double)(simuParams.numIntegrationStep - 1); // distance btw pts
+
   // locate indexes of previous and following points
+  int nPt(m_impedance.size()-1);
   double x_dx(pt.x() / dx);
   int idx[2] = {(int)floor(x_dx), (int)ceil(x_dx)};
+
+  // define the interpolation point
+  vector<Point> pts;
+  pts.push_back(Point(pt.y(), pt.z()));
+
   // interpolate quantity
   double x_0((double)(idx[0])*dx );
   Eigen::MatrixXcd Q;
+  Matrix modes;
   switch (quant)
      {
       case PRESSURE:
         Q = (pt.x() - x_0)*(m_acPressure[idx[1]] - m_acPressure[idx[0]])/dx 
         + m_acPressure[idx[0]];
+      return((interpolateModes(pts) * Q)(0,0));
         break;
       case VELOCITY:
         Q = (pt.x() - x_0)*(m_axialVelocity[idx[1]] - m_axialVelocity[idx[0]])/dx 
         + m_axialVelocity[idx[0]];
+      return((interpolateModes(pts) * Q)(0,0));
+        break;
+      case IMPEDANCE:
+        Q = (pt.x() - x_0)*(m_impedance[nPt - idx[1]] - m_impedance[nPt - idx[0]])/dx 
+        + m_impedance[nPt - idx[0]];
+        modes = interpolateModes(pts);
+        return((modes.completeOrthogonalDecomposition().pseudoInverse() * Q * modes)(0, 0));
+        break;
+      case ADMITTANCE:
+        Q = (pt.x() - x_0)*(m_admittance[nPt - idx[1]] - m_admittance[nPt - idx[0]])/dx 
+        + m_admittance[nPt - idx[0]];
+        modes = interpolateModes(pts).transpose();
+        log << "modes" << endl;
+        log << modes << endl;
+        log << "modes pinv" << endl;
+        log << modes.completeOrthogonalDecomposition().pseudoInverse() << endl;
+        log << "modes * pinv " << endl;
+        log << modes.completeOrthogonalDecomposition().pseudoInverse() * modes << endl;
+        return((modes.completeOrthogonalDecomposition().pseudoInverse() * 
+              Q.transpose() * modes)(0, 0));
         break;
      }
-
-  vector<Point> pts;
-  pts.push_back(Point(pt.y(), pt.z()));
-
-  //log.close();
-
-  return((interpolateModes(pts) * Q)(0,0));
+  log.close();
 }
 
 // **************************************************************************
