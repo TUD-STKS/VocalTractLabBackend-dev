@@ -2467,6 +2467,13 @@ void Acoustic3dSimulation::runTest(enum testType tType)
   Matrix analyticE, E, modes;
   double E1y, E1z, E2y, E2z;
 
+  auto start = std::chrono::system_clock::now();
+  auto stop = std::chrono::system_clock::now();
+  std::chrono::duration<double> elapsedTime;
+  int hours;
+  int minutes;
+  double seconds;
+
   switch(tType){
   case MATRIX_E:
     /////////////////////////////////////////////////////////////////////////////////
@@ -2798,6 +2805,8 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     //*********************************************
     // Elephant trunk 
     //*********************************************
+
+      start = std::chrono::system_clock::now();
     
     // Set the proper simulation parameters
 //    m_simuParams.percentageLosses = 0.;
@@ -2806,8 +2815,9 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       //m_simuParams.orderMagnusScheme = 4;
     //m_meshDensity = 15.;
     //m_maxCutOnFreq = 20000;
+    m_simuParams.numIntegrationStep = 50;
     m_simuParams.maxComputedFreq = 10000;
-    //m_simuParams.curved = true;
+    m_simuParams.curved = true;
     m_geometryImported = true; // to have the good bounding box for modes plot
 
     generateLogFileHeader(true);
@@ -2837,6 +2847,8 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     m_crossSections[0]->setAreaVariationProfileType(ELEPHANT);
     m_crossSections[0]->setCurvatureRadius(inRadius);
     m_crossSections[0]->setCurvatureAngle(inAngle);
+    mn = 32;
+    m_crossSections[0]->setModesNumber(mn);
   
     log << "Cross-section created" << endl;
 
@@ -2868,15 +2880,20 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     inputPressure.setZero(mn, 1);
     inputVelocity.setZero(mn, 1);
 
-    preComputeRadiationMatrices(16, 0);
+    //preComputeRadiationMatrices(16, 0);
 
     // define the position of the radiation point
     radPts.push_back(Point_3(3., 0., 0.));
 
+    radAdmit.setZero(mn, mn);
+    radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(1000000.,0.));
+    radImped = radAdmit.inverse();
+
     freqMax = m_simuParams.maxComputedFreq;
-    ofs.open("imp.txt");
+    ofs.open("elephant_ac_press_MM.txt");
     ofs2.open("radR.txt");
     ofs3.open("radI.txt");
+    m_numFreq = 2001;
     //characImped.setZero(mn, mn);
     for (int i(0); i < m_numFreq; i++)
     {
@@ -2890,12 +2907,12 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       //    m_simuParams.sndSpeed, 2) - pow(scalingFactors[1] * 2. * M_PI * freq / m_simuParams.sndSpeed, 2)))
       //    / scalingFactors[1];
       //}
-      interpolateRadiationImpedance(radImped, freq, 0);
+      //interpolateRadiationImpedance(radImped, freq, 0);
 
       ofs2 << characImped.real() << endl;
       ofs3 << characImped.imag() << endl;
 
-      log << "Radiation impedance interpolated" << endl;
+      //log << "Radiation impedance interpolated" << endl;
   
       // Propagate impedance
       m_crossSections[0]->propagateMagnus(radImped, m_simuParams, freq, -1., IMPEDANCE);
@@ -2936,20 +2953,29 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     // extract the amplitude of the acoustic pressure along the guide
     ofs.open("amp.txt");
     Q = m_crossSections[0]->Z();
-    log << "Size Q " << Q.size() << endl;
     for (int i(0); i < Q.size(); i++)
     {
       sc = m_crossSections[0]->scaling((double)i / (double)(Q.size() - 1));
       ofs << abs(Q[i](0, 0)) << "  " << sc << endl;
     }
+
+    // get total time of the simulation
+    stop = std::chrono::system_clock::now();
+    elapsedTime = stop - start;
+    hours = floor(elapsedTime.count() / 3600.);
+    minutes = floor((elapsedTime.count() - hours * 3600.) / 60.);
+    seconds = elapsedTime.count() - (double)hours * 3600. -
+      (double)minutes * 60.;
+    log << "\nTotal time "
+      << hours << " h " << minutes << " m " << seconds << " s" << endl;
     ofs.close();
 
-    // generate spectra values for negative frequencies
-    for (int i(m_numFreq); i < 2 * m_numFreq; i++)
-    {
-      spectrum.re[i] = spectrum.re[2 * m_numFreq - i - 1];
-      spectrum.im[i] = -spectrum.im[2 * m_numFreq - i - 1];
-    }
+    //// generate spectra values for negative frequencies
+    //for (int i(m_numFreq); i < 2 * m_numFreq; i++)
+    //{
+    //  spectrum.re[i] = spectrum.re[2 * m_numFreq - i - 1];
+    //  spectrum.im[i] = -spectrum.im[2 * m_numFreq - i - 1];
+    //}
 
     break;
     /////////////////////////////////////////////////////////////////////////////////

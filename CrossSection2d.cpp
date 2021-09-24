@@ -1577,22 +1577,12 @@ void CrossSection2dFEM::getSpecificBndAdm(struct simulationParameters simuParams
       bndSpecAdm(m) = simuParams.percentageLosses * (
         ((1. - pow(2 * M_PI * m_eigenFreqs[m] / simuParams.sndSpeed, 2) / pow(k, 2)) *
         simuParams.viscousBndSpecAdm + simuParams.thermalBndSpecAdm) * sqrt(freq));
-      //bndSpecAdm(m) = (1. - pow(2 * M_PI * m_eigenFreqs[m] / sndSpeed, 2) / pow(k, 2)) * 0.01;
     }
   }
   else
   {
-    //bndSpecAdm = Eigen::MatrixXcd::Zero(m_modesNumber, m_modesNumber);
-    //double k(2. * M_PI * freq / simuParams.sndSpeed);
-    //for (int m(0); m < m_modesNumber; m++)
-    //{
-      //bndSpecAdm(m) = simuParams.percentageLosses * 
-          //(1. - pow(2 * M_PI * m_eigenFreqs[m] / simuParams.sndSpeed, 2) / pow(k, 2)) *
-          //(simuParams.viscousBndSpecAdm + simuParams.thermalBndSpecAdm);
-    //}
-    bndSpecAdm = simuParams.percentageLosses * (
-      Eigen::MatrixXcd::Constant(m_modesNumber, m_modesNumber,
-      simuParams.viscousBndSpecAdm + simuParams.thermalBndSpecAdm));
+    bndSpecAdm.setConstant(simuParams.percentageLosses *
+      (simuParams.viscousBndSpecAdm + simuParams.thermalBndSpecAdm));
   }
   //log << "\n" << bndSpecAdm << endl;
   //log.close();
@@ -1630,8 +1620,7 @@ double CrossSection2dFEM::scaling(double tau)
     break;
   case ELEPHANT:
     //return (0.5 * (1 + 9. * pow(tau, 2) - 6. * pow(tau, 3))); // l = [0.5 2]
-    //return (0.25*(1 + 9.*pow(tau, 2) - 6.*pow(tau, 3))); // l = [0.25 1]
-    return 1.; // uniform waveguide
+    return (0.25*(1 + 9.*pow(tau, 2) - 6.*pow(tau, 3))); // l = [0.25 1]
     break;
   }
 }
@@ -1664,8 +1653,7 @@ double CrossSection2dFEM::scalingDerivative(double tau)
     break;
   case ELEPHANT:
     //return (9. * tau * (1. - tau) / 16.95 ); // l = [0.5 2]
-    //return (9.*tau*(1. - tau)/16.95/2.); // l = [0.25 1]
-    return 0.; // uniform waveguide
+    return (9.*tau*(1. - tau)/16.95/2.); // l = [0.25 1]
   }
 }
 
