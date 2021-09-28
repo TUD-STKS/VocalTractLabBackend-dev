@@ -2805,7 +2805,14 @@ complex<double> CrossSection2dFEM::pout(Point pt)
 {
   vector<Point> pts;
   pts.push_back(pt);
+  if (m_acPressure.size() == 0)
+  {
+    return((interpolateModes(pts) * Zout() * Qout())(0, 0));
+  }
+  else
+  {
   return((interpolateModes(pts) * Pout())(0,0));
+  }
 }
 // **************************************************************************
 complex<double> CrossSection2dFEM::qin(Point pt)

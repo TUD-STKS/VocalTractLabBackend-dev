@@ -2466,6 +2466,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
   int nCombinations, ie, je, me, ne;
   Matrix analyticE, E, modes;
   double E1y, E1z, E2y, E2z;
+  bool radiationCondition;
 
   auto start = std::chrono::system_clock::now();
   auto stop = std::chrono::system_clock::now();
@@ -2807,9 +2808,10 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     //*********************************************
 
       start = std::chrono::system_clock::now();
+
+      radiationCondition = false;
     
     // Set the proper simulation parameters
-//    m_simuParams.percentageLosses = 0.;
     m_simuParams.freqDepLosses = false;
 //    m_simuParams.wallLosses = false;
       //m_simuParams.orderMagnusScheme = 4;
@@ -2880,84 +2882,83 @@ void Acoustic3dSimulation::runTest(enum testType tType)
     inputPressure.setZero(mn, 1);
     inputVelocity.setZero(mn, 1);
 
-    //preComputeRadiationMatrices(16, 0);
+    // Open end boundary consition
+    if (radiationCondition)
+    { 
+      preComputeRadiationMatrices(16, 0); 
+    }
+    else
+    {
+      radAdmit.setZero(mn, mn);
+      radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(1000000000., 0.));
+      radImped = radAdmit.inverse();
+    }
 
     // define the position of the radiation point
     radPts.push_back(Point_3(3., 0., 0.));
 
-    radAdmit.setZero(mn, mn);
-    radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(1000000.,0.));
-    radImped = radAdmit.inverse();
-
     freqMax = m_simuParams.maxComputedFreq;
     ofs.open("elephant_ac_press_MM.txt");
-    ofs2.open("radR.txt");
-    ofs3.open("radI.txt");
     m_numFreq = 2001;
-    //characImped.setZero(mn, mn);
     for (int i(0); i < m_numFreq; i++)
     {
       freq = max(0.1, freqMax*(double)i/(double)(m_numFreq - 1));
       log << "f = " << freq << " Hz" << endl;
-      
-      //// build characteristic impedance matrix
-      //for (int m(0); m < mn; m++)
-      //{
-      //  characImped(m, m) =  1. / sqrt(complex<double>(pow(2. * M_PI * m_crossSections[0]->eigenFrequency(m) /
-      //    m_simuParams.sndSpeed, 2) - pow(scalingFactors[1] * 2. * M_PI * freq / m_simuParams.sndSpeed, 2)))
-      //    / scalingFactors[1];
-      //}
-      //interpolateRadiationImpedance(radImped, freq, 0);
+
+      if (radiationCondition) { interpolateRadiationImpedance(radImped, freq, 0); }
 
       ofs2 << characImped.real() << endl;
       ofs3 << characImped.imag() << endl;
 
       //log << "Radiation impedance interpolated" << endl;
   
-      // Propagate impedance
-      m_crossSections[0]->propagateMagnus(radImped, m_simuParams, freq, -1., IMPEDANCE);
+      if (radiationCondition) {
+        // Propagate impedance
+        m_crossSections[0]->propagateMagnus(radImped, m_simuParams, freq, -1., IMPEDANCE);
+      }
+      else
+      {
+        // Propagate admittance
+        m_crossSections[0]->propagateMagnus(radAdmit, m_simuParams, freq, -1., ADMITTANCE);
+        //log << "Admittance propagated" << endl;
+      }
 
-      // propagate velocity
+      // propagate velocity or pressure
       inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass
        //* m_crossSections[0]->area() * pow(m_crossSections[0]->scaling(0.), 2)
         ;
-      m_crossSections[0]->propagateMagnus(inputVelocity, m_simuParams, freq, 1., VELOCITY);
-
-      // compute radiated pressure
-      RayleighSommerfeldIntegral(radPts, radPress, freq, 0);
-      spectrum.setValue(i, radPress(0,0));
-
-
-      // export impedance and velocity and radiated pressure
-      ofs << freq << "  "
-        << abs(
-          -1i * 2. * M_PI * freq * m_simuParams.volumicMass *
-          m_crossSections[0]->Zin()(0, 0)
-          //  /characImped(0,0)
-        ) << "  "
-        << arg(
-          -1i * 2. * M_PI * freq * m_simuParams.volumicMass *
-          m_crossSections[0]->Zin()(0, 0)
-          // /characImped(0, 0)
-        ) << "  "
-        << abs(m_crossSections[0]->Qout()(0,0)) << "  "
-        << arg(m_crossSections[0]->Qout()(0, 0)) << "  "
-        << abs(radPress(0)) << "  "
-        << arg(radPress(0)) << "  "
-        << endl;
+      ofs << freq << "  ";
+      if (radiationCondition)
+      {
+        m_crossSections[0]->propagateMagnus(inputVelocity, m_simuParams, freq, 1., VELOCITY);
+        // compute radiated pressure
+        RayleighSommerfeldIntegral(radPts, radPress, freq, 0);
+        spectrum.setValue(i, radPress(0,0));
+        ofs << abs(radPress(0)) << "  "
+          << arg(radPress(0)) << "  " << endl;
+      }
+      else
+      {
+        inputPressure = m_crossSections[0]->Yin().inverse() * inputVelocity;
+        m_crossSections[0]->propagateMagnus(inputPressure, m_simuParams, freq, 1., PRESSURE);
+        //log << "Pressure propagated" << endl;
+        ofs << abs(m_crossSections[0]->interiorField(
+          Point_3(m_crossSections[0]->length() - 0.03, 0., 0.), m_simuParams, PRESSURE)) << "  "
+          << arg(m_crossSections[0]->interiorField(
+            Point_3(m_crossSections[0]->length() - 0.03, 0., 0.), m_simuParams, PRESSURE)) << "  "
+          << endl;
+      }
     }
-    ofs3.close();
-    ofs2.close();
     ofs.close();
 
-    // extract the amplitude of the acoustic pressure along the guide
-    ofs.open("amp.txt");
-    Q = m_crossSections[0]->Z();
-    for (int i(0); i < Q.size(); i++)
-    {
-      sc = m_crossSections[0]->scaling((double)i / (double)(Q.size() - 1));
-      ofs << abs(Q[i](0, 0)) << "  " << sc << endl;
-    }
+    //// extract the amplitude of the acoustic pressure along the guide
+    //ofs.open("amp.txt");
+    //Q = m_crossSections[0]->Z();
+    //for (int i(0); i < Q.size(); i++)
+    //{
+    //  sc = m_crossSections[0]->scaling((double)i / (double)(Q.size() - 1));
+    //  ofs << abs(Q[i](0, 0)) << "  " << sc << endl;
+    //}
 
     // get total time of the simulation
     stop = std::chrono::system_clock::now();
