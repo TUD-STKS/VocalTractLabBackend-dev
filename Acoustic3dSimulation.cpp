@@ -2434,13 +2434,14 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 // ****************************************************************************
 // Run specific simulation tests
 
-void Acoustic3dSimulation::runTest(enum testType tType)
+void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 {
   ofstream ofs, ofs2, ofs3, ofs4;
   ifstream ifs;
   string line, str;
   char separator(';');
   stringstream strs;
+  string::size_type idxStr;
   ofstream log("log.txt", ofstream::app);
   log << "\nStart test" << endl;
 
@@ -3115,7 +3116,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       // load geometry parameters
       //***************************
 
-      ifs.open("param_test_geo.csv");
+      ifs.open(fileName);
       if (!ifs.is_open())
       {
         log << "failed to opened parameters file" << endl;
@@ -3365,7 +3366,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       ofs << E << endl;
       ofs.close();
 
-      preComputeRadiationMatrices(16, 2);
+      //preComputeRadiationMatrices(16, 2);
 
       // initialize input pressure and velocity vectors
       mn = m_crossSections[1]->numberOfModes();
@@ -3373,8 +3374,11 @@ void Acoustic3dSimulation::runTest(enum testType tType)
       inputVelocity.setZero(mn, 1);
 
       //radPts.push_back(Point_3(100., 0., 0.));
-      freqMax = m_simuParams.maxComputedFreq;
-      ofs.open("imp.txt");
+      freqMax = 10000.;
+      m_numFreq = 501;
+      idxStr = fileName.find_last_of("/\\");
+      str = fileName.substr(0, idxStr + 1) + "tfMM.txt"; 
+      ofs.open(str);
       //ofs3.open("Y.txt");
       //characImped.setZero(mn, mn);
       for (int i(0); i < m_numFreq; i++)
@@ -3382,11 +3386,11 @@ void Acoustic3dSimulation::runTest(enum testType tType)
         freq = max(0.1, freqMax * (double)i / (double)(m_numFreq - 1));
         log << "f = " << freq << " Hz" << endl;
 
-        interpolateRadiationImpedance(radImped, freq, 2);
-        interpolateRadiationAdmittance(radAdmit, freq, 2);
-        //radAdmit.setZero(vIdx[1], vIdx[1]);
-        //radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx[1], complex<double>(endAdmit,0.));
-        //radImped = radAdmit.inverse();
+        //interpolateRadiationImpedance(radImped, freq, 2);
+        //interpolateRadiationAdmittance(radAdmit, freq, 2);
+        radAdmit.setZero(vIdx[1], vIdx[1]);
+        radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx[1], complex<double>(endAdmit,0.));
+        radImped = radAdmit.inverse();
 
         //log << "radAdmit: \n" << radAdmit << endl;
         //log << "radImped: \n" << radImped << endl;
@@ -3399,7 +3403,7 @@ void Acoustic3dSimulation::runTest(enum testType tType)
             / m_crossSections[2]->area();
         }
 
-        log << "Radiation impedance interpolated" << endl;
+        //log << "Radiation impedance interpolated" << endl;
 
         propagateImpedAdmit(radImped, radAdmit, freq, 2, 1);
 
@@ -3416,22 +3420,22 @@ void Acoustic3dSimulation::runTest(enum testType tType)
         //RayleighSommerfeldIntegral(radPts, radPress, freq, 2);
 
         ofs << freq << "  "
-          << abs(
+          //<< abs(
             //-1i * 2. * M_PI * freq * m_simuParams.volumicMass *
-            m_crossSections[1]->Zin()(0, 0)
+            //m_crossSections[1]->Zin()(0, 0)
             //  /characImped(0,0)
-          ) << "  "
-          << arg(
+          //) << "  "
+          //<< arg(
             //-1i * 2. * M_PI * freq * m_simuParams.volumicMass *
-            m_crossSections[1]->Zin()(0, 0)
+            //m_crossSections[1]->Zin()(0, 0)
             // /characImped(0, 0)
-          )
-          << "  " << abs(m_crossSections[1]->Zout()(0, 0))
-          << "  " << arg(m_crossSections[1]->Zout()(0, 0))
-          << "  " << abs(m_crossSections[2]->Zin()(0, 0))
-          << "  " << arg(m_crossSections[2]->Zin()(0, 0))
-          << "  " << abs(m_crossSections[2]->Zout()(0, 0))
-          << "  " << arg(m_crossSections[2]->Zout()(0, 0))
+          //)
+          //<< "  " << abs(m_crossSections[1]->Zout()(0, 0))
+          //<< "  " << arg(m_crossSections[1]->Zout()(0, 0))
+          //<< "  " << abs(m_crossSections[2]->Zin()(0, 0))
+          //<< "  " << arg(m_crossSections[2]->Zin()(0, 0))
+          //<< "  " << abs(m_crossSections[2]->Zout()(0, 0))
+          //<< "  " << arg(m_crossSections[2]->Zout()(0, 0))
           << "  " << abs(-m_crossSections[2]->qout(Point(0., shifts[1]*rads[1]))
                   /1i/2./M_PI/freq/m_simuParams.volumicMass) 
           << "  " << arg(-m_crossSections[2]->qout(Point(0., shifts[1]*rads[1]))
@@ -3450,9 +3454,12 @@ void Acoustic3dSimulation::runTest(enum testType tType)
         // extract acoustic pressure and potential fields at a given frequency 
         if (i == idxField)
         {
-          ofs2.open("q.txt");
-          ofs3.open("Y.txt");
-          ofs4.open("p.txt");
+          str = fileName.substr(0, idxStr + 1) + "q.txt"; 
+          ofs2.open(str);
+          str = fileName.substr(0, idxStr + 1) + "Y.txt"; 
+          ofs3.open(str);
+          str = fileName.substr(0, idxStr + 1) + "p.txt"; 
+          ofs4.open(str);
           for (int s(1); s < 3; s++)
           {
             if (m_crossSections[s]->length() > 0.)

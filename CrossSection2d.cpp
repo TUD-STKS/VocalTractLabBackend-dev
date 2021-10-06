@@ -1237,8 +1237,8 @@ Matrix CrossSection2dFEM::interpolateModes(vector<Point> pts)
   //ofstream val;
   //val.open("val.txt", ofstream::app);
 
-  //ofstream log;
-  //log.open("log.txt", ofstream::app);
+  ofstream log;
+  log.open("log.txt", ofstream::app);
   //log << "Start interpolation" << endl;
   //log.close();
 
@@ -1298,25 +1298,34 @@ Matrix CrossSection2dFEM::interpolateModes(vector<Point> pts)
   // interpolate the field
   for (int i(0); i < numPts; ++i)
   {
-    //Coordinate_vector:
-    coords.clear();
-    auto res = CGAL::natural_neighbor_coordinates_2(T, pts[i], std::back_inserter(coords));
-    //val << "Point " << i << " location successfull: " << res.third << endl;
-    norm = res.second;
-    //norm = CGAL::natural_neighbor_coordinates_2(T, pts[i], std::back_inserter(coords)).second;
-
-    for (int m(0); m < m_modesNumber; ++m)
+    // check if the point is inside the contour
+    if (m_contour.has_on_unbounded_side(pts[i]))
     {
-      //linear interpolant:
-      l_value = CGAL::linear_interpolation(coords.begin(), coords.end(),
-        norm, Value_access(values[m]));
-      interpolation(i,m) = (double)l_value;
+      log << "Error interpolating: point outside of the contour" << endl;
+      interpolation.row(i).setConstant(NAN); 
+    }
+    else
+    {
+      //Coordinate_vector:
+      coords.clear();
+      auto res = CGAL::natural_neighbor_coordinates_2(T, pts[i], std::back_inserter(coords));
+      //val << "Point " << i << " location successfull: " << res.third << endl;
+      norm = res.second;
+      //norm = CGAL::natural_neighbor_coordinates_2(T, pts[i], std::back_inserter(coords)).second;
+
+      for (int m(0); m < m_modesNumber; ++m)
+      {
+        //linear interpolant:
+        l_value = CGAL::linear_interpolation(coords.begin(), coords.end(),
+          norm, Value_access(values[m]));
+        interpolation(i,m) = (double)l_value;
+      }
     }
   }
 
   //val << "\nInterpolation finished" << endl << endl;
   //val.close();
-  //log.close();
+  log.close();
   
   return interpolation;
 }
@@ -1351,9 +1360,6 @@ Matrix CrossSection2dRadiation::interpolateModes(vector<Point> pts)
   {
     // compute the radial polar coordinate of the point
     //
-    // absolute position assumed
-    //r = sqrt(pow(pts[p].x() - m_ctrLinePt.x, 2) +
-    //  pow(pts[p].y() - m_ctrLinePt.y, 2));
     // relative position assumed
     r = sqrt(pow(pts[p].x(), 2) + pow(pts[p].y(), 2));
 
@@ -2860,6 +2866,7 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
   // define the interpolation point
   vector<Point> pts;
   pts.push_back(Point(pt.y(), pt.z()));
+  log << "Point " << pts.back() << endl;
 
   // interpolate quantity
   double x_0((double)(idx[0])*dx );
@@ -2886,13 +2893,14 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
       case ADMITTANCE:
         Q = (pt.x() - x_0)*(m_admittance[nPt - idx[1]] - m_admittance[nPt - idx[0]])/dx 
         + m_admittance[nPt - idx[0]];
+        log << "Amplitude interpolated" << endl;
         modes = interpolateModes(pts).transpose();
         log << "modes" << endl;
-        log << modes << endl;
-        log << "modes pinv" << endl;
-        log << modes.completeOrthogonalDecomposition().pseudoInverse() << endl;
-        log << "modes * pinv " << endl;
-        log << modes.completeOrthogonalDecomposition().pseudoInverse() * modes << endl;
+        //log << modes << endl;
+        //log << "modes pinv" << endl;
+        //log << modes.completeOrthogonalDecomposition().pseudoInverse() << endl;
+        //log << "modes * pinv " << endl;
+        //log << modes.completeOrthogonalDecomposition().pseudoInverse() * modes << endl;
         return((modes.completeOrthogonalDecomposition().pseudoInverse() * 
               Q.transpose() * modes)(0, 0));
         break;
