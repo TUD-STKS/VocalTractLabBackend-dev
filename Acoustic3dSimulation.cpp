@@ -98,7 +98,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_idxSecNoiseSource(46), // for /sh/ 212, for vowels 46
   m_idxConstriction(40),
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
-  m_contInterpMeth(AREA)
+  m_contInterpMeth(BOUNDING_BOX)
 {
   m_simuParams.temperature = 31.4266;
   m_simuParams.volumicMass = STATIC_PRESSURE_CGS * MOLECULAR_MASS / (GAS_CONSTANT *
@@ -279,7 +279,16 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   log << "Varying cross-sectional area: ";
   if (m_simuParams.varyingArea)
   {
-    log << "yes" << endl;
+    log << "yes contour interpolation method: ";
+    switch (m_contInterpMeth)
+    {
+      case AREA:
+        log << "AREA" << endl;
+        break;
+      case BOUNDING_BOX:
+        log << "BOUNDING_BOX" << endl;
+        break;
+    }
   }
   else
   {
