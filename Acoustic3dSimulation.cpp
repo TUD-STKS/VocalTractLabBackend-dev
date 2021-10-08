@@ -2286,6 +2286,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 
     //log << "Imped admit propagated" << endl;
 
+    // FIXME: take into acount the scaling
     //// compute the pressure and the velocity at the entrance of the next section
     //// if the section expends
     //if (m_crossSections[m_idxSecNoiseSource +1]->area() >
