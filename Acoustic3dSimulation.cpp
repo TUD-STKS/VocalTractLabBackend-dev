@@ -98,7 +98,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_idxSecNoiseSource(46), // for /sh/ 212, for vowels 46
   m_idxConstriction(40),
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
-  m_contInterpMeth(BOUNDING_BOX)
+  m_contInterpMeth(AREA)
 {
   m_simuParams.temperature = 31.4266;
   m_simuParams.volumicMass = STATIC_PRESSURE_CGS * MOLECULAR_MASS / (GAS_CONSTANT *
@@ -1580,8 +1580,8 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
     m_simuParams.thermalBndSpecAdm / m_simuParams.sndSpeed);
 
   //ofstream ar;
-  ofstream log;
-  log.open("log.txt", ofstream::app);
+  //ofstream log;
+  //log.open("log.txt", ofstream::app);
   //log << "\n\nStart velocity propagation" << endl;
 
   // determine the direction of the propagation
@@ -1660,7 +1660,7 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
       }
     }
 
-    log << "i = " << i << " nextSec = " << nextSec << endl;
+    //log << "i = " << i << " nextSec = " << nextSec << endl;
 
     prevVelo = Eigen::MatrixXcd::Zero(m_crossSections[nextSec]->numberOfModes(), 1);
     prevPress = Eigen::MatrixXcd::Zero(m_crossSections[nextSec]->numberOfModes(), 1);
@@ -1704,7 +1704,7 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
             (m_crossSections[nextSec]->area() *
              pow(m_crossSections[nextSec]->scaleIn(), 2)))
           {
-            log << "Compute previous pressure" << endl;
+            //log << "Compute previous pressure" << endl;
             prevPress += 
                 //(m_crossSections[i]->scaleOut() /
                 //m_crossSections[nextSec]->scaleIn()) * 
@@ -1716,7 +1716,7 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
           // if the section expends: area(i) < area(ns)
           else
           {
-            log << "Compute previous velocity" << endl;
+            //log << "Compute previous velocity" << endl;
           prevVelo +=
             //(Matrix::Identity(nNs, nNs)
             //  - wallInterfaceAdmit *
