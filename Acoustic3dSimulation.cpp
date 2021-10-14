@@ -2069,7 +2069,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   //}
 
   // generate one point in front
-  radPts.push_back(Point_3(25., 0., 0.));
+  radPts.push_back(Point_3(3., 0., 0.));
 
   // print radiation points coordinates in the log file
   log << "Radiation point(s) coordinates (m):" << endl;
@@ -2461,7 +2461,8 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
   vector<int> surfaceIdx(nbAngles, 0), slectedModesIdx;
   double scalingFactors[2] = { 1., 1. };
   double a(5.5), b(3.);
-  double freq, freqMax, endAdmit;
+  double freq, freqMax, freqField, endAdmit;
+  complex<double> result;
   int nbFreqs, mn, idxField;
   Eigen::MatrixXcd characImped, radImped, radAdmit, inputVelocity, inputPressure;
   vector<Point_3> radPts;
@@ -2820,7 +2821,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 
       start = std::chrono::system_clock::now();
 
-      radiationCondition = false;
+      radiationCondition = true;
     
     // Set the proper simulation parameters
     m_simuParams.freqDepLosses = false;
@@ -2938,6 +2939,8 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
       inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass
        //* m_crossSections[0]->area() * pow(m_crossSections[0]->scaling(0.), 2)
         ;
+
+      // export result
       ofs << freq << "  ";
       if (radiationCondition)
       {
@@ -2945,19 +2948,19 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
         // compute radiated pressure
         RayleighSommerfeldIntegral(radPts, radPress, freq, 0);
         spectrum.setValue(i, radPress(0,0));
-        ofs << abs(radPress(0)) << "  "
-          << arg(radPress(0)) << "  " << endl;
+        ofs << abs(1e5*radPress(0)/2./M_PI) << "  "
+          << arg(1e5*radPress(0)/2./M_PI) << "  " << endl;
       }
       else
       {
         inputPressure = m_crossSections[0]->Yin().inverse() * inputVelocity;
         m_crossSections[0]->propagateMagnus(inputPressure, m_simuParams, freq, 1., PRESSURE);
         //log << "Pressure propagated" << endl;
-        ofs << abs(m_crossSections[0]->interiorField(
-          Point_3(m_crossSections[0]->length() - 0.03, 0., 0.), m_simuParams, PRESSURE)) << "  "
-          << arg(m_crossSections[0]->interiorField(
-            Point_3(m_crossSections[0]->length() - 0.03, 0., 0.), m_simuParams, PRESSURE)) << "  "
-          << endl;
+        result = m_crossSections[0]->area() * pow(m_crossSections[0]->scaleIn(), 2) * 1e5 *
+            m_crossSections[0]->interiorField(
+          Point_3(m_crossSections[0]->length() - 0.03, 0., 0.), m_simuParams, PRESSURE);
+        ofs << abs(result) << "  "
+          << arg(result) << "  " << endl;
       }
     }
     ofs.close();
@@ -3222,7 +3225,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
         // extract index frequency field extraction
         getline(ifs, line); // to remove comment line
         getline(ifs, line);
-        idxField = stoi(line);
+        freqField = stod(line);
 
       }
 
@@ -3451,66 +3454,68 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
           << "  " << arg(-m_crossSections[2]->qout(Point(0., shifts[1]*rads[1]))
                   /1i/2./M_PI/freq/m_simuParams.volumicMass) 
           << endl;
-
-        //for (int s(1); s < 3; s++)
-        //{
-          //// extract impedance of the first mode
-          //Q = m_crossSections[s]->Y();
-          //for (int p(Q.size() - 1); p >= 0; p--)
-          //{
-            //ofs3 << abs(Q[p](0, 0)) << "  ";
-          //}
-        //}
-        // extract acoustic pressure and potential fields at a given frequency 
-        if (i == idxField)
-        {
-          str = fileName.substr(0, idxStr + 1) + "q.txt"; 
-          ofs2.open(str);
-          str = fileName.substr(0, idxStr + 1) + "Y.txt"; 
-          ofs3.open(str);
-          str = fileName.substr(0, idxStr + 1) + "p.txt"; 
-          ofs4.open(str);
-          for (int s(1); s < 3; s++)
-          {
-            if (m_crossSections[s]->length() > 0.)
-            {
-              for (int px(0); px < 100; px++)
-              {
-                for (int pz(0); pz < 50; pz++)
-                {
-                  ofs3 << abs(m_crossSections[s]->interiorField(
-                    Point_3(lengths[s-1]*(double)(px)/99., 0., rads[s-1]*(2.*(double)(pz)/49.-1.))
-                    , m_simuParams, ADMITTANCE)) << "  ";
-                  ofs2 << abs(m_crossSections[s]->q(
-                    Point_3(lengths[s-1]*(double)(px)/99., 0., rads[s-1]*(2.*(double)(pz)/49.-1.))
-                    , m_simuParams)) << "  ";
-                  ofs4 << abs(m_crossSections[s]->p(
-                    Point_3(lengths[s-1]*(double)(px)/99., 0., rads[s-1]*(2.*(double)(pz)/49.-1.))
-                    , m_simuParams)) << "  ";
-                }
-                ofs2 << endl;
-                ofs3 << endl;
-                ofs4 << endl;
-              }
-            }
-          }
-          ofs4.close();
-          ofs3.close();
-          ofs2.close();
-        }
-
-        //ofs3 << endl;
       }
       ofs.close();
       //ofs2.close();
 
-      // extract admittance at both sides of the junction
-      ofs.open("Zin.txt");
-      ofs << m_crossSections[1]->Zin().cwiseAbs() << endl;
-      ofs.close();
-      ofs.open("Zout.txt");
-      ofs << m_crossSections[1]->Zout().cwiseAbs() << endl;
-      ofs.close();
+      ////////////////////////////////////////////////////////
+      // Extract the acoustic field at a specified frequency
+      ////////////////////////////////////////////////////////
+  
+      if (freqField != 0.)
+      {
+        log << "Compute acoustic field at the frequency " << freqField << endl;
+
+        freq = freqField;
+
+        radAdmit.setZero(vIdx[1], vIdx[1]);
+        radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx[1], complex<double>(endAdmit,0.));
+        radImped = radAdmit.inverse();
+
+        propagateImpedAdmit(radImped, radAdmit, freq, 2, 1);
+        log << "Impedance propagated" << endl;
+
+        inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass ; 
+            // * m_crossSections[0]->area();
+        inputPressure = m_crossSections[1]->Zin() * inputVelocity;
+        log << "input pressure and velocity computed" << endl;
+        propagateVelocityPress(inputVelocity, inputPressure, freq, 1, 2);
+        log << "Velocity and pressure propagated" << endl;
+
+        str = fileName.substr(0, idxStr + 1) + "q.txt"; 
+        ofs2.open(str);
+        str = fileName.substr(0, idxStr + 1) + "Y.txt"; 
+        ofs3.open(str);
+        str = fileName.substr(0, idxStr + 1) + "p.txt"; 
+        ofs4.open(str);
+        for (int s(1); s < 3; s++)
+        {
+          if (m_crossSections[s]->length() > 0.)
+          {
+            for (int px(0); px < 100; px++)
+            {
+              for (int pz(0); pz < 50; pz++)
+              {
+                ofs3 << abs(m_crossSections[s]->interiorField(
+                  Point_3(lengths[s-1]*(double)(px)/99., 0., rads[s-1]*(2.*(double)(pz)/49.-1.))
+                  , m_simuParams, ADMITTANCE)) << "  ";
+                ofs2 << abs(m_crossSections[s]->q(
+                  Point_3(lengths[s-1]*(double)(px)/99., 0., rads[s-1]*(2.*(double)(pz)/49.-1.))
+                  , m_simuParams)) << "  ";
+                ofs4 << abs(m_crossSections[s]->p(
+                  Point_3(lengths[s-1]*(double)(px)/99., 0., rads[s-1]*(2.*(double)(pz)/49.-1.))
+                  , m_simuParams)) << "  ";
+              }
+              ofs2 << endl;
+              ofs3 << endl;
+              ofs4 << endl;
+            }
+          }
+        }
+        ofs4.close();
+        ofs3.close();
+        ofs2.close();
+      }
 
       break;
   }
