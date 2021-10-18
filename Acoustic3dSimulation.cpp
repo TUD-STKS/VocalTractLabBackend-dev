@@ -1877,23 +1877,6 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     log << "Importation failed" << endl;
   }
 
-  //if (m_geometryImported)
-  //{
-  //  if (createCSWithIntermediateCSFromCSVFile(false))
-  //  {
-  //    log << "Geometry successfully imported" << endl;
-  //  }
-  //  else
-  //  {
-  //    log << "Importation failed" << endl;
-  //  }
-  //}
-  //else
-  //{
-  //  log << "Geometry is from vocal tract lab" << endl;
-  //  createCSWithIntermediateCSGeneral(tract, true);
-  //}
-  
   numSec = m_crossSections.size();
 
   log << "Number of sections: " << numSec << endl;
@@ -1913,7 +1896,6 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   //    << "  " << m_crossSections[i]->circleArcAngle()
   //    << "  " << m_crossSections[i]->isJunction()
   //    << endl;
-
   //}
   //prop.close();
 
@@ -1977,37 +1959,37 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     elapsed_seconds.count() << " s" << endl;
 
   // check junction matrix first term
-  prop.open("chkF.txt");
-  double F00, S, Sn, A, An, sc, scn;
-  Matrix modes;
-  for (int i(0); i < numSec - 2; i++)
-  {
-    sc = m_crossSections[i]->scaleOut();
-    scn = m_crossSections[i + 1]->scaleIn();
-    S = m_crossSections[i]->area();
-    Sn = m_crossSections[i + 1]->area();
+  //prop.open("chkF.txt");
+  //double F00, S, Sn, A, An, sc, scn;
+  //Matrix modes;
+  //for (int i(0); i < numSec - 2; i++)
+  //{
+    //sc = m_crossSections[i]->scaleOut();
+    //scn = m_crossSections[i + 1]->scaleIn();
+    //S = m_crossSections[i]->area();
+    //Sn = m_crossSections[i + 1]->area();
     
-    F00 = min(S*pow(sc,2), Sn*pow(scn, 2)) / sqrt(S * Sn)/sc/scn;
+    //F00 = min(S*pow(sc,2), Sn*pow(scn, 2)) / sqrt(S * Sn)/sc/scn;
 
-    modes = m_crossSections[i]->getModes();
-    A = modes(0, 0);
-    modes = m_crossSections[i + 1]->getModes();
-    An = modes(0, 0);
+    //modes = m_crossSections[i]->getModes();
+    //A = modes(0, 0);
+    //modes = m_crossSections[i + 1]->getModes();
+    //An = modes(0, 0);
 
-    prop << m_crossSections[i]->getMatrixF()[0](0, 0) << "  "
-      << F00 << "  " << S << "  " << Sn << "  "
-      << A << "  " << An << "  " << sc << "  " << scn << endl;
-  }
-  prop.close();
+    //prop << m_crossSections[i]->getMatrixF()[0](0, 0) << "  "
+      //<< F00 << "  " << S << "  " << Sn << "  "
+      //<< A << "  " << An << "  " << sc << "  " << scn << endl;
+  //}
+  //prop.close();
   
   // export scaling factors
-  prop.open("sc.txt");
-  for (int i(0); i < numSec - 2; i++)
-  {
-    prop << m_crossSections[i]->scaleIn() << "  "
-      << m_crossSections[i]->scaleOut() << endl;
-  }
-  prop.close();
+  //prop.open("sc.txt");
+  //for (int i(0); i < numSec - 2; i++)
+  //{
+    //prop << m_crossSections[i]->scaleIn() << "  "
+      //<< m_crossSections[i]->scaleOut() << endl;
+  //}
+  //prop.close();
 
   // extract the junction matrix of the noise source section
   F = m_crossSections[m_idxSecNoiseSource]->getMatrixF()[0];
@@ -2033,13 +2015,6 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   inputPressureNoise(0, 0) = V0;
 
   log << "source generated" << endl;
-
-  //// compute the modal amplitude at the center of the last cross-section
-  //vector<Point> pts;
-  //pts.push_back(Point(0., 0.));
-
-  //Matrix modeAmplitudes(
-  //m_crossSections[numSec-2]->interpolateModes(pts));
 
   //*****************************************************************************
   //  Compute points for acoustic field computation
@@ -2098,17 +2073,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     numFreqComputed, NULL,
     wxPD_CAN_ABORT | wxPD_AUTO_HIDE | wxPD_ELAPSED_TIME);
 
-  //// save the frequencies of the transfer function
-  //prop.open("fSimu.txt");
-  //for (int i(0); i < m_numFreq; i++)
-  //{
-  //  prop << max(10., (double)i* freqSteps) << endl;
-  //}
-  //prop.close();
-
   start = std::chrono::system_clock::now();
-
-  //int mn(m_crossSections[numSec - 2]->numberOfModes());
 
   // loop over frequencies
   for (int i(0); i < numFreqComputed; i++)
@@ -2200,11 +2165,6 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     //prop << endl;
     //prop.close();
 
-    //// Extract end volume velocity
-    //prop.open("uend.txt", ofstream::app);
-    //prop << abs(m_crossSections[numSec - 2]->Qout()(0, 0)) << endl;
-    //prop.close();
-    
     start = std::chrono::system_clock::now();
 
     //*****************************************************************************
@@ -2220,19 +2180,6 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     //prop.open("radI.txt", ofstream::app);
     //prop << radPress.transpose().imag() << endl;
     //prop.close();
-
-    //// compute the acoustic pressure at the center of the exit
-    //pressure = (0., 0.);
-    //velocity = (0., 0.);
-    //endPressAmpl = m_crossSections[numSec - 2]->endAcPressure();
-    //endVelAmpl = m_crossSections[numSec - 2]->endAxialVelocity();
-    //for (int m(0); m < m_crossSections[numSec-2]->numberOfModes(); m++)
-    //{
-    //  pressure += endPressAmpl(m, 0) * modeAmplitudes(0, m);
-    //  velocity += endVelAmpl(m, 0) * modeAmplitudes(0, m);
-    //}
-
-    /*prop << freq << "  " << abs(radPress(0, 0)) << "  " << arg(radPress(0, 0)) << endl;*/
 
     spectrum.setValue(i, radPress(0,0));
 
@@ -2399,30 +2346,6 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   }
   prop.close();
 
-  //prop.open("spec.txt");
-  //for (int i(0); i < spectrum.N; i++)
-  //{
-  //  prop << spectrum.getRealPart(i) << "  "
-  //    << spectrum.getImaginaryPart(i) << endl;
-  //}
-  //prop.close();
-  //
-  //prop.open("specN.txt");
-  //for (int i(0); i < spectrumNoise.N; i++)
-  //{
-  //  prop << spectrumNoise.getRealPart(i) << "  "
-  //    << spectrumNoise.getImaginaryPart(i) << endl;
-  //}
-  //prop.close();
-
-  //prop.open("specC.txt");
-  //for (int i(0); i < spectrumConst.N; i++)
-  //{
-  //  prop << spectrumConst.getRealPart(i) << "  "
-  //    << spectrumConst.getImaginaryPart(i) << endl;
-  //}
-  //prop.close();
-
   end = std::chrono::system_clock::now();
   elapsed_seconds = end - startTot;
   int hours(floor(elapsed_seconds.count() / 3600.));
@@ -2456,6 +2379,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
   log << "\nStart test" << endl;
 
   Polygon_2 contour;
+  Point_3 pointComputeField;
   double radius, angle, area, length, inRadius, inAngle, sc;
   int nbAngles(100);
   vector<int> surfaceIdx(nbAngles, 0), slectedModesIdx;
@@ -3422,8 +3346,8 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 
         log << "Impedance propagated" << endl;
 
-        inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass ; 
-            // * m_crossSections[0]->area();
+        inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass;  
+             //* sqrt(m_crossSections[0]->area());
         inputPressure = m_crossSections[1]->Zin() * inputVelocity;
         log << "input pressure and velocity computed" << endl;
         propagateVelocityPress(inputVelocity, inputPressure, freq, 1, 2);
@@ -3433,26 +3357,12 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
         //RayleighSommerfeldIntegral(radPts, radPress, freq, 2);
 
         ofs << freq << "  "
-          //<< abs(
-            //-1i * 2. * M_PI * freq * m_simuParams.volumicMass *
-            //m_crossSections[1]->Zin()(0, 0)
-            //  /characImped(0,0)
-          //) << "  "
-          //<< arg(
-            //-1i * 2. * M_PI * freq * m_simuParams.volumicMass *
-            //m_crossSections[1]->Zin()(0, 0)
-            // /characImped(0, 0)
-          //)
-          //<< "  " << abs(m_crossSections[1]->Zout()(0, 0))
-          //<< "  " << arg(m_crossSections[1]->Zout()(0, 0))
-          //<< "  " << abs(m_crossSections[2]->Zin()(0, 0))
-          //<< "  " << arg(m_crossSections[2]->Zin()(0, 0))
-          //<< "  " << abs(m_crossSections[2]->Zout()(0, 0))
-          //<< "  " << arg(m_crossSections[2]->Zout()(0, 0))
           << "  " << abs(-m_crossSections[2]->qout(Point(0., shifts[1]*rads[1]))
                   /1i/2./M_PI/freq/m_simuParams.volumicMass) 
           << "  " << arg(-m_crossSections[2]->qout(Point(0., shifts[1]*rads[1]))
                   /1i/2./M_PI/freq/m_simuParams.volumicMass) 
+          << "  " << abs(m_crossSections[2]->pout(Point(0., shifts[1]*rads[1])))
+          << "  " << arg(m_crossSections[2]->pout(Point(0., shifts[1]*rads[1])))
           << endl;
       }
       ofs.close();
@@ -3472,12 +3382,17 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
         radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx[1], complex<double>(endAdmit,0.));
         radImped = radAdmit.inverse();
 
+        log << "radAdmit" << endl << radAdmit << endl;
+        log << "radImped" << endl << radImped << endl;
+
         propagateImpedAdmit(radImped, radAdmit, freq, 2, 1);
         log << "Impedance propagated" << endl;
 
         inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass ; 
-            // * m_crossSections[0]->area();
+             //* sqrt(m_crossSections[0]->area());
         inputPressure = m_crossSections[1]->Zin() * inputVelocity;
+        log << "inputVelocity" << endl << inputVelocity << endl;
+        log << "inputPressure" << endl << inputPressure << endl;
         log << "input pressure and velocity computed" << endl;
         propagateVelocityPress(inputVelocity, inputPressure, freq, 1, 2);
         log << "Velocity and pressure propagated" << endl;
@@ -3494,17 +3409,14 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
           {
             for (int px(0); px < 100; px++)
             {
-              for (int pz(0); pz < 50; pz++)
+              for (int pz(0); pz < 51; pz++)
               {
-                ofs3 << abs(m_crossSections[s]->interiorField(
-                  Point_3(lengths[s-1]*(double)(px)/99., 0., rads[s-1]*(2.*(double)(pz)/49.-1.))
-                  , m_simuParams, ADMITTANCE)) << "  ";
-                ofs2 << abs(m_crossSections[s]->q(
-                  Point_3(lengths[s-1]*(double)(px)/99., 0., rads[s-1]*(2.*(double)(pz)/49.-1.))
-                  , m_simuParams)) << "  ";
-                ofs4 << abs(m_crossSections[s]->p(
-                  Point_3(lengths[s-1]*(double)(px)/99., 0., rads[s-1]*(2.*(double)(pz)/49.-1.))
-                  , m_simuParams)) << "  ";
+                pointComputeField = 
+                  Point_3(lengths[s-1]*(double)(px)/99., 0., rads[s-1]*(2.*(double)(pz)/50.-1.));
+                ofs3 << abs(m_crossSections[s]->interiorField(pointComputeField, 
+                      m_simuParams, ADMITTANCE)) << "  ";
+                ofs2 << abs(m_crossSections[s]->q(pointComputeField, m_simuParams)) << "  ";
+                ofs4 << abs(m_crossSections[s]->p(pointComputeField, m_simuParams)) << "  ";
               }
               ofs2 << endl;
               ofs3 << endl;
