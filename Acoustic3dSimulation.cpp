@@ -2365,6 +2365,328 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 }
 
 // ****************************************************************************
+// Run a simulation for a concatenation of cylinders
+
+  void Acoustic3dSimulation::cylinderConcatenationSimulation(string fileName)
+{
+  // for data extraction
+  double endAdmit, freqField;
+  vector<int> vIdx;
+  vector<double> rads, shifts, scaleIn, scaleOut, lengths, curvAngles;
+  ifstream ifs;
+  string line, str;
+  char separator(';');
+  stringstream strSt;
+
+  // for cross-section creation
+  Polygon_2 contour;
+  int nbAngles(100), nbSec;
+  double angle, area, length, inAngle, inRadius, maxRad;
+  double scalingFactors[2];
+  vector<int> surfaceIdx(nbAngles, 0);
+
+  // for solving the wave problem 
+  int mn;
+  double freq, freqMax;
+  Eigen::MatrixXcd radImped, radAdmit, inputVelocity, inputPressure;
+  complex<double> pout, vout;
+  string::size_type idxStr;
+  ofstream ofs, ofs2, ofs3, ofs4;
+  Point_3 pointComputeField;
+
+  m_geometryImported = true; // to have the good bounding box for modes plot
+  m_simuParams.sndSpeed = 34400;
+
+  generateLogFileHeader(true);
+  ofstream log("log.txt", ofstream::app);
+  log << "\nStart cylinder concatenation simulation" << endl;
+
+  //***************************
+  // load geometry parameters
+  //***************************
+
+  ifs.open(fileName);
+  if (!ifs.is_open())
+  {
+    log << "failed to opened parameters file" << endl;
+  }
+  else
+  {
+    // extract number of modes
+    vIdx.clear();
+    getline(ifs, line); // to remove comment line
+    getline(ifs, line);
+    strSt.clear();
+    strSt.str(line);
+    while (getline(strSt, str, separator))
+    {
+      vIdx.push_back(stoi(str));
+    }
+
+    // extract radius
+    rads.clear();
+    getline(ifs, line); // to remove comment line
+    getline(ifs, line);
+    strSt.clear();
+    strSt.str(line);
+    while (getline(strSt, str, separator))
+    {
+      rads.push_back(stod(str));
+    }
+
+    // extract contour shift
+    shifts.clear();
+    getline(ifs, line); // to remove comment line
+    getline(ifs, line);
+    strSt.clear();
+    strSt.str(line);
+    while (getline(strSt, str, separator))
+    {
+      shifts.push_back(stod(str));
+    }
+
+    // extract scaling in
+    scaleIn.clear();
+    getline(ifs, line); // to remove comment line
+    getline(ifs, line);
+    strSt.clear();
+    strSt.str(line);
+    while (getline(strSt, str, separator))
+    {
+      scaleIn.push_back(stod(str));
+    }
+
+    // extract scaling out
+    scaleOut.clear();
+    getline(ifs, line); // to remove comment line
+    getline(ifs, line);
+    strSt.clear();
+    strSt.str(line);
+    while (getline(strSt, str, separator))
+    {
+      scaleOut.push_back(stod(str));
+    }
+
+    // extract length
+    lengths.clear();
+    getline(ifs, line); // to remove comment line
+    getline(ifs, line);
+    strSt.clear();
+    strSt.str(line);
+    while (getline(strSt, str, separator))
+    {
+      lengths.push_back(stod(str));
+    }
+
+    // extract curvature angle
+    curvAngles.clear();
+    getline(ifs, line); // to remove comment line
+    getline(ifs, line);
+    strSt.clear();
+    strSt.str(line);
+    while (getline(strSt, str, separator))
+    {
+      curvAngles.push_back(stod(str));
+    }
+
+    // extract end admittance
+    getline(ifs, line); // to remove comment line
+    getline(ifs, line);
+    strSt.clear();
+    strSt.str(line);
+    getline(strSt, str, separator);
+    endAdmit =  stod(str); // * pow(scaleOut[1], 2); // open end admittance
+    getline(strSt, str, separator);
+    // wall admittance
+    m_simuParams.thermalBndSpecAdm = complex<double>(stod(str), 0.);
+
+    // extract index frequency field extraction
+    getline(ifs, line); // to remove comment line
+    getline(ifs, line);
+    freqField = stod(line);
+
+  }
+
+  log << "Geometry parameters extracted" << endl;
+
+  //***********************
+  // Create cross-sections
+  //***********************
+
+  maxRad = 0.;
+  for (int s(0); s < vIdx.size(); s++)
+  { 
+    maxRad = max(maxRad, rads[s]);
+    // Generate a circular contour
+    contour.clear();
+    for (int i(0); i < nbAngles; i++)
+    {
+      angle = 2. * M_PI * (double)(i) / (double)(nbAngles);
+      contour.push_back(Point(rads[s] * cos(angle), rads[s] * (sin(angle) + shifts[s])));
+    }
+
+    area = pow(rads[s], 2) * M_PI;
+    scalingFactors[0] = scaleIn[s];
+    scalingFactors[1] = scaleOut[s];
+    length = lengths[s];
+    inAngle = curvAngles[s];
+    inRadius = length / inAngle;
+    addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
+      surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
+      scalingFactors);
+    m_crossSections[s]->setCurvatureRadius(inRadius);
+    m_crossSections[s]->setCurvatureAngle(inAngle);
+    m_crossSections[s]->setModesNumber(vIdx[s]);
+    if (s > 0){m_crossSections[s]->setPreviousSection(s - 1);}
+    if (s < vIdx.size() -1) {m_crossSections[s]->setNextSection(s+1);}
+
+    log << "Section " << s << " created" << endl;
+  }
+  nbSec = m_crossSections.size();
+  // define bounding box for modes and mesh display
+  m_maxCSBoundingBox.first = Point2D(-2. * maxRad, -2. * maxRad);
+  m_maxCSBoundingBox.second = Point2D(2. * maxRad, 2. * maxRad);
+
+  log << nbSec << " sections created" << endl;
+
+  //*********************
+  // solve wave problem
+  //*********************
+
+  computeMeshAndModes();
+  log << "Modes computed" << endl;
+
+  computeJunctionMatrices(false);
+  log << "Junctions computed" << endl;
+
+  // initialize input pressure and velocity vectors
+  mn = m_crossSections[0]->numberOfModes();
+  inputPressure.setZero(mn, 1);
+  inputVelocity.setZero(mn, 1);
+
+  freqMax = 10000.;
+  m_numFreq = 501;
+  idxStr = fileName.find_last_of("/\\");
+  str = fileName.substr(0, idxStr + 1) + "tfMM.txt"; 
+  ofs.open(str);
+  for (int i(0); i < m_numFreq; i++)
+  {
+    freq = max(0.1, freqMax * (double)i / (double)(m_numFreq - 1));
+    log << "f = " << freq << " Hz" << endl;
+
+    radAdmit.setZero(vIdx.back(), vIdx.back());
+    radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx.back(), complex<double>(endAdmit,0.));
+    radImped = radAdmit.inverse();
+
+    if (m_simuParams.propMethod == STRAIGHT_TUBES)
+    {
+      radImped *= -1i * 2. * M_PI * freq * m_simuParams.volumicMass
+        / m_crossSections[nbSec - 1]->area();
+      radAdmit /= -1i * 2. * M_PI * freq * m_simuParams.volumicMass
+        / m_crossSections[nbSec - 1]->area();
+    }
+
+    propagateImpedAdmit(radImped, radAdmit, freq, nbSec - 1, 0);
+
+    log << "Impedance propagated" << endl;
+
+    inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass;  
+         //* sqrt(m_crossSections[0]->area());
+    inputPressure = m_crossSections[0]->Zin() * inputVelocity;
+    log << "input pressure and velocity computed" << endl;
+    propagateVelocityPress(inputVelocity, inputPressure, freq, 0, nbSec - 1);
+    log << "Velocity and pressure propagated" << endl;
+
+    // compute the acoustic pressure and the particle velocity at the 
+    // center of the exit surface
+    pout = m_crossSections[nbSec - 1]->pout(Point(0., shifts.back()*rads.back()));
+    vout = -m_crossSections[nbSec - 1]->qout(Point(0., shifts.back()*rads.back()))
+              /1i/2./M_PI/freq/m_simuParams.volumicMass;
+
+    // write result in a text file
+    ofs << freq << "  "
+      // export modulus of particle velocity
+      << "  " << abs(vout) 
+      // export phase of particle velocity
+      << "  " << arg(vout) 
+      // export modulus of acoustic pressure
+      << "  " << abs(pout)
+      // export phase of acoustic pressure
+      << "  " << arg(pout)
+      << endl;
+  }
+  ofs.close();
+
+  //******************************************************
+  // Extract the acoustic field at a specified frequency
+  //******************************************************
+
+  if (freqField > 0.)
+  {
+    log << "Compute acoustic field at the frequency " << freqField << endl;
+
+    freq = freqField;
+
+    radAdmit.setZero(vIdx.back(), vIdx.back());
+    radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx.back(), complex<double>(endAdmit,0.));
+    radImped = radAdmit.inverse();
+
+    if (m_simuParams.propMethod == STRAIGHT_TUBES)
+    {
+      radImped *= -1i * 2. * M_PI * freq * m_simuParams.volumicMass
+        / m_crossSections[nbSec - 1]->area();
+      radAdmit /= -1i * 2. * M_PI * freq * m_simuParams.volumicMass
+        / m_crossSections[nbSec - 1]->area();
+    }
+
+    propagateImpedAdmit(radImped, radAdmit, freq, nbSec - 1, 0);
+
+    log << "Impedance propagated" << endl;
+
+    inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass;  
+         //* sqrt(m_crossSections[0]->area());
+    inputPressure = m_crossSections[0]->Zin() * inputVelocity;
+    log << "input pressure and velocity computed" << endl;
+    propagateVelocityPress(inputVelocity, inputPressure, freq, 0, nbSec - 1);
+    log << "Velocity and pressure propagated" << endl;
+
+    // export the field in text files
+    str = fileName.substr(0, idxStr + 1) + "q.txt"; 
+    ofs2.open(str);
+    str = fileName.substr(0, idxStr + 1) + "Y.txt"; 
+    ofs3.open(str);
+    str = fileName.substr(0, idxStr + 1) + "p.txt"; 
+    ofs4.open(str);
+    for (int s(0); nbSec; s++)
+    {
+      if (m_crossSections[s]->length() > 0.)
+      {
+        for (int px(0); px < 100; px++)
+        {
+          for (int pz(0); pz < 51; pz++)
+          {
+            pointComputeField = 
+              Point_3(lengths[s]*(double)(px)/99., 0., rads[s]*(2.*(double)(pz)/50.-1.));
+            ofs3 << abs(m_crossSections[s]->interiorField(pointComputeField, 
+                  m_simuParams, ADMITTANCE)) << "  ";
+            ofs2 << abs(m_crossSections[s]->q(pointComputeField, m_simuParams)) << "  ";
+            ofs4 << abs(m_crossSections[s]->p(pointComputeField, m_simuParams)) << "  ";
+          }
+          ofs2 << endl;
+          ofs3 << endl;
+          ofs4 << endl;
+        }
+      }
+    }
+    ofs4.close();
+    ofs3.close();
+    ofs2.close();
+  }
+
+  log.close();
+}
+
+// ****************************************************************************
 // Run specific simulation tests
 
 void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
