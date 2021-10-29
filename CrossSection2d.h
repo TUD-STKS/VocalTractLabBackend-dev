@@ -96,6 +96,10 @@ public:
   void setNextSects(vector<int> nextSects) { m_nextSections = nextSects; }
   void clearPrevSects() { m_previousSections.clear(); }
   void clearNextSects() { m_nextSections.clear(); }
+  void setZdir(int dir) { m_direction[0] = dir; }
+  void setYdir(int dir) { m_direction[1] = dir; }
+  void setQdir(int dir) { m_direction[2] = dir; }
+  void setPdir(int dir) { m_direction[3] = dir; }
   virtual void setCurvatureRadius(double radius) { ; }
   virtual void setCurvatureAngle(double angle) { ; }
 
@@ -219,18 +223,22 @@ public:
   virtual double radius() const { return double(); }
   virtual double PMLThickness() const { return double(); }
 
+  int Zdir() const { return m_direction[0]; }
+  int Ydir() const { return m_direction[1]; }
+  int Qdir() const { return m_direction[2]; }
+  int Pdir() const { return m_direction[3]; }
   vector<Eigen::MatrixXcd> Z() const { return m_impedance; }
-  Eigen::MatrixXcd Zin() const { return m_impedance.back(); }
-  Eigen::MatrixXcd Zout() const { return m_impedance[0]; }
+  Eigen::MatrixXcd Zin() const;
+  Eigen::MatrixXcd Zout() const;
   vector<Eigen::MatrixXcd> Y() const { return m_admittance; }
-  Eigen::MatrixXcd Yin() const { return m_admittance.back(); }
-  Eigen::MatrixXcd Yout() const { return m_admittance[0]; }
+  Eigen::MatrixXcd Yin() const;
+  Eigen::MatrixXcd Yout() const;
   vector<Eigen::MatrixXcd> Q() const { return m_axialVelocity; }
-  Eigen::MatrixXcd Qin() const { return m_axialVelocity[0]; }
-  Eigen::MatrixXcd Qout() const { return m_axialVelocity.back(); }
+  Eigen::MatrixXcd Qin() const;
+  Eigen::MatrixXcd Qout() const;
   vector<Eigen::MatrixXcd> P() const { return m_acPressure; }
-  Eigen::MatrixXcd Pin() const { return m_acPressure[0]; }
-  Eigen::MatrixXcd Pout() const { return m_acPressure.back(); }
+  Eigen::MatrixXcd Pin() const;
+  Eigen::MatrixXcd Pout() const;
 
 protected:
 
@@ -241,6 +249,7 @@ protected:
   double m_area;
   int m_modesNumber;
   double m_maxCutOnFreq;
+  int m_direction[4]; // 0 dir Z | 1 dir Y | 2 dir Q | dir P
   vector<Eigen::MatrixXcd> m_impedance;
   vector<Eigen::MatrixXcd> m_admittance;
   vector<Eigen::MatrixXcd> m_axialVelocity;

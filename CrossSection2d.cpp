@@ -211,7 +211,12 @@ CrossSection2d::CrossSection2d(double maxCutOnFreq, Point2D ctrLinePt, Point2D n
   m_ctrLinePt(ctrLinePt),
   m_normal(normal),
   m_modesNumber(0)
-{}
+{
+  setZdir(-1);
+  setYdir(-1);
+  setQdir(1);
+  setPdir(1);
+}
 
 CrossSection2dFEM::CrossSection2dFEM(double maxCutOnFreq, Point2D ctrLinePt, Point2D normal,
   double area, double spacing,
@@ -1417,7 +1422,8 @@ void CrossSection2d::setZin(Eigen::MatrixXcd imped) {
   }
   else
   {
-    m_impedance.back() = imped;
+    if (Zdir() == 1) { m_impedance.back() = imped; }
+    else { m_impedance[0] = imped; }
   }
 }
 
@@ -1428,7 +1434,8 @@ void CrossSection2d::setZout(Eigen::MatrixXcd imped) {
   }
   else
   {
-    m_impedance[0] = imped;
+    if (Zdir() == 1) { m_impedance[0] = imped; }
+    else { m_impedance.back() = imped; }
   }
 }
 
@@ -1439,7 +1446,8 @@ void CrossSection2d::setYin(Eigen::MatrixXcd admit) {
   }
   else
   {
-    m_admittance.back() = admit;
+    if (Ydir() == 1) { m_admittance.back() = admit; }
+    else { m_admittance[0] = admit; }
   }
 }
 
@@ -1450,7 +1458,8 @@ void CrossSection2d::setYout(Eigen::MatrixXcd admit) {
   }
   else
   {
-    m_admittance[0] = admit;
+    if (Ydir() == 1) { m_admittance[0] = admit; }
+    else { m_admittance.back() = admit; }
   }
 }
 
@@ -2893,14 +2902,7 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
       case ADMITTANCE:
         Q = (pt.x() - x_0)*(m_admittance[nPt - idx[1]] - m_admittance[nPt - idx[0]])/dx 
         + m_admittance[nPt - idx[0]];
-        //log << "Amplitude interpolated" << endl;
         modes = interpolateModes(pts).transpose();
-        //log << "modes" << endl;
-        //log << modes << endl;
-        //log << "modes pinv" << endl;
-        //log << modes.completeOrthogonalDecomposition().pseudoInverse() << endl;
-        //log << "modes * pinv " << endl;
-        //log << modes.completeOrthogonalDecomposition().pseudoInverse() * modes << endl;
         return((modes.completeOrthogonalDecomposition().pseudoInverse() * 
               Q.transpose() * modes)(0, 0));
         break;
@@ -2918,7 +2920,55 @@ int CrossSection2d::nextSec(int idx) const { return m_nextSections[idx]; }
 Point2D CrossSection2d::ctrLinePt() const { return(m_ctrLinePt); }
 Point2D CrossSection2d::normal() const { return(m_normal); }
 double CrossSection2d::area() const { return(m_area); }
-
+//******************************************************
+Eigen::MatrixXcd CrossSection2d::Zin() const
+{
+  if (Zdir() == 1) {return m_impedance[0];}
+  else { return m_impedance.back(); }
+}
+//******************************************************
+Eigen::MatrixXcd CrossSection2d::Zout() const
+{
+  if (Zdir() == 1) {return m_impedance.back();}
+  else { return m_impedance[0]; }
+}
+//******************************************************
+Eigen::MatrixXcd CrossSection2d::Yin() const
+{
+  if (Ydir() == 1) { return m_admittance[0]; }
+  else { return m_admittance.back(); }
+}
+//******************************************************
+Eigen::MatrixXcd CrossSection2d::Yout() const
+{
+  if (Ydir() == 1) {return m_admittance.back();}
+  else { return m_admittance[0]; }
+}
+//******************************************************
+Eigen::MatrixXcd  CrossSection2d::Qin() const
+{
+  if (Qdir() == 1) { return m_axialVelocity[0]; }
+  else { return m_axialVelocity.back(); }
+}
+//******************************************************
+Eigen::MatrixXcd CrossSection2d::Qout() const
+{
+  if (Qdir() == 1) { return m_axialVelocity.back(); }
+  else { return m_axialVelocity[0]; }
+}
+//******************************************************
+Eigen::MatrixXcd CrossSection2d::Pin() const
+{
+  if (Pdir() == 1) { return m_acPressure[0]; }
+  else { return m_acPressure.back(); }
+}
+//******************************************************
+Eigen::MatrixXcd CrossSection2d::Pout() const
+{
+  if (Pdir() == 1) { return m_acPressure.back(); }
+  else { return m_acPressure[0]; }
+}
+//******************************************************
 double CrossSection2dFEM::length() const { 
   if (m_circleArcAngle < MINIMAL_DISTANCE)
   {return(m_length);}
