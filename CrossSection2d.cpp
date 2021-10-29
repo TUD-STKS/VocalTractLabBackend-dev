@@ -387,9 +387,9 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   //// get time of start
   //auto start = std::chrono::system_clock::now();
 
-  ofstream log;
-  log.open("log.txt", ofstream::app);
-  log << "\nStart compute modes" << endl;
+  //ofstream log;
+  //log.open("log.txt", ofstream::app);
+  //log << "\nStart compute modes" << endl;
 
   // declare variables
   bool different;
@@ -880,7 +880,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   //}
   //matrixKR2.close();
   
-  log.close();
+  //log.close();
 }
 
 // **************************************************************************
@@ -2866,7 +2866,7 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
   // define the interpolation point
   vector<Point> pts;
   pts.push_back(Point(pt.y(), pt.z()));
-  log << "Point " << pts.back() << endl;
+  //log << "Point " << pts.back() << endl;
 
   // interpolate quantity
   double x_0((double)(idx[0])*dx );
@@ -2893,9 +2893,9 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
       case ADMITTANCE:
         Q = (pt.x() - x_0)*(m_admittance[nPt - idx[1]] - m_admittance[nPt - idx[0]])/dx 
         + m_admittance[nPt - idx[0]];
-        log << "Amplitude interpolated" << endl;
+        //log << "Amplitude interpolated" << endl;
         modes = interpolateModes(pts).transpose();
-        log << "modes" << endl;
+        //log << "modes" << endl;
         //log << modes << endl;
         //log << "modes pinv" << endl;
         //log << modes.completeOrthogonalDecomposition().pseudoInverse() << endl;

@@ -33,8 +33,7 @@ enum testType {
     MATRIX_E,
     DISCONTINUITY,
     ELEPHANT_TRUNK,
-    SCALE_RAD_IMP,
-    JUNCTION
+    SCALE_RAD_IMP
 };
 
 class Acoustic3dSimulation
@@ -81,17 +80,21 @@ public:
   void computeJunctionMatrices(bool computeG);
   void propagateImpedAdmitBranch(vector< Eigen::MatrixXcd> Q0, double freq,
     vector<int> startSections, vector<int> endSections, double direction);
-  void propagateImpedAdmit(Eigen::MatrixXcd &startImped, 
-    Eigen::MatrixXcd &startAdmit, double freq, int startSection, int endSection);
+  void propagateImpedAdmit(Eigen::MatrixXcd& startImped, Eigen::MatrixXcd& startAdmit, 
+    double freq, int startSection, int endSection, int direction);
+  void propagateImpedAdmit(Eigen::MatrixXcd& startImped, Eigen::MatrixXcd& startAdmit,
+    double freq, int startSection, int endSection);
   void propagateAdmit(Eigen::MatrixXcd radImped, double freq);
-  void propagateVelocityPress(Eigen::MatrixXcd &startVelocity,
-    Eigen::MatrixXcd &startPressure, double freq, int startSection, int endSection);
+  void propagateVelocityPress(Eigen::MatrixXcd &startVelocity, Eigen::MatrixXcd &startPressure, 
+    double freq, int startSection, int endSection, int direction);
+  void propagateVelocityPress(Eigen::MatrixXcd& startVelocity, Eigen::MatrixXcd& startPressure,
+    double freq, int startSection, int endSection);
   void propagatePressure(Eigen::MatrixXcd startVelocity, double freq);
   //void propagateAcPressure(vector<Eigen::MatrixXcd> inputPressure, double freq);
   void RayleighSommerfeldIntegral(vector<Point_3> points,
     Eigen::VectorXcd &radPress, double freq, int radSecIdx);
   void staticSimulation(VocalTract* tract);
-  void cylinderConcatenationSimulation(string fileName);
+  void coneConcatenationSimulation(string fileName);
   void runTest(enum testType tType, string fileName);
 
 // **************************************************************************
