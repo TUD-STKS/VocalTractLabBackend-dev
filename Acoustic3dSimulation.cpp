@@ -1733,7 +1733,9 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
               {
             //log << "area(i) > area(ns) compute pressure" << endl;
                 prevPress += F[0] *
-                    m_crossSections[i]->Pin();
+                    m_crossSections[i]->Pin()
+                  / m_crossSections[i]->scaleIn()
+                  / m_crossSections[nextSec]->scaleOut();
                 prevVelo +=
                   m_crossSections[nextSec]->Yout() * prevPress;
               }
@@ -1749,7 +1751,9 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
 
             //(pow(m_crossSections[i]->scaleIn(), 2) / 
             //  pow(m_crossSections[nextSec]->scaleOut(),2)) *
-            F[0] * m_crossSections[i]->Qin();
+            F[0] * m_crossSections[i]->Qin()
+              * m_crossSections[i]->scaleIn()
+              * m_crossSections[nextSec]->scaleOut();
             prevPress +=
               m_crossSections[nextSec]->Zout() * prevVelo;
           }
@@ -2497,7 +2501,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   // for solving the wave problem 
   bool reverse(false);
   int mn;
-  double freq, freqMax, x, y;
+  double freq, freqMax, x, y, totalLength;
   Eigen::MatrixXcd radImped, radAdmit, inputVelocity, inputPressure;
   complex<double> pout, vout;
   string::size_type idxStr;
@@ -2511,6 +2515,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   generateLogFileHeader(true);
   ofstream log("log.txt", ofstream::app);
   log << "\nStart cylinder concatenation simulation" << endl;
+  if (reverse) { log << "Propagation direction reversed" << endl; }
 
   //***************************
   // load geometry parameters
@@ -2726,8 +2731,8 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
       //log << "Velocity and pressure propagated" << endl;
       // compute the acoustic pressure and the particle velocity at the 
       // center of the exit surface
-      pout = m_crossSections[0]->pout(ptOut); // reversed order
-      vout = -m_crossSections[0]->qout(ptOut)
+      pout = m_crossSections[0]->pin(ptOut); // reversed order
+      vout = -m_crossSections[0]->qin(ptOut)
         / 1i / 2. / M_PI / freq / m_simuParams.volumicMass;
     }
     else
@@ -2747,14 +2752,10 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 
     // write result in a text file
     ofs << freq << "  "
-      // export modulus of particle velocity
-      << "  " << abs(vout) 
-      // export phase of particle velocity
-      << "  " << arg(vout) 
-      // export modulus of acoustic pressure
-      << "  " << abs(pout)
-      // export phase of acoustic pressure
-      << "  " << arg(pout)
+      << "  " << abs(vout) // modulus of particle velocity
+      << "  " << arg(vout) // phase of particle velocity
+      << "  " << abs(pout) // modulus of acoustic pressure
+      << "  " << arg(pout) // phase of acoustic pressure
       << endl;
   }
   ofs.close();
@@ -2824,6 +2825,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     str = fileName.substr(0, idxStr + 1) + "cy.txt";
     ofs6.open(str);
     int cnt(0);
+    totalLength = 0.;
     for (int s(0); s < nbSec; s++)
     {
       if (m_crossSections[s]->length() > 0.)
@@ -2834,7 +2836,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
           for (int pz(0); pz < 51; pz++)
           {
             x = lengths[s] * (double)(px) / 99.;
-            ofs5 << x << "  ";
+            ofs5 << x + totalLength << "  ";
             y = rads[s] * (2. * (double)(pz) / 50. - 1.);
             ofs6 << y * m_crossSections[s]->scaling((double)(px) / 99.) << "  ";
             pointComputeField = Point_3(x, 0., y);
@@ -2851,6 +2853,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
           ofs5 << endl;
           ofs6 << endl;
         }
+        totalLength += m_crossSections[s]->length();
       }
     }
     ofs4.close();

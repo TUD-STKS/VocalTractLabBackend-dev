@@ -446,7 +446,7 @@ public:
 
   // propagation
   void propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
-    double freq, double direction, enum physicalQuantity quant);
+    double freq, double direction, enum physicalQuantity quant) {;}
   void propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0, Eigen::MatrixXcd Y0, 
     struct simulationParameters simuParams,
     double freq, double direction, std::chrono::duration<double>& time);

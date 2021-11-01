@@ -1684,7 +1684,7 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
   int numX(simuParams.numIntegrationStep);
   int mn(m_modesNumber);
   double al(length()); // arc length
-  double dX(direction * al / (double)(numX - 1));
+  double dX; // (direction * al / (double)(numX - 1));
   double curv(curvature(simuParams.curved));
   double k(2 * M_PI * freq / simuParams.sndSpeed);
   double tau, l0, l1, dl0, dl1;
@@ -1696,8 +1696,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
 
   //ofstream log("log.txt", ofstream::app);
   //log << "Start propagate magnus, numX " << numX << endl;
-  //log << "al: " << al << "  "
-    //<< " dX: " << dX << endl;
 
   if (m_length == 0.)
   {
@@ -1727,23 +1725,29 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
       m_impedance.clear();
       m_impedance.reserve(numX);
       m_impedance.push_back(Q0);
+      dX = -al / (double)(numX - 1);
       break;
     case ADMITTANCE:
       m_admittance.clear();
       m_admittance.reserve(numX);
       m_admittance.push_back(Q0);
+      dX = -al / (double)(numX - 1);
       break;
     case PRESSURE:
       m_acPressure.clear();
       m_acPressure.reserve(numX);
       m_acPressure.push_back(Q0);
+      dX = al / (double)(numX - 1);
       break;
     case VELOCITY:
       m_axialVelocity.clear();
       m_acPressure.reserve(numX);
       m_axialVelocity.push_back(Q0);
+      dX = al / (double)(numX - 1);
       break;
     }
+
+    //log << "al: " << al << "  " << " dX: " << dX << endl;
 
     // compute wall admittance
     wallAdmittance = getWallAdmittance(simuParams, freq);
@@ -1778,7 +1782,7 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
 
       case 2:
 
-        if (dX < 0.)
+        if (direction < 0.)
         {
           tau = ((double)(numX - i) - 1.5) / (double)(numX - 1);
         }
@@ -1787,7 +1791,7 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
           tau = ((double)(i)+0.5) / (double)(numX - 1);
         }
         l0 = scaling(tau);
-        dl0 = scalingDerivative(tau);
+        dl0 = - Ydir() * scalingDerivative(tau);
 
         //log << "tau " << tau << endl;
         //log << "l " << l0 << " dl " << dl0 << endl;
@@ -1939,12 +1943,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
   //log << "time propa " << 100.*propag.count() / tot.count() << endl;
   }
   //log.close();
-}
-
-void CrossSection2dRadiation::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
-  double freq, double direction, physicalQuantity quant)
-{
-
 }
 
 // **************************************************************************
@@ -2865,17 +2863,24 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
 
   // get arc length
   double al(length());
-  double dx = al/(double)(simuParams.numIntegrationStep - 1); // distance btw pts
+  int numX(simuParams.numIntegrationStep);
+  double dx = al/(double)(numX - 1); // distance btw pts
 
   // locate indexes of previous and following points
   int nPt(m_impedance.size()-1);
   double x_dx(pt.x() / dx);
-  int idx[2] = {(int)floor(x_dx), (int)ceil(x_dx)};
+  //log << "x/dx " << x_dx << endl;
+  int idx[2] = {min((int)floor(x_dx), numX - 2),
+    min((int)ceil(x_dx), numX - 1)};
+  //log << "Idx1 " << idx[0] << " idx2 " << idx[1] << endl;
 
   // define the interpolation point
   vector<Point> pts;
   pts.push_back(Point(pt.y(), pt.z()));
   //log << "Point " << pts.back() << endl;
+
+  auto correctIdxIfBackwardProp = [&idx, nPt](double dir)
+  {if (dir == -1) { for (int i(0); i < 2; i++) { idx[i] = nPt - idx[i]; } }};
 
   // interpolate quantity
   double x_0((double)(idx[0])*dx );
@@ -2884,24 +2889,37 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
   switch (quant)
      {
       case PRESSURE:
+        // if the propagation direction is backward, reverse the indexes
+        correctIdxIfBackwardProp(Pdir());
+        // interpolate the amplitudes
         Q = (pt.x() - x_0)*(m_acPressure[idx[1]] - m_acPressure[idx[0]])/dx 
         + m_acPressure[idx[0]];
       return((interpolateModes(pts) * Q)(0,0));
         break;
       case VELOCITY:
+        // if the propagation direction is backward, reverse the indexes
+        correctIdxIfBackwardProp(Qdir());
+        if (Qdir() == -1) { for (auto it : idx) { it = nPt - it; } }
+        // interpolate the amplitudes
         Q = (pt.x() - x_0)*(m_axialVelocity[idx[1]] - m_axialVelocity[idx[0]])/dx 
         + m_axialVelocity[idx[0]];
       return((interpolateModes(pts) * Q)(0,0));
         break;
       case IMPEDANCE:
-        Q = (pt.x() - x_0)*(m_impedance[nPt - idx[1]] - m_impedance[nPt - idx[0]])/dx 
-        + m_impedance[nPt - idx[0]];
+        // if the propagation direction is backward, reverse the indexes
+        correctIdxIfBackwardProp(Zdir());
+        // interpolate the amplitudes
+        Q = (pt.x() - x_0)*(m_impedance[idx[1]] - m_impedance[idx[0]])/dx 
+        + m_impedance[idx[0]];
         modes = interpolateModes(pts);
         return((modes.completeOrthogonalDecomposition().pseudoInverse() * Q * modes)(0, 0));
         break;
       case ADMITTANCE:
-        Q = (pt.x() - x_0)*(m_admittance[nPt - idx[1]] - m_admittance[nPt - idx[0]])/dx 
-        + m_admittance[nPt - idx[0]];
+        // if the propagation direction is backward, reverse the indexes
+        correctIdxIfBackwardProp(Ydir());
+        // interpolate the amplitudes
+        Q = (pt.x() - x_0)*(m_admittance[idx[1]] - m_admittance[idx[0]])/dx 
+        + m_admittance[idx[0]];
         modes = interpolateModes(pts).transpose();
         return((modes.completeOrthogonalDecomposition().pseudoInverse() * 
               Q.transpose() * modes)(0, 0));
