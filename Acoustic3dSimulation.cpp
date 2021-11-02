@@ -1766,6 +1766,7 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
             (m_crossSections[nextSec]->area() *
              pow(m_crossSections[nextSec]->scaleIn(), 2)))
           {
+            //log << "area(i) > area(ns), compute pressure" << endl;
             prevPress += 
                 (F[0].transpose()) *
               m_crossSections[i]->Pout()
@@ -1778,6 +1779,7 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
           // if the section expends: area(i) < area(ns)
           else
           {
+            //log << "area(i) < area(ns), compute velocity" << endl;
           prevVelo +=
             //(Matrix::Identity(nNs, nNs)
             //  - wallInterfaceAdmit *
@@ -1786,11 +1788,11 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
 
             //(pow(m_crossSections[i]->scaleOut(),2) /
             //  pow(m_crossSections[nextSec]->scaleIn(), 2)) *
-              (F[0].transpose()) * m_crossSections[i]->Qout();
-          prevPress +=
-            m_crossSections[i]->scaleOut() * 
-            m_crossSections[nextSec]->scaleIn() *
-            m_crossSections[nextSec]->Zin() * prevVelo;
+              (F[0].transpose()) * m_crossSections[i]->Qout()
+            * m_crossSections[i]->scaleOut()
+            * m_crossSections[nextSec]->scaleIn()
+            ;
+          prevPress += m_crossSections[nextSec]->Zin() * prevVelo;
           }
       }
 
@@ -2499,11 +2501,11 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   vector<int> surfaceIdx(nbAngles, 0);
 
   // for solving the wave problem 
-  bool reverse(false);
+  bool reverse(true);
   int mn;
   double freq, freqMax, x, y, totalLength;
   Eigen::MatrixXcd radImped, radAdmit, inputVelocity, inputPressure;
-  complex<double> pout, vout;
+  complex<double> pout, vout, yin;
   string::size_type idxStr;
   ofstream ofs, ofs2, ofs3, ofs4, ofs5, ofs6;
   Point ptOut;
@@ -2516,6 +2518,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   ofstream log("log.txt", ofstream::app);
   log << "\nStart cylinder concatenation simulation" << endl;
   if (reverse) { log << "Propagation direction reversed" << endl; }
+  log << "Geometry from file " << fileName << endl;
 
   //***************************
   // load geometry parameters
@@ -2699,12 +2702,14 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     if (reverse)
     {
       radAdmit.setZero(vIdx[0], vIdx[0]);
-      radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx[0], complex<double>(endAdmit, 0.));
+      radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx[0], 
+        complex<double>(pow(m_crossSections[0]->scaleIn(), 2) * endAdmit, 0.));
     }
     else
     {
       radAdmit.setZero(vIdx.back(), vIdx.back());
-      radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx.back(), complex<double>(endAdmit, 0.));
+      radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx.back(), 
+        complex<double>(pow(m_crossSections[nbSec - 1]->scaleOut(), 2) * endAdmit, 0.));
     }
     radImped = radAdmit.inverse();
 
@@ -2734,6 +2739,9 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
       pout = m_crossSections[0]->pin(ptOut); // reversed order
       vout = -m_crossSections[0]->qin(ptOut)
         / 1i / 2. / M_PI / freq / m_simuParams.volumicMass;
+      yin = m_crossSections[0]->interiorField(
+        Point_3(m_crossSections[0]->length(), ptOut.x(), ptOut.y()), 
+        m_simuParams, ADMITTANCE);
     }
     else
     {
@@ -2748,6 +2756,9 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
       pout = m_crossSections[nbSec - 1]->pout(ptOut);
       vout = -m_crossSections[nbSec - 1]->qout(ptOut)
         / 1i / 2. / M_PI / freq / m_simuParams.volumicMass;
+      yin = m_crossSections[nbSec - 1]->interiorField(
+        Point_3(0., ptOut.x(), ptOut.y()), m_simuParams, ADMITTANCE);
+
     }
 
     // write result in a text file
@@ -2756,6 +2767,8 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
       << "  " << arg(vout) // phase of particle velocity
       << "  " << abs(pout) // modulus of acoustic pressure
       << "  " << arg(pout) // phase of acoustic pressure
+      << "  " << abs(yin)  // modulus of the input impedance
+      << "  " << arg(yin)  // phase of the input impedance
       << endl;
   }
   ofs.close();
