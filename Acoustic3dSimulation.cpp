@@ -2304,121 +2304,82 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     //  Compute transfer function of the noise source
     //*****************************************************************************
 
-    //// get the transfer function from the glottis to the constriction
-    //// location for vowels
+    // get the transfer function from the glottis to the constriction
+    // location for vowels
+    spectrumConst.setValue(i, m_crossSections[m_idxConstriction]->Pout()(0, 0));
 
-    //spectrumConst.setValue(i, m_crossSections[m_idxConstriction]->Pout()(0, 0));
+    // save the input impedance of the upstream part
+    // if the section expends
+    if ((pow(m_crossSections[m_idxSecNoiseSource + 1]->scaleIn(), 2) *
+      m_crossSections[m_idxSecNoiseSource + 1]->area()) >
+      (pow(m_crossSections[m_idxSecNoiseSource]->scaleOut(), 2) * 
+      m_crossSections[m_idxSecNoiseSource]->area()))
+    {
+      upStreamImpAdm = m_crossSections[m_idxSecNoiseSource]->Zout();
+    }
+    // if the section contracts
+    else
+    {
+      upStreamImpAdm = m_crossSections[m_idxSecNoiseSource]->Yout();
+    }
+    //log << "upstream input impedance saved" << endl;
 
-    //// save the input impedance of the upstream part
-    //// if the section expends
-    ////log << "Start save impedance" << endl;
-    ////log << "area next sec" << m_crossSections[m_idxSecNoiseSource + 1]->area() << endl;
-    ////log << "area " << m_crossSections[m_idxSecNoiseSource]->area() << endl;
-    //if (m_crossSections[m_idxSecNoiseSource + 1]->area() >
-    //  m_crossSections[m_idxSecNoiseSource]->area())
-    //{
-    //  upStreamImpAdm = m_crossSections[m_idxSecNoiseSource]->Zout();
-    //}
-    //// if the section contracts
-    //else
-    //{
-    //  upStreamImpAdm = m_crossSections[m_idxSecNoiseSource]->Yout();
-    //}
-    ////log << "upstream input impedance saved" << endl;
+    // set glottis boundary condition
+    
+    switch (m_glottisBoundaryCond)
+    {
+    case HARD_WALL:
+      radImped.setZero();
+      radImped.diagonal().setConstant(100000.);
+      radAdmit.setZero();
+      radAdmit.diagonal().setConstant(1. / 100000.);
+      break;
+    case IFINITE_WAVGUIDE:
+      m_crossSections[0]->characteristicImpedance(radImped, freq, m_simuParams);
+      m_crossSections[0]->characteristicAdmittance(radAdmit, freq, m_simuParams);
+      break;
+    }
 
-    //// set glottis boundary condition
-    //
-    //switch (m_glottisBoundaryCond)
-    //{
-    //case HARD_WALL:
-    //  radImped.setZero();
-    //  radImped.diagonal().setConstant(100000.);
-    //  radAdmit.setZero();
-    //  radAdmit.diagonal().setConstant(1. / 100000.);
-    //  break;
-    //case IFINITE_WAVGUIDE:
-    //  m_crossSections[0]->characteristicImpedance(radImped, freq, m_simuParams);
-    //  m_crossSections[0]->characteristicAdmittance(radAdmit, freq, m_simuParams);
-    //  break;
-    //}
+    // propagate impedance and admittance from the glottis to the location
+    // of the second sound source
+    propagateImpedAdmit(radImped, radAdmit, freq, 0, m_idxSecNoiseSource);
 
-    //// propagate impedance and admittance from the glottis to the location
-    //// of the second sound source
-    //propagateImpedAdmit(radImped, radAdmit, freq, 0, m_idxSecNoiseSource);
+    log << "Imped admit propagated" << endl;
 
-    //log << "Imped admit propagated" << endl;
+    // compute the pressure and the velocity at the entrance of the next section
+    // if the section expends
+    if ((pow(m_crossSections[m_idxSecNoiseSource + 1]->scaleIn(), 2) * 
+      m_crossSections[m_idxSecNoiseSource +1]->area()) >
+      (pow(m_crossSections[m_idxSecNoiseSource]->scaleOut(), 2) * 
+      m_crossSections[m_idxSecNoiseSource]->area()))
+    {
+      prevVelo = (F.transpose()) * ((freq * upStreamImpAdm - freq * 
+        m_crossSections[m_idxSecNoiseSource]->Zout()).householderQr()
+        .solve(inputPressureNoise));
+      prevPress = freq *
+        m_crossSections[m_idxSecNoiseSource +1]->Zin() * prevVelo;
+    }
+    // if the section contracts
+    else
+    {
+      prevPress = (F.transpose()) * ((upStreamImpAdm -
+        m_crossSections[m_idxSecNoiseSource]->Yout()).householderQr()
+        .solve( -m_crossSections[m_idxSecNoiseSource]->Yout() *
+          inputPressureNoise));
 
-    // FIXME: take into acount the scaling
-    //// compute the pressure and the velocity at the entrance of the next section
-    //// if the section expends
-    //if (m_crossSections[m_idxSecNoiseSource +1]->area() >
-    //  m_crossSections[m_idxSecNoiseSource]->area())
-    //{
-    //  prevVelo = (F.transpose()) * ((freq * upStreamImpAdm - freq * 
-    //    m_crossSections[m_idxSecNoiseSource]->Zin()).householderQr()
-    //    .solve(inputPressureNoise));
-    //  prevPress = freq *
-    //    m_crossSections[m_idxSecNoiseSource +1]->Zin() * prevVelo;
-    //}
-    //// if the section contracts
-    //else
-    //{
-    //  prevPress = (F.transpose()) * ((upStreamImpAdm -
-    //    m_crossSections[m_idxSecNoiseSource]->Yin()).householderQr()
-    //    .solve( -m_crossSections[m_idxSecNoiseSource]->Yin() *
-    //      inputPressureNoise));
+      prevVelo =
+        m_crossSections[m_idxSecNoiseSource +1]->Yin()* prevPress;
+    }
 
-    //  prevVelo =
-    //    m_crossSections[m_idxSecNoiseSource +1]->Yin()* prevPress;
-    //}
+    log << "Previous pressure/velocity computed" << endl;
+    
+    // propagate the pressure and the velocity in the upstream part
+    propagateVelocityPress(prevVelo, prevPress, freq, 
+      min(m_idxSecNoiseSource +1, numSec - 2), numSec - 2);
 
-    //log << "Previous pressure/velocity computed" << endl;
+    log << "Velocity and pressure propagated" << endl;
 
-
-    ////for (int j(0); j < (numSec - 1); j++)
-    ////{
-    ////  log << m_crossSections[j]->startAcPressure()(0, 0) << "  "
-    ////    << m_crossSections[j]->endAcPressure()(0, 0) << "  ";
-    ////}
-    ////log << endl;
-
-    ////log << "start sec: " << min(m_idxSecNoiseSource + 1, numSec - 2)
-    ////  << " end sec: " << numSec - 2 << endl;
-    //
-    //// propagate the pressure and the velocity in the upstream part
-    //propagateVelocityPress(prevVelo, prevPress, freq, 
-    //  min(m_idxSecNoiseSource +1, numSec - 2), numSec - 2);
-
-    ////for (int j(0); j < (numSec - 1); j++)
-    ////{
-    ////  log << m_crossSections[j]->startAcPressure()(0, 0) << "  "
-    ////    << m_crossSections[j]->endAcPressure()(0, 0) << "  ";
-    ////}
-    ////log << endl;
-
-    //log << "Velocity and pressure propagated" << endl;
-
-    //RayleighSommerfeldIntegral(radPts, radPress, freq);
-
-    ////// save radiated field
-    ////prop.open("radR.txt", ofstream::app);
-    ////prop << radPress.transpose().real() << endl;
-    ////prop.close();
-    ////prop.open("radI.txt", ofstream::app);
-    ////prop << radPress.transpose().imag() << endl;
-    ////prop.close();
-
-    ////// compute the acoustic pressure at the center of the exit
-    ////pressure = (0., 0.);
-    ////velocity = (0., 0.);
-    ////endPressAmpl = m_crossSections[numSec - 2]->endAcPressure();
-    ////endVelAmpl = m_crossSections[numSec - 2]->endAxialVelocity();
-    ////for (int m(0); m < m_crossSections[numSec - 2]->numberOfModes(); m++)
-    ////{
-    ////  pressure += endPressAmpl(m, 0) * modeAmplitudes(0, m);
-    ////  velocity += endVelAmpl(m, 0) * modeAmplitudes(0, m);
-    ////}
-
+    RayleighSommerfeldIntegral(radPts, radPress, freq, numSec - 2);
 
     end = std::chrono::system_clock::now();
 
@@ -2443,8 +2404,8 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   {
     spectrum.re[i] = spectrum.re[2 * m_numFreq - i - 1];
     spectrum.im[i] = -spectrum.im[2 * m_numFreq - i - 1];
-    //spectrumNoise.re[i] = spectrumNoise.re[2 * m_numFreq - i - 1];
-    //spectrumNoise.im[i] = -spectrumNoise.im[2 * m_numFreq - i - 1];
+    spectrumNoise.re[i] = spectrumNoise.re[2 * m_numFreq - i - 1];
+    spectrumNoise.im[i] = -spectrumNoise.im[2 * m_numFreq - i - 1];
     //spectrumConst.re[i] = spectrumConst.re[2 * m_numFreq - i - 1];
     //spectrumConst.im[i] = -spectrumConst.im[2 * m_numFreq - i - 1];
   }
@@ -2456,8 +2417,12 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   for (int i(0); i < spectrum.N; i++)
   {
     freq = max(0.1, (double)i * freqSteps);
-    prop << freq << "  " << spectrum.getMagnitude(i) << "  " 
-      << spectrum.getPhase(i) << endl;
+    prop << freq << "  " 
+      << spectrum.getMagnitude(i) << "  " 
+      << spectrum.getPhase(i) << "  "
+      << spectrumNoise.getMagnitude(i) << "  "
+      << spectrumNoise.getPhase(i) << "  "
+      << endl;
   }
   prop.close();
 
