@@ -72,8 +72,8 @@ public:
     vector<Point2D>& centerLine, vector<Point2D>& normals);
   bool extractContoursFromCsvFile(
     vector<vector<Polygon_2>>& contours, vector<vector<vector<int>>>& surfaceIdx,
-    vector<Point2D>& centerLine, vector<Point2D>& normals,
-    bool simplifyContours);
+    vector<Point2D>& centerLine, vector<Point2D>& normals, 
+    vector<pair<double, double>>& scalingFactors, bool simplifyContours);
   bool createCrossSections(VocalTract* tract, bool createRadSection);
   void exportGeoInCsv(string fileName);
   void computeMeshAndModes();
