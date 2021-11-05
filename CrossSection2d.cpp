@@ -2806,7 +2806,64 @@ void CrossSection2dRadiation::radiatePressure(double distance, double freq,
 
 // **************************************************************************
 // Acoustic field computation
+// **************************************************************************
 
+// **************************************************************************
+// Get transformed coordinate from an input cartesian point
+
+Point_3 CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt)
+{
+  ofstream log("log.txt", ofstream::app);
+  log << "\nStart get coordinates" << endl;
+  // center-line point
+  Point ctl(m_ctrLinePt.x, m_ctrLinePt.y);
+  // curvature radius
+  double R(abs(m_curvatureRadius));
+  // center of the circle arc
+  Point C(ctl.x() - R * m_normal.x, ctl.y() - R * m_normal.y);        
+  log << "Circle arc center " << C << endl;
+  // point to convert in the 2D plane
+  Point pt2D(pt.x(), pt.z());
+  // vector from the center of circle arc to the centerline point
+  Vector vCtl(ctl, C);
+  log << "Vec ctl " << vCtl << endl;
+  // vector from the center of circle arc to the point to convert
+  Vector vPt2D(pt2D, C);
+  log << "Vec pt " << vPt2D << endl;
+  double x, y, z, sc;
+
+  // compute the angle between the 2 vectors
+  x = R * acos((vCtl * vPt2D)
+      / sqrt(vCtl.squared_length()) / sqrt(vPt2D.squared_length())); 
+  log << "Angle " << acos((vCtl * vPt2D)
+      / sqrt(vCtl.squared_length()) / sqrt(vPt2D.squared_length()))
+    << endl;
+  // compute the scaling factor
+  sc = scaling(x / length());
+  log << "scaling " << sc << endl;
+  // compute y coordinate
+  y = pt.y()/sc;
+  // compute z coordinate
+  z = (sqrt(vPt2D.squared_length()) - R)/sc;
+
+  log << x << "  " << y << "  " << z << "  " << pt.x() << "  " << pt.z() << endl;
+
+  // check if the point is inside the section
+  if (x > length())
+  {
+    log << "x > length" << endl;
+    x = NAN; y = NAN; z = NAN;
+  }
+  else if (m_contour.has_on_unbounded_side(Point(x, z)))
+  {
+    log << "Outside of contour" << endl;
+    x = NAN; y = NAN; z = NAN;
+  }
+
+  return(Point_3(x, y, z));
+}
+
+// **************************************************************************
 complex<double> CrossSection2dFEM::pin(Point pt)
 {
   vector<Point> pts;

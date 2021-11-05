@@ -3251,6 +3251,15 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
       contour.push_back(Point(radius * cos(angle), radius * sin(angle)));
     }
 
+    // export contour
+    ofs.open("cont.txt");
+    for (auto pt : contour)
+    {
+      ofs << pt.x() << "  " << pt.y() << endl;
+    }
+    ofs.close();
+
+    // create the cross-section
     m_crossSections.clear();
     area = pow(radius, 2) * M_PI;
     scalingFactors[0] = 0.25;
@@ -3261,7 +3270,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
     length = inAngle * inRadius;
     log << "length: " << length << endl;
     addCrossSectionFEM(area, sqrt(area) / m_meshDensity, contour,
-      surfaceIdx, length, Point2D(0., 0.), Point2D(0., 1.),
+      surfaceIdx, length, Point2D(0., 0.), Point2D(-1., 0.),
       scalingFactors);
     m_crossSections[0]->setAreaVariationProfileType(ELEPHANT);
     m_crossSections[0]->setCurvatureRadius(inRadius);
@@ -3270,6 +3279,20 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
     m_crossSections[0]->setModesNumber(mn);
   
     log << "Cross-section created" << endl;
+
+    // test get coordinates
+    ofs.open("pt3.txt");
+    for (int i(0); i < 100; i++)
+    {
+      for (int j(0); j < 100; j++)
+      {
+        pointComputeField = m_crossSections[0]->getCoordinateFromCartesianPt(Point_3(
+              10.*(double)i/99. -1., 0., 10.*(double)j/99. - 6.));
+        ofs << pointComputeField << "  " << 10.*(double)i/99. -1.
+          << "  " << 10.*(double)j/99.-6. << endl;
+      }
+    }
+    log.close();
 
     // Check the scaling factor
     ofs.open("sc.txt");
