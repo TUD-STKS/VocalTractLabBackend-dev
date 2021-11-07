@@ -1328,7 +1328,7 @@ Matrix CrossSection2dFEM::interpolateModes(vector<Point> pts)
     }
   }
 
-  //val << "\nInterpolation finished" << endl << endl;
+  //log << "\nInterpolation finished" << endl << endl;
   //val.close();
   log.close();
   
@@ -2811,56 +2811,48 @@ void CrossSection2dRadiation::radiatePressure(double distance, double freq,
 // **************************************************************************
 // Get transformed coordinate from an input cartesian point
 
-Point_3 CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt)
+bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut)
 {
-  ofstream log("log.txt", ofstream::app);
-  log << "\nStart get coordinates" << endl;
+  //ofstream log("log.txt", ofstream::app);
+  //log << "\nStart get coordinates" << endl;
   // center-line point
   Point ctl(m_ctrLinePt.x, m_ctrLinePt.y);
   // curvature radius
   double R(abs(m_curvatureRadius));
   // center of the circle arc
   Point C(ctl.x() - R * m_normal.x, ctl.y() - R * m_normal.y);        
-  log << "Circle arc center " << C << endl;
-  // point to convert in the 2D plane
-  Point pt2D(pt.x(), pt.z());
-  // vector from the center of circle arc to the centerline point
-  Vector vCtl(ctl, C);
-  log << "Vec ctl " << vCtl << endl;
-  // vector from the center of circle arc to the point to convert
-  Vector vPt2D(pt2D, C);
-  log << "Vec pt " << vPt2D << endl;
+  //log << "Circle arc center " << C << endl;
   double x, y, z, sc;
+  complex<double> ptCplx(pt.x() - C.x(), pt.z() - C.y());
+  complex<double> ctlCplx(ctl.x() - C.x(), ctl.y() - C.y());
 
-  // compute the angle between the 2 vectors
-  x = R * acos((vCtl * vPt2D)
-      / sqrt(vCtl.squared_length()) / sqrt(vPt2D.squared_length())); 
-  log << "Angle " << acos((vCtl * vPt2D)
-      / sqrt(vCtl.squared_length()) / sqrt(vPt2D.squared_length()))
-    << endl;
-  // compute the scaling factor
-  sc = scaling(x / length());
-  log << "scaling " << sc << endl;
+  // get the x coordinate by computing the angle between the 2 complex coordinate pts
+  x = R * fmod(arg(ctlCplx) - arg(ptCplx) + 2.*M_PI, 2.*M_PI);
+  sc = scaling(x/length());
   // compute y coordinate
   y = pt.y()/sc;
   // compute z coordinate
-  z = (sqrt(vPt2D.squared_length()) - R)/sc;
+  z = (abs(ptCplx) - R)/sc;
 
-  log << x << "  " << y << "  " << z << "  " << pt.x() << "  " << pt.z() << endl;
+  //log << x << "  " << y << "  " << z << "  " << pt.x() << "  " << pt.z() << endl;
 
   // check if the point is inside the section
-  if (x > length())
+  bool isInside(true);
+  if ((x > length()) || (x < 0.))
   {
-    log << "x > length" << endl;
+    //log << "x > length" << endl;
     x = NAN; y = NAN; z = NAN;
+    isInside = false;
   }
-  else if (m_contour.has_on_unbounded_side(Point(x, z)))
+  else if (m_contour.has_on_unbounded_side(Point(y, z)))
   {
-    log << "Outside of contour" << endl;
+    //log << "Outside of contour" << endl;
     x = NAN; y = NAN; z = NAN;
+    isInside = false;
   }
-
-  return(Point_3(x, y, z));
+  //log.close();
+  ptOut = Point_3(x, y, z);
+  return(isInside);
 }
 
 // **************************************************************************
@@ -2916,7 +2908,7 @@ complex<double> CrossSection2dFEM::q(Point_3 pt, struct simulationParameters sim
 complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationParameters simuParams,
           enum physicalQuantity quant)
 {
-  ofstream log("log.txt", ofstream::app);
+  //ofstream log("log.txt", ofstream::app);
 
   // get arc length
   double al(length());
@@ -2982,7 +2974,7 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
               Q.transpose() * modes)(0, 0));
         break;
      }
-  log.close();
+  //log.close();
 }
 
 // **************************************************************************

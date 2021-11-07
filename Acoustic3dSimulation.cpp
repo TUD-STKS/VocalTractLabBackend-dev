@@ -2861,7 +2861,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 
   Polygon_2 contour;
   Point_3 pointComputeField;
-  double radius, angle, area, length, inRadius, inAngle, sc;
+  double radius, angle, area, length, inRadius, inAngle, sc, r;
   int nbAngles(100);
   vector<int> surfaceIdx(nbAngles, 0), slectedModesIdx;
   double scalingFactors[2] = { 1., 1. };
@@ -3226,7 +3226,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 
       start = std::chrono::system_clock::now();
 
-      radiationCondition = true;
+      radiationCondition = false;
     
     // Set the proper simulation parameters
     m_simuParams.freqDepLosses = false;
@@ -3281,18 +3281,32 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
     log << "Cross-section created" << endl;
 
     // test get coordinates
-    ofs.open("pt3.txt");
-    for (int i(0); i < 100; i++)
-    {
-      for (int j(0); j < 100; j++)
-      {
-        pointComputeField = m_crossSections[0]->getCoordinateFromCartesianPt(Point_3(
-              10.*(double)i/99. -1., 0., 10.*(double)j/99. - 6.));
-        ofs << pointComputeField << "  " << 10.*(double)i/99. -1.
-          << "  " << 10.*(double)j/99.-6. << endl;
-      }
-    }
-    log.close();
+    //ofs.open("pt3.txt");
+    //for (int i(0); i < 100; i++)
+    //{
+      //for (int j(0); j < 100; j++)
+      //{
+        //angle = inAngle * (double)i/99.;
+        //r = inRadius + m_crossSections[0]->scaling(inRadius * angle / length)
+          //* 2. * radius * ((double)j/99. - 0.5);
+        //log << "angle = " << angle << endl;
+        //log << "r = " << r << " inRadius " << inRadius << " scaling " 
+          //<< m_crossSections[0]->scaling(inRadius * angle / length)  
+          //<< " radius " << radius << " val " << ((double)j/99. - 0.5) 
+          //<< " z " << m_crossSections[0]->scaling(inRadius * angle / length)
+          //* ((double)j/99. - 0.5) << endl;
+        //pointComputeField = m_crossSections[0]->getCoordinateFromCartesianPt(Point_3(
+              //-r * cos(angle) + inRadius, 0., r * sin(angle)));
+        //ofs << pointComputeField << "  " << -r * cos(angle) + inRadius
+          //<< "  " << r * sin(angle) << endl;
+
+         //m_crossSections[0]->getCoordinateFromCartesianPt(Point_3(
+              //28.*(double)i/99. - 14., 0., 28.*(double)j/99. - 14.), pointComputeField);
+        //ofs << pointComputeField << "  " << 28.*(double)i/99. - 14.
+          //<< "  " << 28.*(double)j/99. - 14. << endl;
+      //}
+    //}
+    //ofs.close();
 
     // Check the scaling factor
     ofs.open("sc.txt");
@@ -3339,7 +3353,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 
     freqMax = m_simuParams.maxComputedFreq;
     ofs.open("elephant_ac_press_MM.txt");
-    m_numFreq = 2001;
+    m_numFreq = 101;
     for (int i(0); i < m_numFreq; i++)
     {
       freq = max(0.1, freqMax*(double)i/(double)(m_numFreq - 1));
@@ -3389,6 +3403,31 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
           Point_3(m_crossSections[0]->length() - 0.03, 0., 0.), m_simuParams, PRESSURE);
         ofs << abs(result) << "  "
           << arg(result) << "  " << endl;
+      }
+      
+      // extract acoustic field
+      if (freq == 2400.)
+      {
+        ofs2.open("p_field.txt");
+        for (int i(0); i < 500; i++)
+        {
+          for (int j(0); j < 500; j++)
+          {
+            if (m_crossSections[0]->getCoordinateFromCartesianPt(Point_3(
+                 15.*(double)i/499. - 1., 0., 15.*(double)j/499. - 1), pointComputeField))
+            {
+              result = m_crossSections[0]->interiorField(pointComputeField, m_simuParams, PRESSURE);
+              log << "Pressure computed" << endl;
+              ofs2 << abs(result) << "  ";
+            }
+            else
+            {
+              ofs2 << "nan  ";
+            }
+          }
+          ofs2 << endl;
+        }
+        ofs2.close();
       }
     }
     ofs.close();
