@@ -2868,7 +2868,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
   double a(5.5), b(3.);
   double freq, freqMax, freqField, endAdmit;
   complex<double> result;
-  int nbFreqs, mn, idxField;
+  int nbFreqs, mn, idxField, cnt;
   Eigen::MatrixXcd characImped, radImped, radAdmit, inputVelocity, inputPressure;
   vector<Point_3> radPts;
   vector<array<double, 2>> pts;
@@ -3226,7 +3226,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 
       start = std::chrono::system_clock::now();
 
-      radiationCondition = false;
+      radiationCondition = true;
     
     // Set the proper simulation parameters
     m_simuParams.freqDepLosses = false;
@@ -3275,7 +3275,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
     m_crossSections[0]->setAreaVariationProfileType(ELEPHANT);
     m_crossSections[0]->setCurvatureRadius(inRadius);
     m_crossSections[0]->setCurvatureAngle(inAngle);
-    mn = 32;
+    mn = 6;
     m_crossSections[0]->setModesNumber(mn);
   
     log << "Cross-section created" << endl;
@@ -3406,6 +3406,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
       }
       
       // extract acoustic field
+      cnt = 0;
       if (freq == 2400.)
       {
         ofs2.open("p_field.txt");
@@ -3417,7 +3418,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
                  15.*(double)i/499. - 1., 0., 15.*(double)j/499. - 1), pointComputeField))
             {
               result = m_crossSections[0]->interiorField(pointComputeField, m_simuParams, PRESSURE);
-              log << "Pressure computed" << endl;
+              log << "Pressure computed " << cnt << " over " << 250000 << endl;
               ofs2 << abs(result) << "  ";
             }
             else

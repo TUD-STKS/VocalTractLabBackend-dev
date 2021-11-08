@@ -2940,6 +2940,16 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
       case PRESSURE:
         // if the propagation direction is backward, reverse the indexes
         correctIdxIfBackwardProp(Pdir());
+        // if the pressure amplitudes have not been computed
+        if (m_acPressure.size() == 0)
+        {
+          int numStep(m_impedance.size());
+          for (int i(0); i < numStep; i++)
+          {
+            m_acPressure.push_back(m_impedance[numStep - 1 -i] * 
+                m_axialVelocity[i]);
+          }
+        }
         // interpolate the amplitudes
         Q = (pt.x() - x_0)*(m_acPressure[idx[1]] - m_acPressure[idx[0]])/dx 
         + m_acPressure[idx[0]];
@@ -2949,6 +2959,16 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
         // if the propagation direction is backward, reverse the indexes
         correctIdxIfBackwardProp(Qdir());
         if (Qdir() == -1) { for (auto it : idx) { it = nPt - it; } }
+        // if the velocity have not been computed
+        if (m_axialVelocity.size() == 0)
+        {
+          int numStep(m_admittance.size());
+          for (int i(0); i < numStep; i++)
+          {
+            m_axialVelocity.push_back(m_admittance[numStep - 1 - i] *
+                m_acPressure[i]);
+          }
+        }
         // interpolate the amplitudes
         Q = (pt.x() - x_0)*(m_axialVelocity[idx[1]] - m_axialVelocity[idx[0]])/dx 
         + m_axialVelocity[idx[0]];
@@ -2957,6 +2977,15 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
       case IMPEDANCE:
         // if the propagation direction is backward, reverse the indexes
         correctIdxIfBackwardProp(Zdir());
+        // if the impedance have not been computed
+        if (m_impedance.size() == 0)
+        {
+          int numStep(m_admittance.size());
+          for (int i(0); i < numStep; i++)
+          {
+            m_impedance.push_back(m_admittance[i].fullPivLu().inverse());
+          }
+        }
         // interpolate the amplitudes
         Q = (pt.x() - x_0)*(m_impedance[idx[1]] - m_impedance[idx[0]])/dx 
         + m_impedance[idx[0]];
@@ -2966,6 +2995,15 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
       case ADMITTANCE:
         // if the propagation direction is backward, reverse the indexes
         correctIdxIfBackwardProp(Ydir());
+        // if the admittance have not been computed
+        if (m_admittance.size() == 0)
+        {
+          int numStep(m_impedance.size());
+          for (int i(0); i < numStep; i++)
+          {
+            m_admittance.push_back(m_impedance[i].fullPivLu().inverse());
+          }
+        }
         // interpolate the amplitudes
         Q = (pt.x() - x_0)*(m_admittance[idx[1]] - m_admittance[idx[0]])/dx 
         + m_admittance[idx[0]];
