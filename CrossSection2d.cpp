@@ -2815,43 +2815,69 @@ bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut)
 {
   //ofstream log("log.txt", ofstream::app);
   //log << "\nStart get coordinates" << endl;
-  // center-line point
-  Point ctl(m_ctrLinePt.x, m_ctrLinePt.y);
-  // curvature radius
-  double R(abs(m_curvatureRadius));
-  // center of the circle arc
-  Point C(ctl.x() - R * m_normal.x, ctl.y() - R * m_normal.y);        
-  //log << "Circle arc center " << C << endl;
+
+  bool isInside(false);
   double x, y, z, sc;
-  complex<double> ptCplx(pt.x() - C.x(), pt.z() - C.y());
-  complex<double> ctlCplx(ctl.x() - C.x(), ctl.y() - C.y());
-
-  // get the x coordinate by computing the angle between the 2 complex coordinate pts
-  x = R * fmod(arg(ctlCplx) - arg(ptCplx) + 2.*M_PI, 2.*M_PI);
-  sc = scaling(x/length());
-  // compute y coordinate
-  y = pt.y()/sc;
-  // compute z coordinate
-  z = (abs(ptCplx) - R)/sc;
-
-  //log << x << "  " << y << "  " << z << "  " << pt.x() << "  " << pt.z() << endl;
-
-  // check if the point is inside the section
-  bool isInside(true);
-  if ((x > length()) || (x < 0.))
+  if (length() > 0.)
   {
-    //log << "x > length" << endl;
-    x = NAN; y = NAN; z = NAN;
-    isInside = false;
+    // center-line point
+    Point ctl(m_ctrLinePt.x, m_ctrLinePt.y);
+    // curvature radius
+    double R(abs(m_curvatureRadius));
+    // center of the circle arc
+    Point C(ctl.x() - m_curvatureRadius * m_normal.x, ctl.y() 
+        - m_curvatureRadius * m_normal.y);        
+    //Point C(ctl.x() - R * m_normal.x, ctl.y() - R * m_normal.y);        
+    //log << "Circle arc center " << C << endl;
+    complex<double> ptCplx(pt.x() - C.x(), pt.z() - C.y());
+    complex<double> ctlCplx(ctl.x() - C.x(), ctl.y() - C.y());
+
+    // get the x coordinate by computing the angle between the 2 complex coordinate pts
+    //x = R * fmod(arg(ctlCplx) - arg(ptCplx) + 2.*M_PI, 2.*M_PI);
+    if (m_curvatureRadius < 0.)
+    {
+      x = R * fmod(arg(ptCplx) - arg(ctlCplx) + 2.*M_PI, 2.*M_PI);
+    }
+    else
+    {
+      x = R * fmod(arg(ctlCplx) - arg(ptCplx) + 2.*M_PI, 2.*M_PI);
+    }
+    sc = scaling(x/length());
+    // compute y coordinate
+    y = pt.y()/sc;
+    // compute z coordinate
+    if (m_curvatureRadius < 0.)
+    {
+      z = -(abs(ptCplx) - R)/sc;
+    }
+    else
+    {
+      z = (abs(ptCplx) - R)/sc;
+    }
+
+    //log << x << "  " << y << "  " << z << "  " << pt.x() << "  " << pt.z() << endl;
+
+    // check if the point is inside the section
+    isInside = true;
+    if ((x > length()) || (x < 0.))
+    {
+      //log << "x > length" << endl;
+      x = NAN; y = NAN; z = NAN;
+      isInside = false;
+    }
+    else if (m_contour.has_on_unbounded_side(Point(y, z)))
+    {
+      //log << "Outside of contour" << endl;
+      x = NAN; y = NAN; z = NAN;
+      isInside = false;
+    }
   }
-  else if (m_contour.has_on_unbounded_side(Point(y, z)))
+  else
   {
-    //log << "Outside of contour" << endl;
     x = NAN; y = NAN; z = NAN;
-    isInside = false;
   }
-  //log.close();
   ptOut = Point_3(x, y, z);
+  //log.close();
   return(isInside);
 }
 

@@ -2448,9 +2448,148 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 }
 
 // ****************************************************************************
+// Run a simulation at a specific frequency and compute the aoustic field 
+
+void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
+{
+  int numSec, lastSec; 
+  double freq(6300.);
+
+  m_meshDensity = 10.;
+  m_simuParams.numIntegrationStep = 3;
+  m_simuParams.curved = true;
+
+  generateLogFileHeader(true);
+  ofstream log("log.txt", ofstream::app);
+
+  auto start = std::chrono::system_clock::now();
+
+  // create the cross-sections
+  if (createCrossSections(tract, false))
+  {
+    log << "Geometry successfully imported" << endl;
+  }
+  else
+  {
+    log << "Importation failed" << endl;
+  }
+  numSec = m_crossSections.size();
+  lastSec = numSec - 1;
+  log << "Number of sections: " << numSec << endl;
+
+  // create the mesh and compute modes
+  computeMeshAndModes();
+  log << "Modes computed" << endl;
+
+  // Compute junction matrices
+  computeJunctionMatrices(false);
+  log << "Junction matrices computed " << endl;
+
+  // generate source matrix
+  Eigen::MatrixXcd inputVelocity(Eigen::MatrixXcd::Zero(
+  m_crossSections[0]->numberOfModes(), 1));
+  Eigen::MatrixXcd inputPressure(Eigen::MatrixXcd::Zero(
+    m_crossSections[0]->numberOfModes(), 1));
+  complex<double> V0(1.0, 0.0);
+  // for a constant input velocity q = -j * w * rho * v 
+  inputVelocity(0, 0) = -1i * 2. * M_PI * m_simuParams.volumicMass * V0;
+  log << "source generated" << endl;
+
+  // Compute the radiation impedance and admittance 
+  Eigen::MatrixXcd radImped, radAdmit;
+  radiationImpedance(radImped, freq, 15., lastSec);
+  radAdmit = radImped.inverse();
+
+  // propagate impedance and admittance
+  propagateImpedAdmit(radImped, radAdmit, freq, lastSec, 0);
+  log << "Impedance and admittance computed" << endl;
+
+  // propagate velocity and pressure
+  inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass * 
+    m_crossSections[0]->area();
+  inputPressure = m_crossSections[0]->Zin() * inputVelocity;
+  propagateVelocityPress(inputVelocity, inputPressure, freq, 0, lastSec);
+  log << "Pressure and velocity computed" << endl;
+
+  //******************************************************
+  // Extract acoustic field
+  //******************************************************
+
+  ofstream ofs;
+  ofs.open("sec.txt");
+  // extract parameters of the sections
+  for (int s(0); s < numSec; s++)
+  {
+    ofs << m_crossSections[s]->ctrLinePt().x << "  "
+     << m_crossSections[s]->ctrLinePt().y << "  "
+     << m_crossSections[s]->normal().x << "  "
+     << m_crossSections[s]->normal().y << "  "
+     << m_crossSections[s]->curvRadius() << "  "
+     << m_crossSections[s]->circleArcAngle() << endl; 
+  }
+  ofs.close();
+
+  ofs.open("field.txt");
+  Point bbx[2];
+  bbx[0] = Point(-5., -10.);
+  bbx[1] = Point(10., 5.);
+  double lx(bbx[1].x() - bbx[0].x());
+  double ly(bbx[1].y() - bbx[0].y());
+  int nPt(500), cnt(0);
+  Point_3 queryPt, outPt;
+  bool ptFound;
+  complex<double> field;
+
+  for (int i(0); i < nPt; i++)
+  {
+    for (int j(0); j < nPt; j++)
+    {
+      // generate cartesian coordinates point to search
+      queryPt = Point_3(lx * (double)j / (double)(nPt - 1) + bbx[0].x(), 0., 
+          ly * (double)i / (double)(nPt - 1) + bbx[0].y());
+
+      cnt ++;
+      log << "Point " << cnt << " out of " << nPt*nPt << "  " 
+        << queryPt << endl; 
+      
+      // search if the query point is inside one of the sections
+      ptFound = false;
+      for (int s(0); s < numSec; s++)
+      {
+        if (m_crossSections[s]->getCoordinateFromCartesianPt(queryPt, outPt))
+        {
+          log << "Point found in section " << s << endl;
+          ptFound = true;
+          field = m_crossSections[s]->interiorField(outPt, m_simuParams, PRESSURE);
+          ofs << abs(field) << "  ";
+          break;
+        }
+      }
+      if (!ptFound)
+      {
+        ofs << "nan  ";
+      }
+    }
+    ofs << endl;
+  }
+  ofs.close();
+
+  auto end = std::chrono::system_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end - start;
+  int hours(floor(elapsed_seconds.count() / 3600.));
+  int minutes(floor((elapsed_seconds.count() - hours * 3600.) / 60.));
+  double seconds(elapsed_seconds.count() - (double)hours * 3600. -
+    (double)minutes * 60.);
+  log << "\nAcoustic field computation time "
+    << hours << " h " << minutes << " m " << seconds << " s" << endl;
+
+  log.close();
+}
+
+// ****************************************************************************
 // Run a simulation for a concatenation of cylinders
 
-  void Acoustic3dSimulation::coneConcatenationSimulation(string fileName)
+void Acoustic3dSimulation::coneConcatenationSimulation(string fileName)
 {
   // for data extraction
   double endAdmit, freqField;
@@ -3418,6 +3557,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
                  15.*(double)i/499. - 1., 0., 15.*(double)j/499. - 1), pointComputeField))
             {
               result = m_crossSections[0]->interiorField(pointComputeField, m_simuParams, PRESSURE);
+              cnt ++;
               log << "Pressure computed " << cnt << " over " << 250000 << endl;
               ofs2 << abs(result) << "  ";
             }

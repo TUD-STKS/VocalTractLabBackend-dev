@@ -94,6 +94,7 @@ public:
   void RayleighSommerfeldIntegral(vector<Point_3> points,
     Eigen::VectorXcd &radPress, double freq, int radSecIdx);
   void staticSimulation(VocalTract* tract);
+  void computeAcousticField(VocalTract* tract);
   void coneConcatenationSimulation(string fileName);
   void runTest(enum testType tType, string fileName);
 
