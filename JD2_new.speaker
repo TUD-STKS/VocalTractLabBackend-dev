@@ -42,25 +42,25 @@
       <piriform_fossa length="2.5000" volume="1.5000"/>
       <subglottal_cavity length="23.0000"/>
       <nasal_cavity length="11.4000"/>
-      <param index="0"  name="HX"  description="Hyoid position (horz.)"  unit="cm"   min="0.000"   max="1.000"  default="1.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="1"  name="HY"  description="Hyoid position (vert.)"  unit="cm"   min="-6.000"  max="-3.500" default="-4.750" positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="2"  name="JX"  description="Jaw position (horz.)"    unit="cm"   min="-0.500"  max="0.000"  default="0.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="3"  name="JA"  description="Jaw angle"               unit="deg." min="-7.000"  max="0.000"  default="-2.000" positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="4"  name="LP"  description="Lip protrusion"          unit="cm"   min="-1.000"  max="1.000"  default="-0.070" positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="5"  name="LD"  description="Lip distance"            unit="cm"   min="-2.000"  max="4.000"  default="0.950"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="6"  name="VS"  description="Velum shape"             unit=""     min="0.000"   max="1.000"  default="0.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="7"  name="VO"  description="Velum opening"           unit="cm^2" min="-0.100"  max="1.000"  default="-0.100" positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="8"  name="TCX" description="Tongue body (horz.)"     unit="cm"   min="-3.000"  max="4.000"  default="-0.400" positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="9"  name="TCY" description="Tongue body (vert.)"     unit="cm"   min="-3.000"  max="1.000"  default="-1.460" positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="10" name="TTX" description="Tongue tip (horz.)"      unit="cm"   min="1.500"   max="5.500"  default="3.500"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="11" name="TTY" description="Tongue tip (vert.)"      unit="cm"   min="-3.000"  max="2.500"  default="-1.000" positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="12" name="TBX" description="Tongue blade (horz.)"    unit="cm"   min="-3.000"  max="4.000"  default="2.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="13" name="TBY" description="Tongue blade (vert.)"    unit="cm"   min="-3.000"  max="5.000"  default="0.500"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="14" name="TRX" description="Tongue root (horz.)"     unit="cm"   min="-4.000"  max="2.000"  default="0.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="15" name="TRY" description="Tongue root (vert.)"     unit="cm"   min="-6.000"  max="0.000"  default="0.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="16" name="TS1" description="Tongue side elevation 1" unit="cm"   min="0.000"   max="1.000"  default="0.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="17" name="TS2" description="Tongue side elevation 2" unit="cm"   min="0.000"   max="1.000"  default="0.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
-      <param index="18" name="TS3" description="Tongue side elevation 3" unit="cm"   min="-1.000"  max="1.000"  default="0.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="0"  name="HX"  description="Hyoid position (horz.)"  unit="cm"   min="0.000"   max="1.000"  neutral="1.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="1"  name="HY"  description="Hyoid position (vert.)"  unit="cm"   min="-6.000"  max="-3.500" neutral="-4.750" positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="2"  name="JX"  description="Jaw position (horz.)"    unit="cm"   min="-0.500"  max="0.000"  neutral="0.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="3"  name="JA"  description="Jaw angle"               unit="deg." min="-7.000"  max="0.000"  neutral="-2.000" positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="4"  name="LP"  description="Lip protrusion"          unit="cm"   min="-1.000"  max="1.000"  neutral="-0.070" positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="5"  name="LD"  description="Lip distance"            unit="cm"   min="-2.000"  max="4.000"  neutral="0.950"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="6"  name="VS"  description="Velum shape"             unit=""     min="0.000"   max="1.000"  neutral="0.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="7"  name="VO"  description="Velum opening"           unit="cm^2" min="-0.100"  max="1.000"  neutral="-0.100" positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="8"  name="TCX" description="Tongue body (horz.)"     unit="cm"   min="-3.000"  max="4.000"  neutral="-0.400" positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="9"  name="TCY" description="Tongue body (vert.)"     unit="cm"   min="-3.000"  max="1.000"  neutral="-1.460" positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="10" name="TTX" description="Tongue tip (horz.)"      unit="cm"   min="1.500"   max="5.500"  neutral="3.500"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="11" name="TTY" description="Tongue tip (vert.)"      unit="cm"   min="-3.000"  max="2.500"  neutral="-1.000" positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="12" name="TBX" description="Tongue blade (horz.)"    unit="cm"   min="-3.000"  max="4.000"  neutral="2.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="13" name="TBY" description="Tongue blade (vert.)"    unit="cm"   min="-3.000"  max="5.000"  neutral="0.500"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="14" name="TRX" description="Tongue root (horz.)"     unit="cm"   min="-4.000"  max="2.000"  neutral="0.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="15" name="TRY" description="Tongue root (vert.)"     unit="cm"   min="-6.000"  max="0.000"  neutral="0.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="16" name="TS1" description="Tongue side elevation 1" unit="cm"   min="0.000"   max="1.000"  neutral="0.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="17" name="TS2" description="Tongue side elevation 2" unit="cm"   min="0.000"   max="1.000"  neutral="0.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
+      <param index="18" name="TS3" description="Tongue side elevation 3" unit="cm"   min="-1.000"  max="1.000"  neutral="0.000"  positive_velocity_factor="1.000"  negative_velocity_factor="1.000" />
     </anatomy>
     <shapes>
       <shape name="a">
@@ -1517,23 +1517,23 @@
   <glottis_models>
     <glottis_model type="Geometric glottis" selected="1">
       <static_params>
-        <param index="0" name="RT"  description="Rest thickness" unit="cm" min="0.300000"  max="1.000000"   default="0.450000"  />
-        <param index="1" name="RL"  description="Rest length"    unit="cm" min="0.500000"  max="2.000000"   default="1.600000"  />
-        <param index="2" name="RF0" description="Rest f0"        unit="Hz" min="50.000000" max="400.000000" default="120.000000"/>
-        <param index="3" name="CL"  description="Chink length"   unit="cm" min="0.100000"  max="0.500000"   default="0.400000"  />
+        <param index="0" name="RT"  description="Rest thickness" unit="cm" min="0.300000"  max="1.000000"   neutral="0.450000"  />
+        <param index="1" name="RL"  description="Rest length"    unit="cm" min="0.500000"  max="2.000000"   neutral="1.600000"  />
+        <param index="2" name="RF0" description="Rest f0"        unit="Hz" min="50.000000" max="400.000000" neutral="120.000000"/>
+        <param index="3" name="CL"  description="Chink length"   unit="cm" min="0.100000"  max="0.500000"   neutral="0.400000"  />
       </static_params>
       <control_params>
-        <param index="0"  name="F0" description="Fundamental frequency" unit="Hz"   min="40.000000"  max="600.000000"   default="120.000000" />
-        <param index="1"  name="PR" description="Lung pressure"         unit="dPa"  min="0.000000"   max="20000.000000" default="8000.000000"/>
-        <param index="2"  name="XB" description="Lower displacement"    unit="cm"   min="-0.050000"  max="0.300000"     default="0.010000"   />
-        <param index="3"  name="XT" description="Upper displacement"    unit="cm"   min="-0.050000"  max="0.300000"     default="0.020000"   />
-        <param index="4"  name="CA" description="Chink area"            unit="cm^2" min="-0.250000"  max="0.250000"     default="0.050000"   />
-        <param index="5"  name="PL" description="Phase lag"             unit="rad." min="0.000000"   max="3.141500"     default="1.220000"   />
-        <param index="6"  name="RA" description="Relative amplitude"    unit=""     min="-1.000000"  max="1.000000"     default="1.000000"   />
-        <param index="7"  name="DP" description="Double pulsing"        unit=""     min="0.000000"   max="1.000000"     default="0.050000"   />
-        <param index="8"  name="PS" description="Pulse skewness"        unit=""     min="-0.500000"  max="0.500000"     default="0.000000"   />
-        <param index="9"  name="FL" description="Flutter"               unit="%"    min="0.000000"   max="100.000000"   default="25.000000"  />
-        <param index="10" name="AS" description="Aspiration strength"   unit="dB"   min="-40.000000" max="0.000000"     default="-10.000000" />
+        <param index="0"  name="F0" description="Fundamental frequency" unit="Hz"   min="40.000000"  max="600.000000"   neutral="120.000000" />
+        <param index="1"  name="PR" description="Lung pressure"         unit="dPa"  min="0.000000"   max="20000.000000" neutral="8000.000000"/>
+        <param index="2"  name="XB" description="Lower displacement"    unit="cm"   min="-0.050000"  max="0.300000"     neutral="0.010000"   />
+        <param index="3"  name="XT" description="Upper displacement"    unit="cm"   min="-0.050000"  max="0.300000"     neutral="0.020000"   />
+        <param index="4"  name="CA" description="Chink area"            unit="cm^2" min="-0.250000"  max="0.250000"     neutral="0.050000"   />
+        <param index="5"  name="PL" description="Phase lag"             unit="rad." min="0.000000"   max="3.141500"     neutral="1.220000"   />
+        <param index="6"  name="RA" description="Relative amplitude"    unit=""     min="-1.000000"  max="1.000000"     neutral="1.000000"   />
+        <param index="7"  name="DP" description="Double pulsing"        unit=""     min="0.000000"   max="1.000000"     neutral="0.050000"   />
+        <param index="8"  name="PS" description="Pulse skewness"        unit=""     min="-0.500000"  max="0.500000"     neutral="0.000000"   />
+        <param index="9"  name="FL" description="Flutter"               unit="%"    min="0.000000"   max="100.000000"   neutral="25.000000"  />
+        <param index="10" name="AS" description="Aspiration strength"   unit="dB"   min="-40.000000" max="0.000000"     neutral="-10.000000" />
       </control_params>
       <shapes>
         <shape name="default">
