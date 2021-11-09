@@ -35,6 +35,7 @@ typedef CGAL::Exact_intersections_tag                     Itag;
 typedef CGAL::Constrained_Delaunay_triangulation_2<K, Tds, Itag> CDT;
 typedef CDT::Point                  Point;
 typedef CGAL::Point_3<K>                Point_3;
+typedef CGAL::Vector_2<K>                Vector;
 
 typedef CGAL::Polygon_2<K>                          Polygon_2;
 
@@ -72,6 +73,11 @@ struct simulationParameters
   bool curved;
   bool varyingArea;
   double maxComputedFreq;
+
+  // for acoustic field computation
+  double freqField;
+  Point bboxField[2];
+  int fieldResolution; // number of points per cm
 };
 
 
@@ -189,7 +195,12 @@ public:
   vector<int> nextSections() const { return m_nextSections; }
   bool computeImpedance() const { return m_computeImpedance; }
   Point2D ctrLinePt() const;
+  Point ctrLinePtIn() const;
+  virtual Point ctrLinePtOut() const { return Point(); }
   Point2D normal() const;
+  Vector normalIn() const;
+  virtual Vector normalOut() const { return Vector(); }
+
   double area() const;
   int numberOfModes() const { return m_modesNumber; }
 
@@ -336,6 +347,8 @@ public:
   // **************************************************************************
   // accessors
 
+  Point ctrLinePtOut() const;
+  Vector normalOut() const;
   double scaleIn() const { return m_scalingFactors[0];  }
   double scaleOut() const { return m_scalingFactors[1]; }
   double length() const;

@@ -2825,8 +2825,8 @@ bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut)
     // curvature radius
     double R(abs(m_curvatureRadius));
     // center of the circle arc
-    Point C(ctl.x() - m_curvatureRadius * m_normal.x, ctl.y() 
-        - m_curvatureRadius * m_normal.y);        
+    Point C(ctl.x() + m_curvatureRadius * m_normal.x, ctl.y() 
+        + m_curvatureRadius * m_normal.y);        
     //Point C(ctl.x() - R * m_normal.x, ctl.y() - R * m_normal.y);        
     //log << "Circle arc center " << C << endl;
     complex<double> ptCplx(pt.x() - C.x(), pt.z() - C.y());
@@ -2836,11 +2836,11 @@ bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut)
     //x = R * fmod(arg(ctlCplx) - arg(ptCplx) + 2.*M_PI, 2.*M_PI);
     if (m_curvatureRadius < 0.)
     {
-      x = R * fmod(arg(ptCplx) - arg(ctlCplx) + 2.*M_PI, 2.*M_PI);
+      x = R * fmod(arg(ctlCplx) - arg(ptCplx) + 2.*M_PI, 2.*M_PI);
     }
     else
     {
-      x = R * fmod(arg(ctlCplx) - arg(ptCplx) + 2.*M_PI, 2.*M_PI);
+      x = R * fmod(arg(ptCplx) - arg(ctlCplx) + 2.*M_PI, 2.*M_PI);
     }
     sc = scaling(x/length());
     // compute y coordinate
@@ -2848,11 +2848,11 @@ bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut)
     // compute z coordinate
     if (m_curvatureRadius < 0.)
     {
-      z = -(abs(ptCplx) - R)/sc;
+      z = (abs(ptCplx) - R)/sc;
     }
     else
     {
-      z = (abs(ptCplx) - R)/sc;
+      z = -(abs(ptCplx) - R)/sc;
     }
 
     //log << x << "  " << y << "  " << z << "  " << pt.x() << "  " << pt.z() << endl;
@@ -3049,7 +3049,9 @@ int CrossSection2d::numNextSec() const { return m_nextSections.size(); }
 int CrossSection2d::prevSec(int idx) const { return m_previousSections[idx]; }
 int CrossSection2d::nextSec(int idx) const { return m_nextSections[idx]; }
 Point2D CrossSection2d::ctrLinePt() const { return(m_ctrLinePt); }
+Point CrossSection2d::ctrLinePtIn() const { return(Point(m_ctrLinePt.x, m_ctrLinePt.y)); }
 Point2D CrossSection2d::normal() const { return(m_normal); }
+Vector CrossSection2d::normalIn() const { return(Vector(m_normal.x, m_normal.y)); }
 double CrossSection2d::area() const { return(m_area); }
 //******************************************************
 Eigen::MatrixXcd CrossSection2d::Zin() const
@@ -3098,6 +3100,47 @@ Eigen::MatrixXcd CrossSection2d::Pout() const
 {
   if (Pdir() == 1) { return m_acPressure.back(); }
   else { return m_acPressure[0]; }
+}
+//******************************************************
+Point CrossSection2dFEM::ctrLinePtOut() const
+{
+  if (length() > 0.)
+  {
+    Point Pt = ctrLinePtIn();
+    Vector N(normalIn());
+    double theta(m_circleArcAngle / 2.);
+    Transformation rotate(CGAL::ROTATION, sin(theta - M_PI / 2.),
+      cos(theta - M_PI / 2.));
+    Transformation translate(CGAL::TRANSLATION,
+      2. * abs(m_curvatureRadius) * sin(theta) * rotate(N));
+    return(translate(Pt));
+  }
+  else
+  {
+    return(ctrLinePtIn());
+  }
+}
+//******************************************************
+Vector CrossSection2dFEM::normalOut() const
+{
+  if (length() > 0.)
+  {
+    double thetaN;
+    if (signbit(m_curvatureRadius))
+    {
+      thetaN = m_circleArcAngle;
+    }
+    else
+    {
+      thetaN = -m_circleArcAngle;
+    }
+    Transformation rotateN(CGAL::ROTATION, sin(thetaN), cos(thetaN));
+    return(rotateN(normalIn()));
+  }
+  else
+  {
+    return(normalIn());
+  }
 }
 //******************************************************
 double CrossSection2dFEM::length() const { 

@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <chrono>    // to get the computation time
 #include <ctime>  
+#include <string>
+#include <regex>
 
 // for Eigen
 #include <Eigen/Dense>
@@ -114,6 +116,10 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_simuParams.curved = false;
   m_simuParams.varyingArea = true;
   m_simuParams.maxComputedFreq = 10000.; // (double)SAMPLING_RATE / 2.;
+  m_simuParams.freqField = 5000.;
+  m_simuParams.bboxField[0] = Point(-5., -10.);
+  m_simuParams.bboxField[1] = Point(10., 5.);
+  m_simuParams.fieldResolution = 30;
   m_numFreq = 1 << (m_spectrumLgthExponent - 1);
   spectrum.setNewLength(2 * m_numFreq);
   spectrumNoise.setNewLength(2 * m_numFreq);
@@ -275,7 +281,7 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   log << "Index of constriction section: " << m_idxConstriction << endl;
   log << "Maximal computed frequency: " << m_simuParams.maxComputedFreq
     << " Hz" << endl;
-  log << "Number of simulated frequencies: " << numFreqComputed << endl << endl;
+  log << "Number of simulated frequencies: " << numFreqComputed << endl;
   log << "Varying cross-sectional area: ";
   if (m_simuParams.varyingArea)
   {
@@ -316,6 +322,13 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   {
     log << "Geometry is from vocal tract lab" << endl;
   }
+  log << "Acoustic field computation at " << m_simuParams.freqField
+  << "with " << m_simuParams.fieldResolution << " points per cm" << endl;
+  log << "Bounding box: min x "
+    << m_simuParams.bboxField[0].x() << " min y "
+    << m_simuParams.bboxField[0].y() << " max x "
+    << m_simuParams.bboxField[1].x() << " max y "
+    << m_simuParams.bboxField[1].y() << endl;
   log.close();
 }
 
@@ -1949,6 +1962,57 @@ void Acoustic3dSimulation::propagatePressure(Eigen::MatrixXcd startPress, double
 }
 
 // **************************************************************************
+// Extract the internal acoustic field in a plane
+
+void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
+{
+  double lx(m_simuParams.bboxField[1].x() - m_simuParams.bboxField[0].x());
+  double ly(m_simuParams.bboxField[1].y() - m_simuParams.bboxField[0].y());
+  int nPtx(round(lx * (double)m_simuParams.fieldResolution));
+  int nPty(round(ly * (double)m_simuParams.fieldResolution));
+  int cnt(0);
+  int numSec(m_crossSections.size());
+  Point_3 queryPt, outPt;
+  bool ptFound;
+  ofstream log("log.txt", ofstream::app);
+
+  field.resize(nPtx, nPty);
+
+  for (int i(0); i < nPty; i++)
+  {
+    log << "Point " << cnt << " out of " << nPtx * nPty << "  "
+      << queryPt << endl;
+    for (int j(0); j < nPtx; j++)
+    {
+      cnt++;
+
+      // generate cartesian coordinates point to search
+      queryPt = Point_3(lx * (double)j / (double)(nPtx - 1) + m_simuParams.bboxField[0].x(), 0.,
+        ly * (double)i / (double)(nPty - 1) + m_simuParams.bboxField[0].y());
+
+      // search if the query point is inside one of the sections
+      ptFound = false;
+      for (int s(0); s < numSec; s++)
+      {
+        if (m_crossSections[s]->getCoordinateFromCartesianPt(queryPt, outPt))
+        {
+          log << "Point founs in section " << s << endl;
+          ptFound = true;
+          field(i,j) = m_crossSections[s]->interiorField(outPt, m_simuParams, PRESSURE);
+          log << "Field computed" << endl;
+          break;
+        }
+      }
+      if (!ptFound)
+      {
+        field(i, j) = complex<double>(NAN, NAN);
+      }
+    }
+  }
+  log.close();
+}
+
+// **************************************************************************
 // Run a static simulation
 
 void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
@@ -2453,7 +2517,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
 {
   int numSec, lastSec; 
-  double freq(6300.);
+  double freq(m_simuParams.freqField);
 
   m_meshDensity = 10.;
   m_simuParams.numIntegrationStep = 3;
@@ -2520,58 +2584,33 @@ void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
   // extract parameters of the sections
   for (int s(0); s < numSec; s++)
   {
-    ofs << m_crossSections[s]->ctrLinePt().x << "  "
-     << m_crossSections[s]->ctrLinePt().y << "  "
-     << m_crossSections[s]->normal().x << "  "
-     << m_crossSections[s]->normal().y << "  "
-     << m_crossSections[s]->curvRadius() << "  "
-     << m_crossSections[s]->circleArcAngle() << endl; 
+    if (m_crossSections[s]->length() > 0.)
+    {
+      // entrance features
+      ofs << m_crossSections[s]->ctrLinePt().x << "  "
+        << m_crossSections[s]->ctrLinePt().y << "  "
+        << m_crossSections[s]->normal().x << "  "
+        << m_crossSections[s]->normal().y << "  "
+        << m_crossSections[s]->curvRadius() << "  "
+        << m_crossSections[s]->circleArcAngle() << endl;
+
+      // exist features
+      ofs << m_crossSections[s]->ctrLinePtOut().x() << "  "
+        << m_crossSections[s]->ctrLinePtOut().y() << "  "
+        << m_crossSections[s]->normalOut().x() << "  "
+        << m_crossSections[s]->normalOut().y() << "  "
+        << m_crossSections[s]->curvRadius() << "  "
+        << m_crossSections[s]->circleArcAngle() << endl;
+    }
   }
   ofs.close();
 
+  Eigen::MatrixXcd field;
+  acousticFieldInPlane(field);
   ofs.open("field.txt");
-  Point bbx[2];
-  bbx[0] = Point(-5., -10.);
-  bbx[1] = Point(10., 5.);
-  double lx(bbx[1].x() - bbx[0].x());
-  double ly(bbx[1].y() - bbx[0].y());
-  int nPt(500), cnt(0);
-  Point_3 queryPt, outPt;
-  bool ptFound;
-  complex<double> field;
-
-  for (int i(0); i < nPt; i++)
-  {
-    for (int j(0); j < nPt; j++)
-    {
-      // generate cartesian coordinates point to search
-      queryPt = Point_3(lx * (double)j / (double)(nPt - 1) + bbx[0].x(), 0., 
-          ly * (double)i / (double)(nPt - 1) + bbx[0].y());
-
-      cnt ++;
-      log << "Point " << cnt << " out of " << nPt*nPt << "  " 
-        << queryPt << endl; 
-      
-      // search if the query point is inside one of the sections
-      ptFound = false;
-      for (int s(0); s < numSec; s++)
-      {
-        if (m_crossSections[s]->getCoordinateFromCartesianPt(queryPt, outPt))
-        {
-          log << "Point found in section " << s << endl;
-          ptFound = true;
-          field = m_crossSections[s]->interiorField(outPt, m_simuParams, PRESSURE);
-          ofs << abs(field) << "  ";
-          break;
-        }
-      }
-      if (!ptFound)
-      {
-        ofs << "nan  ";
-      }
-    }
-    ofs << endl;
-  }
+  stringstream txtField;
+  txtField << field.cwiseAbs();
+  ofs << regex_replace(txtField.str(), regex("-nan\\(ind\\)"), "nan");
   ofs.close();
 
   auto end = std::chrono::system_clock::now();
@@ -3412,7 +3451,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
       surfaceIdx, length, Point2D(0., 0.), Point2D(-1., 0.),
       scalingFactors);
     m_crossSections[0]->setAreaVariationProfileType(ELEPHANT);
-    m_crossSections[0]->setCurvatureRadius(inRadius);
+    m_crossSections[0]->setCurvatureRadius(-inRadius);
     m_crossSections[0]->setCurvatureAngle(inAngle);
     mn = 6;
     m_crossSections[0]->setModesNumber(mn);
@@ -3549,25 +3588,31 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
       if (freq == 2400.)
       {
         ofs2.open("p_field.txt");
-        for (int i(0); i < 500; i++)
-        {
-          for (int j(0); j < 500; j++)
-          {
-            if (m_crossSections[0]->getCoordinateFromCartesianPt(Point_3(
-                 15.*(double)i/499. - 1., 0., 15.*(double)j/499. - 1), pointComputeField))
-            {
-              result = m_crossSections[0]->interiorField(pointComputeField, m_simuParams, PRESSURE);
-              cnt ++;
-              log << "Pressure computed " << cnt << " over " << 250000 << endl;
-              ofs2 << abs(result) << "  ";
-            }
-            else
-            {
-              ofs2 << "nan  ";
-            }
-          }
-          ofs2 << endl;
-        }
+        Eigen::MatrixXcd field;
+        acousticFieldInPlane(field);
+        stringstream txtField;
+        txtField << field.cwiseAbs();
+        ofs2 << regex_replace(txtField.str(), regex("-nan\\(ind\\)"), "nan");
+
+        //for (int i(0); i < 500; i++)
+        //{
+        //  for (int j(0); j < 500; j++)
+        //  {
+        //    if (m_crossSections[0]->getCoordinateFromCartesianPt(Point_3(
+        //         15.*(double)i/499. - 1., 0., 15.*(double)j/499. - 1), pointComputeField))
+        //    {
+        //      result = m_crossSections[0]->interiorField(pointComputeField, m_simuParams, PRESSURE);
+        //      cnt ++;
+        //      log << "Pressure computed " << cnt << " over " << 250000 << endl;
+        //      ofs2 << abs(result) << "  ";
+        //    }
+        //    else
+        //    {
+        //      ofs2 << "nan  ";
+        //    }
+        //  }
+        //  ofs2 << endl;
+        //}
         ofs2.close();
       }
     }
@@ -4139,10 +4184,14 @@ void Acoustic3dSimulation::getCurvatureAngleShift(Point2D P1, Point2D P2,
   angles[1] = atan2(-N2.y, -N2.x);
 
   // compute the average radius
-  radius = (radii[0] + radii[1]) / 2.;
+  //radius = (radii[0] + radii[1]) / 2.;
+  radius = radii[0];
 
   // compute the vertical shift to apply to the contour
   shift = radii[0] - radius;
+  ofstream log("log.txt", ofstream::app);
+  log << "shift " << shift << endl;
+  log.close();
 
   // compute the angle between both angular positions
   angle = max(angles[0], angles[1]) - min(angles[0], angles[1]);
@@ -4422,6 +4471,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   // shift the contours
   Transformation translate(CGAL::TRANSLATION, Vector(0., shift));
   for (auto cont : contours[0]){cont = transform(translate, cont);}
+  // FEXME: one should shift also the ccenterline point probably
 
   // initialize the previous section index list
   for (int c(0); c < contours[0].size(); c++){prevSections.push_back(tmpPrevSection);}
@@ -4495,13 +4545,6 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       }
       scalingFactors[1] = 1.;
     }
-    //log << "scalingFactors[0] " << scalingFactors[0] << endl;
-    //log << "scalingFactors[1] " << scalingFactors[1] << endl;
-
-    //log << "i = " << i << " scaling factors " << prevScalingFactors[0]
-      //<< "  " << prevScalingFactors[1] << " area " 
-      //<< totAreas[i-1]<< " radius " << prevCurvRadius
-      //<< " angle " << prevAngle << endl;
 
     // loop over the created contours
     for (int c(0); c < contours[i-1].size(); c++)
