@@ -1080,7 +1080,7 @@ string XmlNode::getAttributeString(const string &name)
   }
   else
   {
-    return string("");
+      throw std::invalid_argument(std::string("Tag ") + name + std::string(" could not be found in node!"));
   }
 }
 

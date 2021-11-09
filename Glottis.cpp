@@ -403,7 +403,7 @@ bool Glottis::readFromXml(XmlNode &rootNode)
         node = shapeNode->getChildElement("control_param", k);
         try
         {
-            name = node->getAttributeInt("name");
+            name = node->getAttributeString("name");
             value = node->getAttributeDouble("value");
         }
         catch (const std::exception& e)
