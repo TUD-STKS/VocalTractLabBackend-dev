@@ -277,9 +277,9 @@ bool Glottis::readFromXml(XmlNode &rootNode)
           return false;
       }
       n = -1;
-      for (m = 0; (m < controlParam.size()) && (n == -1); m++)
+      for (m = 0; (m < staticParam.size()) && (n == -1); m++)
       {
-          if (name == controlParam[m].name)
+          if (name == staticParam[m].name)
           {
               n = m;
           }
@@ -293,7 +293,7 @@ bool Glottis::readFromXml(XmlNode &rootNode)
       }
       else
       {
-          printf("Error: Could not read definition of static paramters of selected glottis model!\n");
+          printf("Error: Could not read definition of static parameters of selected glottis model!\n");
           return false;
       }
     }
@@ -345,7 +345,7 @@ bool Glottis::readFromXml(XmlNode &rootNode)
       }
       else
       {
-          printf("Error: Could not read definition of control paramters of selected glottis model!\n");
+          printf("Error: Could not read definition of control parameters of selected glottis model!\n");
           return false;
       }
 
