@@ -37,12 +37,12 @@ TriangularGlottis::TriangularGlottis()
 
   Parameter cp[NUM_CONTROL_PARAMS] =
   {
-    { "f0", "f0", "Hz", 1, "Hz", 40.0, 600.0, 120.0, 0.0 },
-    { "Subglottal pressure", "pressure", "dPa", 1.0, "dPa", 0.0, 20000.0, 8000.0, 0.0 },
-    { "Lower rest displacement", "lower_rest_displacement", "cm", 10, "mm", -0.05, 0.3, 0.01, 0.0 },
-    { "Upper rest displacement", "upper_rest_displacement", "cm", 10, "mm", -0.05, 0.3, 0.01, 0.0 },
-    { "Arytenoid area", "ary_area", "cm^2", 100, "mm^2", -0.1, 0.5, 0.0, 0.0 },
-    { "Aspiration strength", "aspiration_strength", "dB", 1, "dB", -40.0, 0.0, -40.0, -40.0 },
+    { "F0", "Fundamental frequency", "Hz", 1, "Hz", 40.0, 600.0, 120.0, 0.0 },
+    { "PR", "Lung pressure", "dPa", 1.0, "dPa", 0.0, 20000.0, 8000.0, 0.0 },
+    { "XB", "Lower rest displacement", "cm", 10, "mm", -0.05, 0.3, 0.01, 0.0 },
+    { "XT", "Upper rest displacement", "cm", 10, "mm", -0.05, 0.3, 0.01, 0.0 },
+    { "AA", "Arytenoid area", "cm^2", 100, "mm^2", -0.1, 0.5, 0.0, 0.0 },
+    { "AS", "Aspiration strength", "dB", 1, "dB", -40.0, 0.0, -40.0, -40.0 },
   };
 
   controlParam.clear();
