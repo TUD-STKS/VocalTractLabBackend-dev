@@ -241,7 +241,7 @@ bool Glottis::writeToXml(ostream &os, int initialIndent, bool isSelected)
 
 bool Glottis::readFromXml(XmlNode &rootNode)
 {
-  int i, k;
+  int i, k, m, n;
   XmlNode *node;
   
   int index;
@@ -352,16 +352,33 @@ bool Glottis::readFromXml(XmlNode &rootNode)
       for (k=0; k < numParams; k++)
       {
         node = shapeNode->getChildElement("control_param", k);
-        index = node->getAttributeInt("index");
-        value = node->getAttributeDouble("value");
-
-        if ((index < 0) || (index >= (int)controlParam.size()))
+        try
         {
-          printf("Error: Shape parameter index out of range!\n");
-          return false;
+            name = node->getAttributeInt("name");
+            value = node->getAttributeDouble("value");
         }
-
-        s.controlParam[index] = value;
+        catch (const std::exception& e)
+        {
+            printf("Error: %s\n", e.what());
+            return false;
+        }
+        n = -1;
+        for (m = 0; (m < controlParam.size()) && (n == -1); m++)
+        {
+            if (name == controlParam[m].name)
+            {
+                n = m;
+            }
+        }
+        if (n != -1)
+        {
+            s.controlParam[n] = value;
+        }
+        else
+        {
+            printf("Error: Could not read control paramter values in glottis shape: %s !\n", s.name.c_str() );
+            return false;
+        }
       }
 
       // Add the read shape to the shapes list.

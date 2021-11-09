@@ -991,14 +991,15 @@ bool XmlNode::hasAttribute(const string &name)
 
 
 // ****************************************************************************
-/// Returns the integer value of the given attribute, or 0, if the attribute
-/// does not exist or is not convertable to integer.
+/// Returns the integer value of the given attribute, or an exception, if the attribute
+/// does not exist, or if the attribute is not convertable to integer.
 // ****************************************************************************
 
 int XmlNode::getAttributeInt(const string &name)
 {
   int i;
   int k = -1;
+  int value = k;
 
   for (i=0; i < (int)attribute.size(); i++)
   {
@@ -1010,25 +1011,27 @@ int XmlNode::getAttributeInt(const string &name)
   }
 
   if (k != -1)
-  {
-    return atoi( attribute[k].value.c_str() );
+  { 
+      value = std::stoi(attribute[k].value.c_str());
   }
   else
   {
-    return 0;
+      throw std::invalid_argument(std::string("Tag ") + name + std::string(" could not be found in node!"));
   }
+  return value;
 }
 
 
 // ****************************************************************************
-/// Returns the double value of the given attribute, or 0.0, if the attribute
-/// does not exist or is not convertable to double.
+/// Returns the double value of the given attribute, or an exception, if the attribute
+/// does not exist, or is not convertable to double.
 // ****************************************************************************
 
 double XmlNode::getAttributeDouble(const string &name)
 {
   int i;
   int k = -1;
+  double value = -1.0;
 
   for (i=0; i < (int)attribute.size(); i++)
   {
@@ -1041,13 +1044,15 @@ double XmlNode::getAttributeDouble(const string &name)
 
   if (k != -1)
   {
-    return atof( attribute[k].value.c_str() );
+      value = std::stod(attribute[k].value.c_str());
   }
   else
   {
-    return 0.0;
+      throw std::invalid_argument(std::string("Tag ") + name + std::string(" could not be found in node!"));
   }
+  return value;
 }
+
 
 
 // ****************************************************************************
