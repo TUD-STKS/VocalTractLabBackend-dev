@@ -51,7 +51,7 @@ public:
   {
     string name;
     string description;
-    string abbr; //deprecated
+    //string abbr; //deprecated, P.Krug
     string cgsUnit;     ///< CGS unit of this parameter (used for its values)
     double factor;      ///< userUnit = factor * cgsUnit
     string userUnit;    ///< Unit displayed for the user

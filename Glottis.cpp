@@ -155,15 +155,15 @@ bool Glottis::writeToXml(ostream &os, int initialIndent, bool isSelected)
 
   for (i=0; i < (int)staticParam.size(); i++)
   {
-    sprintf(st, "<param index=\"%d\" name=\"%s\" abbr=\"%s\" unit=\"%s\" min=\"%f\" max=\"%f\" default=\"%f\" value=\"%f\"/>",
+    sprintf(st, "<param index=\"%d\" name=\"%s\" description=\"%s\" unit=\"%s\" min=\"%f\" max=\"%f\" default=\"%f\"/>", //value=\"%f\"/>",
       i,
       staticParam[i].name.c_str(),
-      staticParam[i].abbr.c_str(),
+      staticParam[i].description.c_str(),
       staticParam[i].cgsUnit.c_str(),
       staticParam[i].min,
       staticParam[i].max,
-      staticParam[i].neutral,
-      staticParam[i].x);
+      staticParam[i].neutral);
+      //staticParam[i].x);
 
     os << string(indent, ' ') << st << endl;
   }
@@ -180,15 +180,15 @@ bool Glottis::writeToXml(ostream &os, int initialIndent, bool isSelected)
 
   for (i=0; i < (int)controlParam.size(); i++)
   {
-    sprintf(st, "<param index=\"%d\" name=\"%s\" abbr=\"%s\" unit=\"%s\" min=\"%f\" max=\"%f\" default=\"%f\" value=\"%f\"/>",
+    sprintf(st, "<param index=\"%d\" name=\"%s\" description=\"%s\" unit=\"%s\" min=\"%f\" max=\"%f\" default=\"%f\"/>",// value=\"%f\"/>",
       i,
       controlParam[i].name.c_str(),
-      controlParam[i].abbr.c_str(),
+      controlParam[i].description.c_str(),
       controlParam[i].cgsUnit.c_str(),
       controlParam[i].min,
       controlParam[i].max,
-      controlParam[i].neutral,
-      controlParam[i].x);
+      controlParam[i].neutral);
+      //controlParam[i].x);
 
     os << string(indent, ' ') << st << endl;
   }
@@ -244,9 +244,12 @@ bool Glottis::readFromXml(XmlNode &rootNode)
   int i, k, m, n;
   XmlNode *node;
   
-  int index;
+  //int index;
   string name;
   double value;
+  double min;
+  double max;
+  double neutral;
 
   // ****************************************************************
   // Read the static parameter values.
@@ -259,24 +262,40 @@ bool Glottis::readFromXml(XmlNode &rootNode)
     for (i=0; i < (int)staticParamNode->childElement.size(); i++)
     {
       node = staticParamNode->childElement[i];
-      index = node->getAttributeInt("index");
-      name  = node->getAttributeString("name");
-      value = node->getAttributeDouble("value");
-
-      if ((index < 0) || (index >= (int)staticParam.size()))
+      try
       {
-        printf("Error: Static parameter index out of range for parameter '%s'!\n", name.c_str());
-        return false;
+          //index = node->getAttributeInt("index");
+          name = node->getAttributeString("name");
+          //value = node->getAttributeDouble("value"); //value does not exist anymore in glottis definition, set to neutral instead
+          min = node->getAttributeDouble("min");
+          max = node->getAttributeDouble("max");
+          neutral = node->getAttributeDouble("default");
       }
-
-      if (name != staticParam[index].name)
+      catch (const std::exception & e)
       {
-        printf("Error: The name of the static parameter %d is '%s' but should be '%s'!\n", 
-          index, name.c_str(), staticParam[index].name.c_str());
-        return false;
+          printf("Error: %s\n", e.what());
+          return false;
       }
-
-      staticParam[index].x = value;
+      n = -1;
+      for (m = 0; (m < controlParam.size()) && (n == -1); m++)
+      {
+          if (name == controlParam[m].name)
+          {
+              n = m;
+          }
+      }
+      if (n != -1)
+      {
+          staticParam[n].min = min;
+          staticParam[n].max = max;
+          staticParam[n].neutral = neutral;
+          staticParam[n].x = neutral;
+      }
+      else
+      {
+          printf("Error: Could not read definition of static paramters of selected glottis model!\n");
+          return false;
+      }
     }
   }
 
@@ -291,26 +310,56 @@ bool Glottis::readFromXml(XmlNode &rootNode)
     for (i=0; i < (int)controlParamNode->childElement.size(); i++)
     {
       node = controlParamNode->childElement[i];
-      index = node->getAttributeInt("index");
-      name  = node->getAttributeString("name");
-      value = node->getAttributeDouble("value");
-
-      if ((index < 0) || (index >= (int)controlParam.size()))
+      try
       {
-        printf("Error: Control parameter index out of range for parameter '%s'!\n", name.c_str());
-        return false;
+          //index = node->getAttributeInt("index");
+          name = node->getAttributeString("name");
+          //value = node->getAttributeDouble("value"); //value does not exist anymore in glottis definition, set to neutral instead
+          min = node->getAttributeDouble("min");
+          max = node->getAttributeDouble("max");
+          neutral = node->getAttributeDouble("default");
+      }
+      catch (const std::exception & e)
+      {
+          printf("Error: %s\n", e.what());
+          return false;
+      }
+      n = -1;
+      for (m = 0; (m < controlParam.size()) && (n == -1); m++)
+      {
+          if (name == controlParam[m].name)
+          {
+              n = m;
+          }
+      }
+      if (n != -1)
+      {
+          controlParam[n].min = min;
+          controlParam[n].max = max;
+          controlParam[n].neutral = neutral;
+          controlParam[n].x = neutral;
+          // Don't overwrite with the values from the xml-file. Keep the
+          // default values at the start of the program.
+          // But why? P. Krug
+          //controlParam[n].x = value; // Anyway, value does not exist anymore, use neutral instead
+      }
+      else
+      {
+          printf("Error: Could not read definition of control paramters of selected glottis model!\n");
+          return false;
       }
 
-      if (name != controlParam[index].name)
-      {
-        printf("Error: The name of the control parameter %d is '%s' but should be '%s'!\n", 
-          index, name.c_str(), controlParam[index].name.c_str());
-        return false;
-      }
-
-      // Don't overwrite with the values from the xml-file. Keep the
-      // default values at the start of the program.
-//      controlParam[index].x = value;
+      //if ((index < 0) || (index >= (int)controlParam.size()))
+      //{
+      //  printf("Error: Control parameter index out of range for parameter '%s'!\n", name.c_str());
+      //  return false;
+      //}
+      //if (name != controlParam[index].name)
+      //{
+      //  printf("Error: The name of the control parameter %d is '%s' but should be '%s'!\n", 
+      //    index, name.c_str(), controlParam[index].name.c_str());
+      //  return false;
+      //}
     }
   }
 
@@ -409,12 +458,12 @@ void Glottis::printParamNames(ostream &os)
 
   for (i=0; i < (int)controlParam.size(); i++)
   {
-    os << controlParam[i].abbr << "[" << controlParam[i].cgsUnit << "] ";
+    os << controlParam[i].name << "[" << controlParam[i].cgsUnit << "] ";
   }
 
   for (i=0; i < (int)derivedParam.size(); i++)
   {
-    os << derivedParam[i].abbr << "[" << derivedParam[i].cgsUnit << "] ";
+    os << derivedParam[i].name << "[" << derivedParam[i].cgsUnit << "] ";
   }
 
   os << "glottal_flow[cm^3/s] ";

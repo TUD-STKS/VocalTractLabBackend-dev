@@ -146,9 +146,10 @@ public:
     double min;
     double max;
     double neutral;
-    string abbr;      ///< deprecated
+    //string abbr;      //deprecated, P.Krug
     string description; ///< Long name, e.g. "Horizontal tongue body position"
     string name;      ///< Abbreviation, e.g. "TCX"
+    string unit;
   };
 
   // ****************************************************************

@@ -368,7 +368,7 @@ int vtlGetTractParamInfo(char *names, double *paramMin, double *paramMax, double
 
   for (i=0; i < VocalTract::NUM_PARAMS; i++)
   {
-    strcat(names, vocalTract->param[i].abbr.c_str());
+    strcat(names, vocalTract->param[i].name.c_str());
     if (i != VocalTract::NUM_PARAMS - 1)
     {
       strcat(names, " ");
@@ -410,7 +410,7 @@ int vtlGetGlottisParamInfo(char *names, double *paramMin, double *paramMax, doub
 
   for (i=0; i < numGlottisParams; i++)
   {
-    strcat(names, glottis[selectedGlottis]->controlParam[i].abbr.c_str());
+    strcat(names, glottis[selectedGlottis]->controlParam[i].name.c_str());
     if (i != VocalTract::NUM_PARAMS - 1)
     {
       strcat(names, " ");
