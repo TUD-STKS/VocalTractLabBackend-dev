@@ -419,6 +419,9 @@ C_EXPORT int vtlApiTest(const char *speakerFileName, double *audio, int *numSamp
 // name segFileName into a gestural score file (gesFileName).
 // The f0 tier in the gestural score is set to a "standard" f0.
 //
+// o enableConsoleOutput (in): Set to 1, if you want to allow output about the
+//   synthesis progress in the console window. Otherwise, set it to 0.
+//
 // Function return value:
 // 0: success.
 // 1: The API was not initialized.
@@ -426,7 +429,7 @@ C_EXPORT int vtlApiTest(const char *speakerFileName, double *audio, int *numSamp
 // 3: Saving the gestural score file failed.
 // ****************************************************************************
 
-C_EXPORT int vtlSegmentSequenceToGesturalScore(const char *segFileName, const char *gesFileName);
+C_EXPORT int vtlSegmentSequenceToGesturalScore(const char *segFileName, const char *gesFileName, int enableConsoleOutput);
 
 
 // ****************************************************************************

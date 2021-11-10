@@ -1182,7 +1182,7 @@ int vtlApiTest(const char *speakerFileName, double *audio, int *numSamples)
 // 3: Saving the gestural score file failed.
 // ****************************************************************************
 
-int vtlSegmentSequenceToGesturalScore(const char *segFileName, const char *gesFileName)
+int vtlSegmentSequenceToGesturalScore(const char *segFileName, const char *gesFileName, int enableConsoleOutput)
 {
   if (!vtlApiInitialized)
   {
@@ -1203,7 +1203,7 @@ int vtlSegmentSequenceToGesturalScore(const char *segFileName, const char *gesFi
   // Create and save the gestural score.
 
   GesturalScore *gesturalScore = new GesturalScore(vocalTract, glottis[selectedGlottis]);
-  gesturalScore->createFromSegmentSequence(segmentSequence);
+  gesturalScore->createFromSegmentSequence(segmentSequence, enableConsoleOutput);
   if (gesturalScore->saveGesturesXml(string(gesFileName)) == false)
   {
     delete segmentSequence;
