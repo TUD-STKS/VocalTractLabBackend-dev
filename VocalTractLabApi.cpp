@@ -431,7 +431,7 @@ int vtlGetGlottisParamInfo(char *names, char *descriptions, char *units,
     strcat(names, glottis[selectedGlottis]->controlParam[i].name.c_str());
     strcat(descriptions, glottis[selectedGlottis]->controlParam[i].description.c_str());
     strcat(units, glottis[selectedGlottis]->controlParam[i].cgsUnit.c_str());
-    if (i != VocalTract::NUM_PARAMS - 1)
+    if (i != glottis[selectedGlottis]->controlParam.size() - 1)
     {
       strcat(names, "\t");
       strcat(descriptions, "\t");
