@@ -1709,26 +1709,26 @@
     </glottis_model>
     <glottis_model type="Two-mass model" selected="0">
       <static_params>
-        <param index="0"  name="Cord length"           description="cord_length"              unit="cm"      min="0.500000"  max="2.000000"      neutral="1.300000"     />
-        <param index="1"  name="L. rest thickness"     description="lower_rest_thickness"     unit="cm"      min="0.100000"  max="0.500000"      neutral="0.250000"     />
-        <param index="2"  name="U. rest thickness"     description="upper_rest_thickness"     unit="cm"      min="0.010000"  max="0.200000"      neutral="0.050000"     />
-        <param index="3"  name="L. rest mass"          description="lower_rest_mass"          unit="g"       min="0.010000"  max="0.200000"      neutral="0.125000"     />
-        <param index="4"  name="U. rest mass"          description="upper_rest_mass"          unit="g"       min="0.010000"  max="0.200000"      neutral="0.025000"     />
-        <param index="5"  name="L. damping ratio"      description="lower_damping_ratio"      unit=""        min="0.000000"  max="3.000000"      neutral="0.100000"     />
-        <param index="6"  name="U. damping ratio"      description="upper_damping_ratio"      unit=""        min="0.000000"  max="3.000000"      neutral="0.600000"     />
-        <param index="7"  name="L. spring k"           description="lower_spring_k"           unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="80000.000000" />
-        <param index="8"  name="U. spring k"           description="upper_spring_k"           unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="8000.000000"  />
-        <param index="9"  name="L. spring eta"         description="lower_spring_eta"         unit="1/cm^2"  min="0.000000"  max="1000.000000"   neutral="100.000000"   />
-        <param index="10" name="U. spring eta"         description="upper_spring_eta"         unit="1/cm^2"  min="0.000000"  max="1000.000000"   neutral="100.000000"   />
-        <param index="11" name="L. contact spring k"   description="lower_contact_spring_k"   unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="240000.000000"/>
-        <param index="12" name="U. contact spring k"   description="upper_contact_spring_k"   unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="24000.000000" />
-        <param index="13" name="L. contact spring eta" description="lower_contact_spring_eta" unit="1/cm^2"  min="0.000000"  max="1000.000000"   neutral="500.000000"   />
-        <param index="14" name="U. contact spring eta" description="upper_contact_spring_eta" unit="1/cm^2"  min="0.000000"  max="1000.000000"   neutral="500.000000"   />
-        <param index="15" name="Coupling spring k"     description="coupling_spring_k"        unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="25000.000000" />
-        <param index="16" name="Critical width"        description="critical_width"           unit="cm"      min="0.000000"  max="0.200000"      neutral="0.000000"     />
-        <param index="17" name="Natural F0"            description="natural_f0"               unit="Hz"      min="20.000000" max="500.000000"    neutral="158.000000"   />
-        <param index="18" name="dF0/dQ"                description="f0_div_q"                 unit="Hz"      min="20.000000" max="500.000000"    neutral="100.000000"   />
-        <param index="19" name="Chink length"          description="chink_length"             unit="cm"      min="0.000000"  max="0.500000"      neutral="0.200000"     />
+        <param index="0"  name="Cord length" description="cord_length"              unit="cm"      min="0.500000"  max="2.000000"      neutral="1.300000"     />
+        <param index="1"  name="LRT"         description="Lower rest thickness"     unit="cm"      min="0.100000"  max="0.500000"      neutral="0.250000"     />
+        <param index="2"  name="URT"         description="Upper rest thickness"     unit="cm"      min="0.010000"  max="0.200000"      neutral="0.050000"     />
+        <param index="3"  name="LRM"         description="Lower rest mass"          unit="g"       min="0.010000"  max="0.200000"      neutral="0.125000"     />
+        <param index="4"  name="URM"         description="Upper rest mass"          unit="g"       min="0.010000"  max="0.200000"      neutral="0.025000"     />
+        <param index="5"  name="LDR"         description="Lower damping ratio"      unit=""        min="0.000000"  max="3.000000"      neutral="0.100000"     />
+        <param index="6"  name="UDR"         description="Upper damping ratio"      unit=""        min="0.000000"  max="3.000000"      neutral="0.600000"     />
+        <param index="7"  name="LSK"         description="Lower spring k"           unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="80000.000000" />
+        <param index="8"  name="USK"         description="Upper spring k"           unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="8000.000000"  />
+        <param index="9"  name="LSE"         description="Lower spring eta"         unit="1/cm^2"  min="0.000000"  max="1000.000000"   neutral="100.000000"   />
+        <param index="10" name="USE"         description="Upper spring eta"         unit="1/cm^2"  min="0.000000"  max="1000.000000"   neutral="100.000000"   />
+        <param index="11" name="LCK"         description="Lower contact spring k"   unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="240000.000000"/>
+        <param index="12" name="UCK"         description="Upper contact spring k"   unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="24000.000000" />
+        <param index="13" name="LCE"         description="Lower contact spring eta" unit="1/cm^2"  min="0.000000"  max="1000.000000"   neutral="500.000000"   />
+        <param index="14" name="UCE"         description="Upper contact spring eta" unit="1/cm^2"  min="0.000000"  max="1000.000000"   neutral="500.000000"   />
+        <param index="15" name="CSK"         description="Coupling spring k"        unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="25000.000000" />
+        <param index="16" name="CRW"         description="Critical width"           unit="cm"      min="0.000000"  max="0.200000"      neutral="0.000000"     />
+        <param index="17" name="NF0"         description="Natural F0"               unit="Hz"      min="20.000000" max="500.000000"    neutral="158.000000"   />
+        <param index="18" name="dF0"         description="Derivative d(F0)/dQ"      unit="Hz"      min="20.000000" max="500.000000"    neutral="100.000000"   />
+        <param index="19" name="CL"          description="Chink length"             unit="cm"      min="0.000000"  max="0.500000"      neutral="0.200000"     />
       </static_params>
       <control_params>
         <param index="0" name="F0"  description="Fundamental frequency"   unit="Hz"   min="40.000000" max="600.000000"   neutral="120.000000" />
@@ -1775,22 +1775,22 @@
     </glottis_model>
     <glottis_model type="Triangular glottis" selected="0">
       <static_params>
-        <param index="0"  name="Cord length"         description="cord_length"            unit="cm"      min="0.500000"  max="2.000000"      neutral="1.300000"     />
-        <param index="1"  name="L. rest thickness"   description="lower_rest_thickness"   unit="cm"      min="0.100000"  max="0.500000"      neutral="0.240000"     />
-        <param index="2"  name="U. rest thickness"   description="upper_rest_thickness"   unit="cm"      min="0.010000"  max="0.200000"      neutral="0.060000"     />
-        <param index="3"  name="L. rest mass"        description="lower_rest_mass"        unit="g"       min="0.010000"  max="0.200000"      neutral="0.120000"     />
-        <param index="4"  name="U. rest mass"        description="upper_rest_mass"        unit="g"       min="0.010000"  max="0.200000"      neutral="0.030000"     />
-        <param index="5"  name="L. damping ratio"    description="lower_damping_ratio"    unit=""        min="0.000000"  max="3.000000"      neutral="0.100000"     />
-        <param index="6"  name="U. damping ratio"    description="upper_damping_ratio"    unit=""        min="0.000000"  max="3.000000"      neutral="0.600000"     />
-        <param index="7"  name="L. spring k"         description="lower_spring_k"         unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="80000.000000" />
-        <param index="8"  name="U. spring k"         description="upper_spring_k"         unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="8000.000000"  />
-        <param index="9"  name="L. contact spring k" description="lower_contact_spring_k" unit="dyne/cm" min="0.000000"  max="500000.000000" neutral="240000.000000"/>
-        <param index="10" name="U. contact spring k" description="upper_contact_spring_k" unit="dyne/cm" min="0.000000"  max="500000.000000" neutral="24000.000000" />
-        <param index="11" name="Coupling spring k"   description="coupling_spring_k"      unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="25000.000000" />
-        <param index="12" name="Inlet length"        description="inlet_length"           unit="cm"      min="0.000000"  max="1.000000"      neutral="0.050000"     />
-        <param index="13" name="Outlet length"       description="outlet_length"          unit="cm"      min="0.000000"  max="0.500000"      neutral="0.010000"     />
-        <param index="14" name="Natural F0"          description="natural_f0"             unit="Hz"      min="20.000000" max="500.000000"    neutral="129.000000"   />
-        <param index="15" name="dF0/dQ"              description="f0_div_q"               unit="Hz"      min="20.000000" max="500.000000"    neutral="125.510000"   />
+        <param index="0"  name="Cord length" description="cord_length"            unit="cm"      min="0.500000"  max="2.000000"      neutral="1.300000"     />
+        <param index="1"  name="LRT"         description="Lower rest thickness"   unit="cm"      min="0.100000"  max="0.500000"      neutral="0.240000"     />
+        <param index="2"  name="URT"         description="Upper rest thickness"   unit="cm"      min="0.010000"  max="0.200000"      neutral="0.060000"     />
+        <param index="3"  name="LRM"         description="Lower rest mass"        unit="g"       min="0.010000"  max="0.200000"      neutral="0.120000"     />
+        <param index="4"  name="URM"         description="Upper rest mass"        unit="g"       min="0.010000"  max="0.200000"      neutral="0.030000"     />
+        <param index="5"  name="LDR"         description="Lower damping ratio"    unit=""        min="0.000000"  max="3.000000"      neutral="0.100000"     />
+        <param index="6"  name="UDR"         description="Upper damping ratio"    unit=""        min="0.000000"  max="3.000000"      neutral="0.600000"     />
+        <param index="7"  name="LSK"         description="Lower spring k"         unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="80000.000000" />
+        <param index="8"  name="USK"         description="Upper spring k"         unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="8000.000000"  />
+        <param index="9"  name="LCK"         description="Lower contact spring k" unit="dyne/cm" min="0.000000"  max="500000.000000" neutral="240000.000000"/>
+        <param index="10" name="UCK"         description="Upper contact spring k" unit="dyne/cm" min="0.000000"  max="500000.000000" neutral="24000.000000" />
+        <param index="11" name="CSK"         description="Coupling spring k"      unit="dyne/cm" min="0.000000"  max="400000.000000" neutral="25000.000000" />
+        <param index="12" name="IL"          description="Inlet length"           unit="cm"      min="0.000000"  max="1.000000"      neutral="0.050000"     />
+        <param index="13" name="OL"          description="Outlet length"          unit="cm"      min="0.000000"  max="0.500000"      neutral="0.010000"     />
+        <param index="14" name="NF0"         description="Natural f0"             unit="Hz"      min="20.000000" max="500.000000"    neutral="129.000000"   />
+        <param index="15" name="dF0"         description="Derivative d(F0)/dQ"    unit="Hz"      min="20.000000" max="500.000000"    neutral="125.510000"   />
       </static_params>
       <control_params>
         <param index="0" name="F0" description="Fundamental frequency"   unit="Hz"   min="40.000000"  max="600.000000"   neutral="120.000000" />
