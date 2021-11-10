@@ -343,18 +343,23 @@ int vtlGetConstants(int *audioSamplingRate, int *numTubeSections,
 
 
 // ****************************************************************************
-// Returns for each vocal tract parameter the minimum value, the maximum value,
-// and the neutral value. Each vector passed to this function must have at 
-// least as many elements as the number of vocal tract model parameters.
-// The "names" string receives the abbreviated names of the parameters separated
-// by spaces. This string should have at least 10*numParams elements.
+// Returns for each supra glottal parameter the minimum value, the maximum value,
+// and the standard (default) value. Each vector passed to this function must have at 
+// least as many elements as the number of supra glottal parameters.
+// The "names" string receives the names of the parameters separated
+// by tabs. This string should have at least 10*numParams elements.
+// The "descriptions" string receives the descriptions of the parameters separated
+// by tabs. This string should have at least 100*numParams elements.
+// The "units" string receives the names of the parameter units separated
+// by tabs. This string should have at least 10*numParams elements.
 //
 // Function return value:
 // 0: success.
 // 1: The API has not been initialized.
 // ****************************************************************************
 
-int vtlGetTractParamInfo(char *names, double *paramMin, double *paramMax, double *paramNeutral)
+int vtlGetTractParamInfo(char *names, char *descriptions, char *units,
+    double *paramMin, double *paramMax, double *paramStandard)
 {
   if (!vtlApiInitialized)
   {
@@ -365,18 +370,24 @@ int vtlGetTractParamInfo(char *names, double *paramMin, double *paramMax, double
   int i;
 
   strcpy(names, "");
+  strcpy(descriptions, "");
+  strcpy(units, "");
 
   for (i=0; i < VocalTract::NUM_PARAMS; i++)
   {
     strcat(names, vocalTract->param[i].name.c_str());
+    strcat(descriptions, vocalTract->param[i].description.c_str());
+    strcat(units, vocalTract->param[i].unit.c_str());
     if (i != VocalTract::NUM_PARAMS - 1)
     {
-      strcat(names, " ");
+      strcat(names, "\t");
+      strcat(descriptions, "\t");
+      strcat(units, "\t");
     }
 
     paramMin[i] = vocalTract->param[i].min;
     paramMax[i] = vocalTract->param[i].max;
-    paramNeutral[i] = vocalTract->param[i].neutral;
+    paramStandard[i] = vocalTract->param[i].neutral;
   }
 
   return 0;
@@ -385,17 +396,22 @@ int vtlGetTractParamInfo(char *names, double *paramMin, double *paramMax, double
 
 // ****************************************************************************
 // Returns for each glottis model parameter the minimum value, the maximum value,
-// and the neutral value. Each vector passed to this function must have at 
+// and the standard (default) value. Each vector passed to this function must have at 
 // least as many elements as the number of glottis model parameters.
-// The "names" string receives the abbreviated names of the parameters separated
-// by spaces. This string should have at least 10*numParams elements.
+// The "names" string receives the names of the parameters separated
+// by tabs. This string should have at least 10*numParams elements.
+// The "descriptions" string receives the descriptions of the parameters separated
+// by tabs. This string should have at least 100*numParams elements.
+// The "units" string receives the names of the parameter units separated
+// by tabs. This string should have at least 10*numParams elements.
 //
 // Function return value:
 // 0: success.
 // 1: The API has not been initialized.
 // ****************************************************************************
 
-int vtlGetGlottisParamInfo(char *names, double *paramMin, double *paramMax, double *paramNeutral)
+int vtlGetGlottisParamInfo(char *names, char *descriptions, char *units,
+    double *paramMin, double *paramMax, double *paramStandard)
 {
   if (!vtlApiInitialized)
   {
@@ -407,18 +423,24 @@ int vtlGetGlottisParamInfo(char *names, double *paramMin, double *paramMax, doub
   int numGlottisParams = (int)glottis[selectedGlottis]->controlParam.size();
 
   strcpy(names, "");
+  strcpy(descriptions, "");
+  strcpy(units, "");
 
   for (i=0; i < numGlottisParams; i++)
   {
     strcat(names, glottis[selectedGlottis]->controlParam[i].name.c_str());
+    strcat(descriptions, glottis[selectedGlottis]->controlParam[i].description.c_str());
+    strcat(units, glottis[selectedGlottis]->controlParam[i].cgsUnit.c_str());
     if (i != VocalTract::NUM_PARAMS - 1)
     {
-      strcat(names, " ");
+      strcat(names, "\t");
+      strcat(descriptions, "\t");
+      strcat(units, "\t");
     }
 
     paramMin[i] = glottis[selectedGlottis]->controlParam[i].min;
     paramMax[i] = glottis[selectedGlottis]->controlParam[i].max;
-    paramNeutral[i] = glottis[selectedGlottis]->controlParam[i].neutral;
+    paramStandard[i] = glottis[selectedGlottis]->controlParam[i].neutral;
   }
 
   return 0;
@@ -1024,18 +1046,22 @@ int vtlApiTest(const char *speakerFileName, double *audio, int *numSamples)
   printf("Num. of glottis parameters = %d\n", numGlottisParams);
 
   char tractParamNames[50 * 32];
+  char tractParamDescriptions[500 * 32];
+  char tractParamUnits[50 * 32];
   double tractParamMin[50];
   double tractParamMax[50];
-  double tractParamNeutral[50];
+  double tractParamStandard[50];
 
-  vtlGetTractParamInfo(tractParamNames, tractParamMin, tractParamMax, tractParamNeutral);
+  vtlGetTractParamInfo(tractParamNames, tractParamDescriptions, tractParamUnits, tractParamMin, tractParamMax, tractParamStandard);
 
   char glottisParamNames[50 * 32];
+  char glottisParamDescriptions[500 * 32];
+  char glottisParamUnits[50 * 32];
   double glottisParamMin[50];
   double glottisParamMax[50];
-  double glottisParamNeutral[50];
+  double glottisParamStandard[50];
 
-  vtlGetGlottisParamInfo(glottisParamNames, glottisParamMin, glottisParamMax, glottisParamNeutral);
+  vtlGetGlottisParamInfo(glottisParamNames, glottisParamDescriptions, glottisParamUnits, glottisParamMin, glottisParamMax, glottisParamStandard);
 
   // ****************************************************************
   // Define two target tube shapes: one for /a/ and one for /i/.
@@ -1113,7 +1139,7 @@ int vtlApiTest(const char *speakerFileName, double *audio, int *numSamples)
 
   for (i = 0; i < numGlottisParams; i++)
   {
-    glottisParams[i] = glottisParamNeutral[i];
+    glottisParams[i] = glottisParamStandard[i];
   }
 
   // **************************************************************************
