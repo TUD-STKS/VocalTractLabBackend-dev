@@ -293,7 +293,7 @@ bool Glottis::readFromXml(XmlNode &rootNode)
       }
       else
       {
-          printf("Error: Could not read definition of static parameters of selected glottis model!\n");
+          printf("Error: Could not read definition of static parameters of selected glottis model! One of the parameter names must be incorrect.\n");
           return false;
       }
     }
@@ -341,7 +341,7 @@ bool Glottis::readFromXml(XmlNode &rootNode)
       }
       else
       {
-          printf("Error: Could not read definition of control parameters of selected glottis model!\n");
+          printf("Error: Could not read definition of control parameters of selected glottis model! One of the parameter names must be incorrect.\n");
           return false;
       }
 

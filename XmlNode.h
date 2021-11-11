@@ -22,8 +22,11 @@
 #ifndef __XML_NODE_H__
 #define __XML_NODE_H__
 
+#include "XmlExceptions.h"
+
 #include <string>
 #include <vector>
+
 
 using namespace std;
 
@@ -58,40 +61,6 @@ struct XmlError
   int line;
   int column;
   string text;
-};
-
-// ****************************************************************************
-// Classes for custom XML rlated exceptions.
-// ****************************************************************************
-
-class XmlException : public std::exception
-{
-public:
-    const char* what() const throw ()
-    {
-        return "An XML exception occurred!";
-    }
-};
-
-class XmlAttributeNotFound : public XmlException
-{
-public:
-    XmlAttributeNotFound(std::string attribute) : m_message(attribute) { }
-    const char* what() const throw ()
-    {
-        return (std::string("Tag '") + m_message + std::string("' could not be found in node!")).c_str();
-    }
-private:
-    std::string m_message;
-};
-
-class XmlBadAttribute : public XmlException
-{
-public:
-    const char* what() const throw ()
-    {
-        return "Attribute could not be converted to expected type";
-    }
 };
 
 // ****************************************************************************
