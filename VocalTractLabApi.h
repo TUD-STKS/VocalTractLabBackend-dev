@@ -99,6 +99,8 @@ C_EXPORT void vtlGetVersion(char *version);
 // o The number of supraglottal tube sections.
 // o The number of vocal tract model parameters.
 // o The number of glottis model parameters.
+// o The number of audio samples that correspond to a single tract state sample
+// o The number of evaluated tract state samples per second (internal sampling rate).
 //
 // Function return value:
 // 0: success.
@@ -106,7 +108,7 @@ C_EXPORT void vtlGetVersion(char *version);
 // ****************************************************************************
 
 C_EXPORT int vtlGetConstants(int *audioSamplingRate, int *numTubeSections,
-  int *numVocalTractParams, int *numGlottisParams);
+  int *numVocalTractParams, int *numGlottisParams, int *numAudioSamplesPerTractState, double *internalSamplingRate);
 
 
 // ****************************************************************************

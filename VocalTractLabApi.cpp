@@ -325,7 +325,8 @@ void vtlGetVersion(char *version)
 // ****************************************************************************
 
 int vtlGetConstants(int *audioSamplingRate, int *numTubeSections,
-  int *numVocalTractParams, int *numGlottisParams)
+                    int *numVocalTractParams, int *numGlottisParams,
+                    int *numAudioSamplesPerTractState, double *internalSamplingRate)
 {
   if (!vtlApiInitialized)
   {
@@ -337,6 +338,9 @@ int vtlGetConstants(int *audioSamplingRate, int *numTubeSections,
   *numTubeSections = Tube::NUM_PHARYNX_MOUTH_SECTIONS;
   *numVocalTractParams = VocalTract::NUM_PARAMS;
   *numGlottisParams = (int)glottis[selectedGlottis]->controlParam.size();
+  *numAudioSamplesPerTractState = Synthesizer::NUM_CHUNCK_SAMPLES;
+  *internalSamplingRate = (double)SAMPLING_RATE / (double)Synthesizer::NUM_CHUNCK_SAMPLES;
+
 
   return 0;
 }
@@ -1011,12 +1015,14 @@ int vtlApiTest(const char *speakerFileName, double *audio, int *numSamples)
   vtlGetVersion(version);
   printf("Compile date of the library: %s\n", version);
 
-  int audioSamplingRate = 0;
-  int numTubeSections = 0;
-  int numVocalTractParams = 0;
-  int numGlottisParams = 0;
+  int audioSamplingRate = -1;
+  int numTubeSections = -1;
+  int numVocalTractParams = -1;
+  int numGlottisParams = -1;
+  int numAudioSamplesPerTractState = -1;
+  double internalSamplingRate = -1.0;
 
-  vtlGetConstants(&audioSamplingRate, &numTubeSections, &numVocalTractParams, &numGlottisParams);
+  vtlGetConstants(&audioSamplingRate, &numTubeSections, &numVocalTractParams, &numGlottisParams, &numAudioSamplesPerTractState, &internalSamplingRate);
 
   printf("Audio sampling rate = %d\n", audioSamplingRate);
   printf("Num. of tube sections = %d\n", numTubeSections);
