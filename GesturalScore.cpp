@@ -821,12 +821,12 @@ void GesturalScore::initTestScore()
 /// and their durations).
 // ****************************************************************************
 
-void GesturalScore::createFromSegmentSequence(SegmentSequence *origSegmentSequence, int enableConsoleOutput)
+void GesturalScore::createFromSegmentSequence(SegmentSequence *origSegmentSequence, bool enableConsoleOutput)
 {
   const double MIN_GESTURE_DURATION_S = (double)MIN_GESTURE_DURATION_MS * 0.001;
   int i;
 
-  if (enableConsoleOutput != 0)
+  if (enableConsoleOutput)
   {
       printf("Creating a gestural score from %d segments.\n", origSegmentSequence->numSegments());
   }
