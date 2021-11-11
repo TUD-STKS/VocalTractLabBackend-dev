@@ -2822,37 +2822,50 @@ bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut)
   {
     // center-line point
     Point ctl(m_ctrLinePt.x, m_ctrLinePt.y);
-    // curvature radius
-    double R(abs(m_curvatureRadius));
-    // center of the circle arc
-    Point C(ctl.x() + m_curvatureRadius * m_normal.x, ctl.y() 
-        + m_curvatureRadius * m_normal.y);        
-    //Point C(ctl.x() - R * m_normal.x, ctl.y() - R * m_normal.y);        
-    //log << "Circle arc center " << C << endl;
-    complex<double> ptCplx(pt.x() - C.x(), pt.z() - C.y());
-    complex<double> ctlCplx(ctl.x() - C.x(), ctl.y() - C.y());
 
-    // get the x coordinate by computing the angle between the 2 complex coordinate pts
-    //x = R * fmod(arg(ctlCplx) - arg(ptCplx) + 2.*M_PI, 2.*M_PI);
-    if (m_curvatureRadius < 0.)
+    // if there is no curvature 
+    if (m_circleArcAngle < MINIMAL_DISTANCE)
     {
-      x = R * fmod(arg(ctlCplx) - arg(ptCplx) + 2.*M_PI, 2.*M_PI);
+      x = pt.x() - ctl.x();
+      sc = scaling(x / length());
+      y = pt.y() / sc;
+      z = pt.z() / sc;
     }
     else
     {
-      x = R * fmod(arg(ptCplx) - arg(ctlCplx) + 2.*M_PI, 2.*M_PI);
-    }
-    sc = scaling(x/length());
-    // compute y coordinate
-    y = pt.y()/sc;
-    // compute z coordinate
-    if (m_curvatureRadius < 0.)
-    {
-      z = (abs(ptCplx) - R)/sc;
-    }
-    else
-    {
-      z = -(abs(ptCplx) - R)/sc;
+      // curvature radius
+      double R(abs(m_curvatureRadius));
+      // center of the circle arc
+      Point C(ctl.x() + m_curvatureRadius * m_normal.x, ctl.y()
+        + m_curvatureRadius * m_normal.y);
+      //Point C(ctl.x() - R * m_normal.x, ctl.y() - R * m_normal.y);        
+      //log << "Circle arc center " << C << endl;
+      complex<double> ptCplx(pt.x() - C.x(), pt.z() - C.y());
+      complex<double> ctlCplx(ctl.x() - C.x(), ctl.y() - C.y());
+
+      // get the x coordinate by computing the angle between the 2 complex coordinate pts
+      //x = R * fmod(arg(ctlCplx) - arg(ptCplx) + 2.*M_PI, 2.*M_PI);
+      if (m_curvatureRadius < 0.)
+      {
+        x = R * fmod(arg(ctlCplx) - arg(ptCplx) + 2. * M_PI, 2. * M_PI);
+      }
+      else
+      {
+        x = R * fmod(arg(ptCplx) - arg(ctlCplx) + 2. * M_PI, 2. * M_PI);
+      }
+
+      sc = scaling(x / length());
+      // compute y coordinate
+      y = pt.y() / sc;
+      // compute z coordinate
+      if (m_curvatureRadius < 0.)
+      {
+        z = (abs(ptCplx) - R) / sc;
+      }
+      else
+      {
+        z = -(abs(ptCplx) - R) / sc;
+      }
     }
 
     //log << x << "  " << y << "  " << z << "  " << pt.x() << "  " << pt.z() << endl;
