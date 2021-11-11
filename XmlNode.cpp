@@ -991,8 +991,8 @@ bool XmlNode::hasAttribute(const string &name)
 
 
 // ****************************************************************************
-/// Returns the integer value of the given attribute. Throws an std::invalid_argument exception, if the attribute
-/// does not exist, or if the attribute is not convertable to integer.
+/// Returns the integer value of the given attribute. Throws an XmlAttributeNotFound exception, if the attribute
+/// does not exist, or an XmlBadAttribute exception if its value is not convertable to integer.
 // ****************************************************************************
 
 int XmlNode::getAttributeInt(const string &name)
@@ -1012,19 +1012,26 @@ int XmlNode::getAttributeInt(const string &name)
 
   if (k != -1)
   { 
-      value = std::stoi(attribute[k].value.c_str());
+      try
+      {
+          value = std::stoi(attribute[k].value.c_str());
+      }
+      catch (const std::exception& e)
+      {
+          throw XmlBadAttribute();
+      }
   }
   else
   {
-      throw std::invalid_argument(std::string("Tag '") + name + std::string("' could not be found in node!"));
+      throw XmlAttributeNotFound(name);
   }
   return value;
 }
 
 
 // ****************************************************************************
-/// Returns the double value of the given attribute. Throws an std::invalid_argument exception, if the attribute
-/// does not exist, or is not convertable to double.
+/// Returns the double value of the given attribute. Throws an XmlAttributeNotFound exception, if the attribute
+/// does not exist, or an XmlBadAttribute exception if its value is not convertable to double.
 // ****************************************************************************
 
 double XmlNode::getAttributeDouble(const string &name)
@@ -1044,11 +1051,18 @@ double XmlNode::getAttributeDouble(const string &name)
 
   if (k != -1)
   {
-      value = std::stod(attribute[k].value.c_str());
+      try
+      {
+          value = std::stod(attribute[k].value.c_str());
+      }
+      catch (const std::exception & e)
+      {
+          throw XmlBadAttribute();
+      }
   }
   else
   {
-      throw std::invalid_argument(std::string("Tag '") + name + std::string("' could not be found in node!"));
+      throw XmlAttributeNotFound(name);
   }
   return value;
 }
@@ -1056,7 +1070,7 @@ double XmlNode::getAttributeDouble(const string &name)
 
 
 // ****************************************************************************
-/// Returns the string value of the given attribute. Throws an std::invalid_argument exception if the
+/// Returns the string value of the given attribute. Throws an XmlAttributeNotFound exception, if the
 /// attribute does not exist.
 // ****************************************************************************
 
@@ -1080,7 +1094,7 @@ string XmlNode::getAttributeString(const string &name)
   }
   else
   {
-      throw std::invalid_argument(std::string("Tag '") + name + std::string("' could not be found in node!"));
+      throw XmlAttributeNotFound(name);
   }
 }
 

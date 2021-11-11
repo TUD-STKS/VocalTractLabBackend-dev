@@ -338,10 +338,6 @@ bool Glottis::readFromXml(XmlNode &rootNode)
           controlParam[n].max = max;
           controlParam[n].neutral = neutral;
           controlParam[n].x = neutral;
-          // Don't overwrite with the values from the xml-file. Keep the
-          // default values at the start of the program.
-          // But why? P. Krug
-          //controlParam[n].x = value; // Anyway, value does not exist anymore, use neutral instead
       }
       else
       {
