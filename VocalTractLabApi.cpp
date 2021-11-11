@@ -947,7 +947,7 @@ int vtlSynthesisAddTract(int numNewSamples, double *audio,
 // ****************************************************************************
 
 int vtlSynthBlock(double *tractParams, double *glottisParams,
-  int numFrames, int frameStep_samples, double *audio, int enableConsoleOutput)
+  int numFrames, int frameStep_samples, double *audio, bool enableConsoleOutput)
 {
   if (!vtlApiInitialized)
   {
@@ -959,7 +959,7 @@ int vtlSynthBlock(double *tractParams, double *glottisParams,
   int samplePos = 0;
   int numGlottisParams = (int)glottis[selectedGlottis]->controlParam.size();
 
-  if (enableConsoleOutput != 0)
+  if (enableConsoleOutput)
   {
     printf("Block synthesis in progress ...");
   }
@@ -1188,7 +1188,7 @@ int vtlApiTest(const char *speakerFileName, double *audio, int *numSamples)
 // 3: Saving the gestural score file failed.
 // ****************************************************************************
 
-int vtlSegmentSequenceToGesturalScore(const char *segFileName, const char *gesFileName)
+int vtlSegmentSequenceToGesturalScore(const char *segFileName, const char *gesFileName, bool enableConsoleOutput)
 {
   if (!vtlApiInitialized)
   {
@@ -1209,7 +1209,7 @@ int vtlSegmentSequenceToGesturalScore(const char *segFileName, const char *gesFi
   // Create and save the gestural score.
 
   GesturalScore *gesturalScore = new GesturalScore(vocalTract, glottis[selectedGlottis]);
-  gesturalScore->createFromSegmentSequence(segmentSequence);
+  gesturalScore->createFromSegmentSequence(segmentSequence, enableConsoleOutput);
   if (gesturalScore->saveGesturesXml(string(gesFileName)) == false)
   {
     delete segmentSequence;
@@ -1249,7 +1249,7 @@ int vtlSegmentSequenceToGesturalScore(const char *segFileName, const char *gesFi
 // ****************************************************************************
 
 int vtlGesturalScoreToAudio(const char *gesFileName, const char *wavFileName,
-  double *audio, int *numSamples, int enableConsoleOutput)
+  double *audio, int *numSamples, bool enableConsoleOutput)
 {
   if (!vtlApiInitialized)
   {
@@ -1288,7 +1288,7 @@ int vtlGesturalScoreToAudio(const char *gesFileName, const char *wavFileName,
   // ****************************************************************
 
   vector<double> audioVector;
-  Synthesizer::synthesizeGesturalScore(gesturalScore, tdsModel, audioVector, (bool)enableConsoleOutput);
+  Synthesizer::synthesizeGesturalScore(gesturalScore, tdsModel, audioVector, enableConsoleOutput);
   int numVectorSamples = (int)audioVector.size();
 
   // ****************************************************************

@@ -43,7 +43,7 @@ extern "C"{ /* start extern "C" */
   #define C_EXPORT
 #endif  // WIN32
 
-//typedef enum { false, true } bool; // Important for compilation with cython
+#include <stdbool.h>
 
 // ****************************************************************************
 // The exported C-compatible functions.
@@ -405,7 +405,7 @@ C_EXPORT int vtlSynthesisAddTract(int numNewSamples, double *audio,
 // ****************************************************************************
 
 C_EXPORT int vtlSynthBlock(double *tractParams, double *glottisParams,
-  int numFrames, int frameStep_samples, double *audio, int enableConsoleOutput);
+  int numFrames, int frameStep_samples, double *audio, bool enableConsoleOutput);
 
 
 // ****************************************************************************
@@ -423,6 +423,9 @@ C_EXPORT int vtlApiTest(const char *speakerFileName, double *audio, int *numSamp
 // name segFileName into a gestural score file (gesFileName).
 // The f0 tier in the gestural score is set to a "standard" f0.
 //
+// o enableConsoleOutput (in): Set to 1, if you want to allow output about the
+//   synthesis progress in the console window. Otherwise, set it to 0.
+//
 // Function return value:
 // 0: success.
 // 1: The API was not initialized.
@@ -430,7 +433,7 @@ C_EXPORT int vtlApiTest(const char *speakerFileName, double *audio, int *numSamp
 // 3: Saving the gestural score file failed.
 // ****************************************************************************
 
-C_EXPORT int vtlSegmentSequenceToGesturalScore(const char *segFileName, const char *gesFileName);
+C_EXPORT int vtlSegmentSequenceToGesturalScore(const char *segFileName, const char *gesFileName, bool enableConsoleOutput);
 
 
 // ****************************************************************************
@@ -457,7 +460,7 @@ C_EXPORT int vtlSegmentSequenceToGesturalScore(const char *segFileName, const ch
 // ****************************************************************************
 
 C_EXPORT int vtlGesturalScoreToAudio(const char* gesFileName, const char* wavFileName,
-  double* audio, int* numSamples, int enableConsoleOutput);
+  double* audio, int* numSamples, bool enableConsoleOutput);
 
 
 // ****************************************************************************
