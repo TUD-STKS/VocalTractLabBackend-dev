@@ -112,33 +112,43 @@ C_EXPORT int vtlGetConstants(int *audioSamplingRate, int *numTubeSections,
 
 
 // ****************************************************************************
-// Returns for each vocal tract parameter the minimum value, the maximum value,
-// and the neutral value. Each vector passed to this function must have at 
-// least as many elements as the number of vocal tract model parameters.
-// The "names" string receives the abbreviated names of the parameters separated
-// by spaces. This string should have at least 10*numParams elements.
+// Returns for each supra glottal parameter the minimum value, the maximum value,
+// and the standard (default) value. Each array passed to this function must have at 
+// least as many elements as the number of supra glottal parameters.
+// The "names" string receives the names of the parameters separated
+// by tabs. This string should have at least 10*numParams elements.
+// The "descriptions" string receives the descriptions of the parameters separated
+// by tabs. This string should have at least 100*numParams elements.
+// The "units" string receives the names of the parameter units separated
+// by tabs. This string should have at least 10*numParams elements.
 //
 // Function return value:
 // 0: success.
 // 1: The API has not been initialized.
 // ****************************************************************************
 
-C_EXPORT int vtlGetTractParamInfo(char *names, double *paramMin, double *paramMax, double *paramNeutral);
+C_EXPORT int vtlGetTractParamInfo(char* names, char* descriptions, char* units,
+    double* paramMin, double* paramMax, double* paramStandard);
 
 
 // ****************************************************************************
 // Returns for each glottis model parameter the minimum value, the maximum value,
-// and the neutral value. Each vector passed to this function must have at 
+// and the standard (default) value. Each array passed to this function must have at 
 // least as many elements as the number of glottis model parameters.
-// The "names" string receives the abbreviated names of the parameters separated
-// by spaces. This string should have at least 10*numParams elements.
+// The "names" string receives the names of the parameters separated
+// by tabs. This string should have at least 10*numParams elements.
+// The "descriptions" string receives the descriptions of the parameters separated
+// by tabs. This string should have at least 100*numParams elements.
+// The "units" string receives the names of the parameter units separated
+// by tabs. This string should have at least 10*numParams elements.
 //
 // Function return value:
 // 0: success.
 // 1: The API has not been initialized.
 // ****************************************************************************
 
-C_EXPORT int vtlGetGlottisParamInfo(char *names, double *paramMin, double *paramMax, double *paramNeutral);
+C_EXPORT int vtlGetGlottisParamInfo(char* names, char* descriptions, char* units,
+    double* paramMin, double* paramMax, double* paramStandard);
 
 
 // ****************************************************************************
