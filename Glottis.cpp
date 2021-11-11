@@ -155,7 +155,7 @@ bool Glottis::writeToXml(ostream &os, int initialIndent, bool isSelected)
 
   for (i=0; i < (int)staticParam.size(); i++)
   {
-    sprintf(st, "<param index=\"%d\" name=\"%s\" description=\"%s\" unit=\"%s\" min=\"%f\" max=\"%f\" neutral=\"%f\"/>", //value=\"%f\"/>",
+    sprintf(st, "<param index=\"%d\" name=\"%s\" description=\"%s\" unit=\"%s\" min=\"%f\" max=\"%f\" neutral=\"%f\"/>",
       i,
       staticParam[i].name.c_str(),
       staticParam[i].description.c_str(),
@@ -163,7 +163,6 @@ bool Glottis::writeToXml(ostream &os, int initialIndent, bool isSelected)
       staticParam[i].min,
       staticParam[i].max,
       staticParam[i].neutral);
-      //staticParam[i].x);
 
     os << string(indent, ' ') << st << endl;
   }
@@ -180,7 +179,7 @@ bool Glottis::writeToXml(ostream &os, int initialIndent, bool isSelected)
 
   for (i=0; i < (int)controlParam.size(); i++)
   {
-    sprintf(st, "<param index=\"%d\" name=\"%s\" description=\"%s\" unit=\"%s\" min=\"%f\" max=\"%f\" neutral=\"%f\"/>",// value=\"%f\"/>",
+    sprintf(st, "<param index=\"%d\" name=\"%s\" description=\"%s\" unit=\"%s\" min=\"%f\" max=\"%f\" neutral=\"%f\"/>",
       i,
       controlParam[i].name.c_str(),
       controlParam[i].description.c_str(),
@@ -188,7 +187,6 @@ bool Glottis::writeToXml(ostream &os, int initialIndent, bool isSelected)
       controlParam[i].min,
       controlParam[i].max,
       controlParam[i].neutral);
-      //controlParam[i].x);
 
     os << string(indent, ' ') << st << endl;
   }
@@ -244,7 +242,6 @@ bool Glottis::readFromXml(XmlNode &rootNode)
   int i, k, m, n;
   XmlNode *node;
   
-  //int index;
   string name;
   double value;
   double min;
@@ -264,9 +261,7 @@ bool Glottis::readFromXml(XmlNode &rootNode)
       node = staticParamNode->childElement[i];
       try
       {
-          //index = node->getAttributeInt("index");
           name = node->getAttributeString("name");
-          //value = node->getAttributeDouble("value"); //value does not exist anymore in glottis definition, set to neutral instead
           min = node->getAttributeDouble("min");
           max = node->getAttributeDouble("max");
           neutral = node->getAttributeDouble("neutral");
@@ -312,9 +307,7 @@ bool Glottis::readFromXml(XmlNode &rootNode)
       node = controlParamNode->childElement[i];
       try
       {
-          //index = node->getAttributeInt("index");
           name = node->getAttributeString("name");
-          //value = node->getAttributeDouble("value"); //value does not exist anymore in glottis definition, set to neutral instead
           min = node->getAttributeDouble("min");
           max = node->getAttributeDouble("max");
           neutral = node->getAttributeDouble("neutral");
@@ -344,18 +337,6 @@ bool Glottis::readFromXml(XmlNode &rootNode)
           printf("Error: Could not read definition of control parameters of selected glottis model! One of the parameter names must be incorrect.\n");
           return false;
       }
-
-      //if ((index < 0) || (index >= (int)controlParam.size()))
-      //{
-      //  printf("Error: Control parameter index out of range for parameter '%s'!\n", name.c_str());
-      //  return false;
-      //}
-      //if (name != controlParam[index].name)
-      //{
-      //  printf("Error: The name of the control parameter %d is '%s' but should be '%s'!\n", 
-      //    index, name.c_str(), controlParam[index].name.c_str());
-      //  return false;
-      //}
     }
   }
 
