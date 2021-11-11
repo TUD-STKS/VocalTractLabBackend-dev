@@ -193,30 +193,6 @@ void VocalTract::init()
   // Delete the XML-tree.
   delete node;
 
-  // ****************************************************************
-  // Init. the long names of the parameters. // deprecated, is read in automatically now, P Krug
-  // ****************************************************************
-
-  //param[HX].name = "Horz. hyoid pos.";
-  //param[HY].name = "Vert. hyoid pos.";
-  //param[JX].name = "Horz. jaw pos.";
-  //param[JA].name = "Jaw angle (deg.)";
-  //param[LP].name = "Lip protrusion";
-  //param[LD].name = "Lip distance";
-  //param[VS].name = "Velum shape";
-  //param[VO].name = "Velic opening";
-  //param[TCX].name = "Tongue body X";
-  //param[TCY].name = "Tongue body Y";
-  //param[TTX].name = "Tongue tip X";
-  //param[TTY].name = "Tongue tip Y";
-  //param[TBX].name = "Tongue blade X";
-  //param[TBY].name = "Tongue blade Y";
-  //param[TRX].name = "Tongue root X";
-  //param[TRY].name = "Tongue root Y";
-  //param[TS1].name = "Tongue side elevation 1";
-  //param[TS2].name = "Tongue side elevation 2";
-  //param[TS3].name = "Tongue side elevation 3";
-
 
   // ****************************************************************
   // Calculate all (center line, area function, tube function).
