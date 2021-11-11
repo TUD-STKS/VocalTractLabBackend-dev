@@ -58,7 +58,7 @@ TwoMassModel::TwoMassModel()
 
   Parameter sp[NUM_STATIC_PARAMS] =
   {
-    { "Cord length", "cord_length", "cm", 10, "mm", 0.5, 2.0, 1.3, 0.0 },
+    { "COL", "Cord length", "cm", 10, "mm", 0.5, 2.0, 1.3, 0.0 },
     { "LRT", "Lower rest thickness", "cm", 10, "mm", 0.1, 0.5, 0.25, 0.0 },
     { "URT", "Upper rest thickness", "cm", 10, "mm", 0.01, 0.2, 0.05, 0.0 },
     { "LRM", "Lower rest mass", "g", 1, "g", 0.01, 0.2, 0.125, 0.0 },
@@ -97,7 +97,7 @@ TwoMassModel::TwoMassModel()
     { "URD", "Upper relative displacement", "cm", 10, "mm", -0.3, 0.3, 0.0, 0.0 },
     { "LAD", "Lower absolute displacement", "cm", 10, "mm", 0.0, 1.0, 0.0, 0.0 },
     { "UAD", "Upper absolute displacement", "cm", 10, "mm", 0.0, 1.0, 0.0, 0.0 },
-    { "Cord length", "cord_length", "cm", 10, "mm", 0.0, 3.0, 0.0, 0.0 },
+    { "COL", "Cord length", "cm", 10, "mm", 0.0, 3.0, 0.0, 0.0 },
     { "LT", "Lower thickness", "cm", 10, "mm", 0.0, 2.0, 0.0, 0.0 },
     { "UT", "Upper thickness", "cm", 10, "mm", 0.0, 2.0, 0.0, 0.0 },
     { "LA", "Lower area", "cm^2", 100, "mm^2", 0.0, 4.0, 0.0, 0.0 },
