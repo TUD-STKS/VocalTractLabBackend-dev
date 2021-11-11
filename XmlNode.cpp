@@ -991,7 +991,7 @@ bool XmlNode::hasAttribute(const string &name)
 
 
 // ****************************************************************************
-/// Returns the integer value of the given attribute, or an exception, if the attribute
+/// Returns the integer value of the given attribute. Throws an exception, if the attribute
 /// does not exist, or if the attribute is not convertable to integer.
 // ****************************************************************************
 
@@ -1023,7 +1023,7 @@ int XmlNode::getAttributeInt(const string &name)
 
 
 // ****************************************************************************
-/// Returns the double value of the given attribute, or an exception, if the attribute
+/// Returns the double value of the given attribute. Throws an exception, if the attribute
 /// does not exist, or is not convertable to double.
 // ****************************************************************************
 
@@ -1056,7 +1056,7 @@ double XmlNode::getAttributeDouble(const string &name)
 
 
 // ****************************************************************************
-/// Returns the string value of the given attribute, or an empty string, if the
+/// Returns the string value of the given attribute. Throws an exception if the
 /// attribute does not exist.
 // ****************************************************************************
 
