@@ -47,6 +47,8 @@ typedef CGAL::Delaunay_mesher_no_edge_refinement_2<CDT, Criteria> MesherNoRefine
 typedef CGAL::Polyline_simplification_2::Stop_below_count_ratio_threshold Stop;
 typedef CGAL::Polyline_simplification_2::Squared_distance_cost Cost;
 
+const double MINIMAL_DISTANCE = 1e-14;
+
 // ****************************************************************************
 // Independant functions
 // ****************************************************************************
@@ -294,6 +296,9 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
       case BOUNDING_BOX:
         log << "BOUNDING_BOX" << endl;
         break;
+      case FROM_FILE:
+        log << "FROM_FILE" << endl;
+        break;
     }
   }
   else
@@ -330,6 +335,13 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
     << m_simuParams.bboxField[1].x() << " max y "
     << m_simuParams.bboxField[1].y() << endl;
   log.close();
+}
+
+// ****************************************************************************
+
+void Acoustic3dSimulation::setContourInterpolationMethod(enum contourInterpolationMethod method)
+{
+  m_contInterpMeth = method;
 }
 
 // ****************************************************************************
@@ -1996,10 +2008,10 @@ void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
       {
         if (m_crossSections[s]->getCoordinateFromCartesianPt(queryPt, outPt))
         {
-          log << "Point founs in section " << s << endl;
+          //log << "Point founs in section " << s << endl;
           ptFound = true;
           field(i,j) = m_crossSections[s]->interiorField(outPt, m_simuParams, PRESSURE);
-          log << "Field computed" << endl;
+          //log << "Field computed" << endl;
           break;
         }
       }
@@ -4377,7 +4389,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   vector<array<double, 4>> bboxes;
   array<double, 4> arrayZeros = { 0., 0., 0., 0. };
 
-  //ofstream log("log.txt", ofstream::app);
+  ofstream log("log.txt", ofstream::app);
+  log << "Start cross-section creation" << endl;
 
   if (m_geometryImported)
   {
@@ -4438,10 +4451,6 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     }
   };
 
-  //*******************************************
-  // Create the cross-sections
-  //*******************************************
-
   // variables for cross-section creation
   double prevCurvRadius, curvRadius, prevAngle, angle, shift, area, length, radius;
   double prevScalingFactors[2] = { 1., 1. };
@@ -4450,16 +4459,68 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   const double MINIMAL_AREA(0.15);
   vector<int> tmpPrevSection, prevSecInt, listNextCont, tmpSurf;
   vector<vector<int>> prevSections, intSurfacesIdx;
-  int secIdx(0), intSecIdx(0), nextSecIdx;
+  int secIdx(0), intSecIdx(0), nextSecIdx, nbCont(contours.size());
   vector<Polygon_2> intContours;
   Pwh_list_2 intersections;
   bool sidePrev, side;
-  
-  // number between 0. and 1. to quantify the propotion of scaling factor variation
-  // 0. --> scaling factor is constant 
-  // 1. --> scaling factor has the maximal variation determined by the model 
-  // (AREA or BOUNDING_BOX)
-  double propChg(1.); 
+
+  //**********************************************************************
+  // Add an intermediate centerline point and normal before the last ones
+  //**********************************************************************
+
+  centerLine.push_back(centerLine.back());
+  normals.push_back(normals.back());
+  int lastCtl(centerLine.size() - 1);
+  //log << "Before last ctl " << centerLine[lastCtl - 2].x << "  "
+  //  << centerLine[lastCtl - 2].y << " normal "
+  //  << normals[lastCtl - 2].x << "  "
+  //  << normals[lastCtl - 2].y << endl;
+  //log << "Last ctl " << centerLine[lastCtl].x << "  "
+  //  << centerLine[lastCtl].y << " normal "
+  //  << normals[lastCtl].x << "  "
+  //  << normals[lastCtl].y << endl;
+
+  getCurvatureAngleShift(centerLine[lastCtl - 2], centerLine[lastCtl], 
+    normals[lastCtl - 2], normals[lastCtl], curvRadius, angle, shift);
+
+  Point pt(Point(centerLine.back().x, centerLine.back().y));
+  Vector N(Vector(normals.back().x, normals.back().y));
+
+  if (angle > MINIMAL_DISTANCE)
+  {
+    angle /= -4.;
+    Transformation rotate(CGAL::ROTATION, sin(angle - M_PI / 2.),
+      cos(angle - M_PI / 2.));
+    Transformation translateInit(CGAL::TRANSLATION,
+      2. * abs(curvRadius) * sin(angle) * rotate(N));
+
+    pt = translateInit(pt);
+    centerLine[lastCtl - 1].x = pt.x();
+    centerLine[lastCtl - 1].y = pt.y();
+
+    angle *= 2.;
+    Transformation rotateN(CGAL::ROTATION, sin(angle), cos(angle));
+    N = rotateN(N);
+    normals[lastCtl - 1].x = N.x();
+    normals[lastCtl - 1].y = N.y();
+  }
+  else
+  {
+    Vector tr(centerLine[lastCtl - 1].x - centerLine[lastCtl].x,
+      centerLine[lastCtl - 1].y - centerLine[lastCtl].y);
+    Transformation translateInit(CGAL::TRANSLATION, tr);
+
+    pt = translateInit(pt);
+    centerLine[lastCtl - 1].x = pt.x();
+    centerLine[lastCtl - 1].y = pt.y();
+  }
+
+  //log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
+  //  << N.x() << "  " << N.y() << endl;
+
+  //*******************************************
+  // Create the cross-sections
+  //*******************************************
 
   // clear cross-sections before 
   m_crossSections.clear();
@@ -4479,72 +4540,92 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   // initialise the scaling factors
   if (m_simuParams.varyingArea)
   {
-    prevScalingFactors[0] = 1.;
     switch (m_contInterpMeth)
     {
     case AREA:
-      prevScalingFactors[1] = (1. - propChg) +
-        propChg * sqrt((totAreas[0] + totAreas[1]) / 2. / totAreas[0]);
+      prevScalingFactors[0] = 1.;
+      prevScalingFactors[1] = sqrt(totAreas[1] / totAreas[0]);
       break;
     case BOUNDING_BOX:
-      // determine the lagest dimension 
-      prevScalingFactors[1] = (1. + getScalingFactor(0, 1)) / 2.;
+      prevScalingFactors[0] = 1.;
+      prevScalingFactors[1] = getScalingFactor(0, 1);
+      break;
+    case FROM_FILE:
+      prevScalingFactors[0] = vecScalingFactors[0].first;
+      prevScalingFactors[1] = vecScalingFactors[0].second;
       break;
     }
   }
 
   // create the cross-sections
-  for (int i(1); i < contours.size(); i++)
+  for (int i(1); i < nbCont; i++)
   {
-    //log << "\ni= " << i << endl;
+    log << "\ni= " << i << endl;
 
     //**********************************
     // Create previous cross-sections
     //**********************************
 
-    // devide the angle and the length of the 2 first sections by 2 since they 
-    // share they are defined between the same two points
-    if (i < 3) { 
-      prevAngle /= 2.; 
-      length = centerLine[0].getDistanceFrom(centerLine[1]) / 2.;
-    }
-    else
-    {
-      length = centerLine[i - 1].getDistanceFrom(centerLine[i]);
-    }
+      length = centerLine[i-1].getDistanceFrom(centerLine[i]);
 
     // compute the scaling factors
     if (m_simuParams.varyingArea)
     {
-      if (i == 1)
+      if (i < (nbCont - 2))
       {
         switch (m_contInterpMeth)
         {
         case AREA:
-          scalingFactors[0] = (1. - propChg) +
-            propChg * sqrt((totAreas[0] + totAreas[1]) / 2. / totAreas[1]);
+          scalingFactors[0] = 1.;
+          scalingFactors[1] =  sqrt(totAreas[i + 1] / totAreas[i]);
           break;
         case BOUNDING_BOX:
-          scalingFactors[0] = (1. + getScalingFactor(1, 0)) / 2.;
+          scalingFactors[0] = 1.;
+          scalingFactors[1] = getScalingFactor(i, i + 1);
+          break;
+        case FROM_FILE:
+          scalingFactors[0] = vecScalingFactors[i].first;
+          scalingFactors[1] = vecScalingFactors[i].second;
           break;
         }
       }
-      else
+      else if (i == nbCont - 2)
+      {
+        switch (m_contInterpMeth)
+        {
+        case AREA: 
+          scalingFactors[0] = 1.;
+          scalingFactors[1] = sqrt((totAreas[i] + totAreas[i + 1]) / 2. / totAreas[i]);
+          break;
+        case BOUNDING_BOX:
+          scalingFactors[0] = 1.;
+          scalingFactors[1] = getScalingFactor(i, i + 1) / 2.;
+          break;
+        case FROM_FILE:
+          scalingFactors[0] = vecScalingFactors[i].first;
+          scalingFactors[1] = vecScalingFactors[i].second;
+          break;
+        }
+      }
+      else if (i == nbCont - 1)
       {
         switch (m_contInterpMeth)
         {
         case AREA:
-          scalingFactors[0] = (1. - propChg) + propChg * sqrt(totAreas[i - 1] / totAreas[i]);
+          scalingFactors[0] = sqrt((totAreas[i-1] + totAreas[i]) / 2. / totAreas[i]);
+          scalingFactors[1] = 1.;
           break;
         case BOUNDING_BOX:
-          //log << "Before compute scaling factor i " << i 
-            //<< " i-1 " << i-1 << endl;
-          scalingFactors[0] = getScalingFactor(i, i-1);
+          scalingFactors[1] = getScalingFactor(i-1, i) / 2.;
+          scalingFactors[1] = 1.;
           break;
+        case FROM_FILE:
+          scalingFactors[0] = vecScalingFactors[i].first;
+          scalingFactors[1] = vecScalingFactors[i].second;
         }
       }
-      scalingFactors[1] = 1.;
     }
+    log << "SCaling factors " << scalingFactors[0] << "  " << scalingFactors[1] << endl;
 
     // loop over the created contours
     for (int c(0); c < contours[i-1].size(); c++)
@@ -4570,7 +4651,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       // set the curvature angle
       m_crossSections[secIdx]->setCurvatureAngle(prevAngle);
 
-      //log << "Section " << secIdx << " created" << endl;
+      log << "Section " << secIdx << " created" << endl;
       secIdx++;
     }
 
@@ -4579,7 +4660,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     //******************************************
 
     // compute the curvatur parameters of the section
-    getCurvatureAngleShift(centerLine[i - 1], centerLine[i], normals[i - 1], normals[i],
+    getCurvatureAngleShift(centerLine[i], centerLine[i+1], normals[i], normals[i+1],
       curvRadius, angle, shift);
 
     // shift the contours
@@ -4686,12 +4767,12 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
           {
             //log << "side != sidePrev" << endl;
 
-            ofstream os("cont.txt");
-            for (auto pt : cont) { os << pt.x() << "  " << pt.y() << endl; }
-            os.close();
-            os.open("pcont.txt");
-            for (auto pt : prevCont) { os << pt.x() << "  " << pt.y() << endl; }
-            os.close();
+            //ofstream os("cont.txt");
+            //for (auto pt : cont) { os << pt.x() << "  " << pt.y() << endl; }
+            //os.close();
+            //os.open("pcont.txt");
+            //for (auto pt : prevCont) { os << pt.x() << "  " << pt.y() << endl; }
+            //os.close();
 
             // compute the intersections of both contours
             intersections.clear();
@@ -4805,7 +4886,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   // create last cross-sections
   //********************************
 
-  //log << "Create last cross-section" << endl;
+  log << "Create last cross-section" << endl;
 
   radius = 0.;  // initalise the radius of the radiation cross-section
   tmpPrevSection.clear(); // the list of section connected to the radiation section
@@ -4818,7 +4899,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     area = abs(contours.back()[c].area());
     length = centerLine.rbegin()[1].getDistanceFrom(centerLine.back());
     addCrossSectionFEM(area, sqrt(area)/m_meshDensity, contours.back()[c],
-      surfaceIdx.back()[c], length, centerLine.back(), normals.back(), 
+      surfaceIdx.back()[c], length, centerLine.rbegin()[1], normals.rbegin()[1],
       prevScalingFactors);
 
     // set the connections with the previous cross-sections if necessary
@@ -4868,7 +4949,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     }
   }
   return true;
-  //log.close();
+  log.close();
 }
 
 //*************************************************************************

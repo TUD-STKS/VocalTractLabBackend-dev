@@ -3141,11 +3141,11 @@ Vector CrossSection2dFEM::normalOut() const
     double thetaN;
     if (signbit(m_curvatureRadius))
     {
-      thetaN = m_circleArcAngle;
+      thetaN = -m_circleArcAngle;
     }
     else
     {
-      thetaN = -m_circleArcAngle;
+      thetaN = m_circleArcAngle;
     }
     Transformation rotateN(CGAL::ROTATION, sin(thetaN), cos(thetaN));
     return(rotateN(normalIn()));

@@ -26,7 +26,8 @@ enum glottisBoundaryCond {
 
 enum contourInterpolationMethod {
   AREA,
-  BOUNDING_BOX
+  BOUNDING_BOX,
+  FROM_FILE
 };
 
 enum testType {
@@ -58,6 +59,7 @@ public:
   }
   void setGeometryFile(string fileName) {
     m_geometryFile = fileName;}
+  void setContourInterpolationMethod(enum contourInterpolationMethod method);
 
   void addCrossSectionFEM(double areas, double spacing,
     Polygon_2 contours, vector<int> surfacesIdx,
