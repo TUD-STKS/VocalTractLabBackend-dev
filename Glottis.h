@@ -99,6 +99,7 @@ public:
   virtual double getAspirationStrength_dB();
 
   Shape *getShape(const string &name);
+  int getShapeIndex(const string& name);
   bool hasUnsavedChanges();
   void clearUnsavedChanges();
   bool writeToXml(ostream &os, int initialIndent, bool isSelected);
