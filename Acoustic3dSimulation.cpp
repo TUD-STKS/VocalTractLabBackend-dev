@@ -47,7 +47,7 @@ typedef CGAL::Delaunay_mesher_no_edge_refinement_2<CDT, Criteria> MesherNoRefine
 typedef CGAL::Polyline_simplification_2::Stop_below_count_ratio_threshold Stop;
 typedef CGAL::Polyline_simplification_2::Squared_distance_cost Cost;
 
-const double MINIMAL_DISTANCE = 1e-14;
+//const double MINIMAL_DISTANCE = 1e-14;
 
 // ****************************************************************************
 // Independant functions
@@ -87,6 +87,29 @@ void gaussPointsFromMesh(vector<Point> &pts, vector<double> & areaFaces, const C
         + quadPtCoord[g][1] * itF->vertex(2)->point().y()));
     }
   }
+}
+
+// ****************************************************************************
+// Check if 2 contours are similar with a distance criterion
+
+bool similarContours(Polygon_2& cont1, Polygon_2& cont2, double minDist)
+{
+  bool similar(false);
+  if (cont1.size() == cont2.size())
+  {
+    int nPt(cont1.size());
+    similar = true;
+    for (int i(0); i < nPt; i++)
+    {
+      if ((abs(cont1[i].x() - cont2[i].x()) > minDist)
+        || (abs(cont1[i].y() - cont2[i].y()) > minDist))
+      { 
+        similar = false;
+        break;
+      }
+    }
+  }
+  return similar;
 }
 
 // ****************************************************************************
@@ -480,7 +503,7 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
   // loop over the cross-section
   for (int i(0); i < m_crossSections.size(); i++)
   {
-    //log << "\nSection " << i+1 << " over " << m_crossSections.size() << endl;
+    //log << "Num next sec " << m_crossSections[i]->numNextSec() << endl;
 
     if (m_crossSections[i]->numNextSec() > 0)
     {
@@ -494,7 +517,6 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
       scaling[0] = m_crossSections[i]->scaleOut();
       Transformation scale(CGAL::SCALING, scaling[0]);
       contour = transform(scale, m_crossSections[i]->contour());
-      //contour = m_crossSections[i]->contour();
       //log << "Contour sec " << i << " scaling out " << scaling[0] 
       //  << " area " << contour.area() << endl;
       //if (m_crossSections[i]->isJunction()) { log << "Junction section" << endl; }
@@ -557,10 +579,17 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
         }
         else
         {
-          CGAL::intersection(contour, nextContour, std::back_inserter(intersections));
-          //log << "Intersection computed" << endl;
+          if (!similarContours(contour, nextContour, MINIMAL_DISTANCE_DIFF_POLYGONS))
+          {
+            CGAL::intersection(contour, nextContour, std::back_inserter(intersections));
+            //log << "Intersection computed" << endl;
+          }
+          else
+          {
+            intersections.push_back(Polygon_with_holes_2(nextContour));
+            //log << "Next contour copied" << endl;
+          }
         }
-
 
         if (computeG) {
           //log << "Before compute difference Gend" << endl;
@@ -1318,9 +1347,9 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
 
   std::chrono::duration<double> time;
 
-  //ofstream log;
-  //log.open("log.txt", ofstream::app);
-  //log << "start propagating admittance" << endl;
+ /* ofstream log;
+  log.open("log.txt", ofstream::app);
+  log << "start propagating admittance" << endl;*/
   //log << "Direction " << direction << endl;
 
   // set the initial impedance and admittance matrices
@@ -1398,6 +1427,9 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
         G = Matrix::Identity(nPs, nPs) - F[0] * F[0].transpose();
       }
     }
+
+    //log << "Size F " << F.size() << endl;
+    //log << "Size F " << F[0].rows() << "  " << F[0].cols() << endl;
 
     prevImped = Eigen::MatrixXcd::Zero(m_crossSections[i]->numberOfModes(),
       m_crossSections[i]->numberOfModes());
@@ -2002,13 +2034,16 @@ void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
       queryPt = Point_3(lx * (double)j / (double)(nPtx - 1) + m_simuParams.bboxField[0].x(), 0.,
         ly * (double)i / (double)(nPty - 1) + m_simuParams.bboxField[0].y());
 
+      //log << "Point " << cnt << " out of " << nPtx * nPty << "  "
+      //  << queryPt << endl;
+
       // search if the query point is inside one of the sections
       ptFound = false;
       for (int s(0); s < numSec; s++)
       {
         if (m_crossSections[s]->getCoordinateFromCartesianPt(queryPt, outPt))
         {
-          //log << "Point founs in section " << s << endl;
+          //log << "Point found in section " << s << endl;
           ptFound = true;
           field(i,j) = m_crossSections[s]->interiorField(outPt, m_simuParams, PRESSURE);
           //log << "Field computed" << endl;
@@ -2531,10 +2566,6 @@ void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
   int numSec, lastSec; 
   double freq(m_simuParams.freqField);
 
-  m_meshDensity = 10.;
-  m_simuParams.numIntegrationStep = 3;
-  m_simuParams.curved = true;
-
   generateLogFileHeader(true);
   ofstream log("log.txt", ofstream::app);
 
@@ -2573,8 +2604,13 @@ void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
 
   // Compute the radiation impedance and admittance 
   Eigen::MatrixXcd radImped, radAdmit;
-  radiationImpedance(radImped, freq, 15., lastSec);
-  radAdmit = radImped.inverse();
+  //radiationImpedance(radImped, freq, 15., lastSec);
+  //radAdmit = radImped.inverse();
+  int mn(m_crossSections[lastSec]->numberOfModes());
+  radAdmit = Eigen::MatrixXcd::Zero(mn, mn);
+  radAdmit.diagonal().setConstant(pow(m_crossSections[lastSec]->scaleOut(), 2));
+  radImped = radAdmit.inverse();
+  log << "Radiation impedance computed" << endl;
 
   // propagate impedance and admittance
   propagateImpedAdmit(radImped, radAdmit, freq, lastSec, 0);
@@ -4456,6 +4492,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   double prevScalingFactors[2] = { 1., 1. };
   double scalingFactors[2] = { 1., 1. };
   double array1[2] = { 1., 1. };
+  //const double minDist(1.e-4);
   const double MINIMAL_AREA(0.15);
   vector<int> tmpPrevSection, prevSecInt, listNextCont, tmpSurf;
   vector<vector<int>> prevSections, intSurfacesIdx;
@@ -4471,14 +4508,14 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   centerLine.push_back(centerLine.back());
   normals.push_back(normals.back());
   int lastCtl(centerLine.size() - 1);
-  //log << "Before last ctl " << centerLine[lastCtl - 2].x << "  "
-  //  << centerLine[lastCtl - 2].y << " normal "
-  //  << normals[lastCtl - 2].x << "  "
-  //  << normals[lastCtl - 2].y << endl;
-  //log << "Last ctl " << centerLine[lastCtl].x << "  "
-  //  << centerLine[lastCtl].y << " normal "
-  //  << normals[lastCtl].x << "  "
-  //  << normals[lastCtl].y << endl;
+  log << "Before last ctl " << centerLine[lastCtl - 2].x << "  "
+    << centerLine[lastCtl - 2].y << " normal "
+    << normals[lastCtl - 2].x << "  "
+    << normals[lastCtl - 2].y << endl;
+  log << "Last ctl " << centerLine[lastCtl].x << "  "
+    << centerLine[lastCtl].y << " normal "
+    << normals[lastCtl].x << "  "
+    << normals[lastCtl].y << endl;
 
   getCurvatureAngleShift(centerLine[lastCtl - 2], centerLine[lastCtl], 
     normals[lastCtl - 2], normals[lastCtl], curvRadius, angle, shift);
@@ -4506,8 +4543,9 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   }
   else
   {
-    Vector tr(centerLine[lastCtl - 1].x - centerLine[lastCtl].x,
-      centerLine[lastCtl - 1].y - centerLine[lastCtl].y);
+    Vector tr((centerLine[lastCtl - 2].x - centerLine[lastCtl].x)/2.,
+      (centerLine[lastCtl - 2].y - centerLine[lastCtl].y)/2.);
+    log << "Vec tr " << tr << endl;
     Transformation translateInit(CGAL::TRANSLATION, tr);
 
     pt = translateInit(pt);
@@ -4515,8 +4553,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     centerLine[lastCtl - 1].y = pt.y();
   }
 
-  //log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
-  //  << N.x() << "  " << N.y() << endl;
+  log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
+    << N.x() << "  " << N.y() << endl;
 
   //*******************************************
   // Create the cross-sections
@@ -4529,9 +4567,9 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   getCurvatureAngleShift(centerLine[0], centerLine[1], normals[0], normals[1],
     prevCurvRadius, prevAngle, shift);
 
-  // shift the contours
-  Transformation translate(CGAL::TRANSLATION, Vector(0., shift));
-  for (auto cont : contours[0]){cont = transform(translate, cont);}
+  //// shift the contours
+  //Transformation translate(CGAL::TRANSLATION, Vector(0., shift));
+  //for (auto cont : contours[0]){cont = transform(translate, cont);}
   // FEXME: one should shift also the ccenterline point probably
 
   // initialize the previous section index list
@@ -4567,6 +4605,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     //**********************************
 
       length = centerLine[i-1].getDistanceFrom(centerLine[i]);
+      log << "length " << length << endl;
 
     // compute the scaling factors
     if (m_simuParams.varyingArea)
@@ -4663,9 +4702,9 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     getCurvatureAngleShift(centerLine[i], centerLine[i+1], normals[i], normals[i+1],
       curvRadius, angle, shift);
 
-    // shift the contours
-    Transformation translate(CGAL::TRANSLATION, Vector(0., shift));
-    for (auto cont : contours[i]) {cont = transform(translate, cont);}
+    //// shift the contours
+    //Transformation translate(CGAL::TRANSLATION, Vector(0., shift));
+    //for (auto cont : contours[i]) {cont = transform(translate, cont);}
 
     //log << "Contour shifted" << endl;
 
@@ -4748,77 +4787,85 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
         //log << "Prev Contour extracted and scaled sc = " 
           //<< prevScalingFactors[1] << endl;
 
-        // Check if the current and previous contour intersect:
-        // check if the first point of the previous contour
-        // is on the bounded side of the current contour
-        auto itP = prevCont.begin();
-        sidePrev = cont.has_on_bounded_side(*itP);
-
-        //log << "Sideprev " << sidePrev << endl;
-
-        // loop over the points of the previous contour
-        for (; itP != prevCont.end(); itP++)
+        if (!similarContours(cont, prevCont, MINIMAL_DISTANCE_DIFF_POLYGONS))
         {
-          side = cont.has_on_bounded_side(*itP);
-          // log << "Side " << side << endl;
-          // if the previous point and the next point are on
-          // different sides
-          if (side != sidePrev)
+
+          // Check if the current and previous contour intersect:
+          // check if the first point of the previous contour
+          // is on the bounded side of the current contour
+          auto itP = prevCont.begin();
+          sidePrev = cont.has_on_bounded_side(*itP);
+
+          //log << "Sideprev " << sidePrev << endl;
+
+          // loop over the points of the previous contour
+          for (; itP != prevCont.end(); itP++)
           {
-            //log << "side != sidePrev" << endl;
-
-            //ofstream os("cont.txt");
-            //for (auto pt : cont) { os << pt.x() << "  " << pt.y() << endl; }
-            //os.close();
-            //os.open("pcont.txt");
-            //for (auto pt : prevCont) { os << pt.x() << "  " << pt.y() << endl; }
-            //os.close();
-
-            // compute the intersections of both contours
-            intersections.clear();
-            CGAL::intersection(prevCont, cont, back_inserter(intersections));
-
-            //log << intersections.size() << " intersections computed" << endl;
-
-            // loop over the intersection polygons created
-            for (auto pol = intersections.begin();
-              pol != intersections.end(); pol++)
+            side = cont.has_on_bounded_side(*itP);
+            // log << "Side " << side << endl;
+            // if the previous point and the next point are on
+            // different sides
+            if (side != sidePrev)
             {
-              // add the corresponding previous section index
-              // to the previous section index list for the 
-              // intermediate section which will be created
-              prevSecInt.push_back(secIdx - contours[i - 1].size() + cp);
+              //log << "side != sidePrev" << endl;
 
-              // add the corresponding index of the next contour
-              listNextCont.push_back(c);
+              //ofstream os("cont.txt");
+              //for (auto pt : cont) { os << pt.x() << "  " << pt.y() << endl; }
+              //os.close();
+              //os.open("pcont.txt");
+              //for (auto pt : prevCont) { os << pt.x() << "  " << pt.y() << endl; }
+              //os.close();
 
-              // add the index of the intermediate section 
-              // which will be created from this contour 
-              // to the previous section index list
-              tmpPrevSection.push_back(secIdx + intSecIdx);
+              // compute the intersections of both contours
+              intersections.clear();
+              CGAL::intersection(prevCont, cont, back_inserter(intersections));
 
-              // add it the intermediate contour list
-              intContours.push_back(pol->outer_boundary());
+              //log << intersections.size() << " intersections computed" << endl;
 
-              // create a surface index vector (the value does not
-              // mater since they are not used after)
-              tmpSurf.clear();
-              tmpSurf.assign(intContours.back().size(), 0);
-              intSurfacesIdx.push_back(tmpSurf);
+              // loop over the intersection polygons created
+              for (auto pol = intersections.begin();
+                pol != intersections.end(); pol++)
+              {
+                // add the corresponding previous section index
+                // to the previous section index list for the 
+                // intermediate section which will be created
+                prevSecInt.push_back(secIdx - contours[i - 1].size() + cp);
 
-              intSecIdx++;
+                // add the corresponding index of the next contour
+                listNextCont.push_back(c);
+
+                // add the index of the intermediate section 
+                // which will be created from this contour 
+                // to the previous section index list
+                tmpPrevSection.push_back(secIdx + intSecIdx);
+
+                // add it the intermediate contour list
+                intContours.push_back(pol->outer_boundary());
+
+                // create a surface index vector (the value does not
+                // mater since they are not used after)
+                tmpSurf.clear();
+                tmpSurf.assign(intContours.back().size(), 0);
+                intSurfacesIdx.push_back(tmpSurf);
+
+                intSecIdx++;
+              }
+              break;
             }
-            break;
+            else
+            {
+              sidePrev = side;
+            }
           }
-          else
+          // if no intersection has been found, check if one contour is 
+          // completely contained inside the other
+          if ((sidePrev == side) &&
+            CGAL::do_intersect(contours[i][c], contours[i - 1][cp]))
           {
-            sidePrev = side;
+            tmpPrevSection.push_back(secIdx - contours[i - 1].size() + cp);
           }
         }
-        // if no intersection has been found, check if one contour is 
-        // completely contained inside the other
-        if ((sidePrev == side) &&
-          CGAL::do_intersect(contours[i][c], contours[i - 1][cp]))
+        else
         {
           tmpPrevSection.push_back(secIdx - contours[i - 1].size() + cp);
         }

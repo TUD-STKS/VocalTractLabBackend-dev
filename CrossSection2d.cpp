@@ -1,4 +1,5 @@
 #include "CrossSection2d.h"
+#include "Constants.h"
 #include "Tube.h"
 #include <iostream>
 #include <Eigen/Core>
@@ -61,7 +62,7 @@ typedef CGAL::Data_access<Point_value_map>        Value_access;
 // Initialize constants
 // ****************************************************************************
 
-const double MINIMAL_DISTANCE = 1e-14;
+//const double MINIMAL_DISTANCE = 1e-14;
 const double NON_SENS_VALUE = 1e14;
 
 // ****************************************************************************
@@ -2814,7 +2815,7 @@ void CrossSection2dRadiation::radiatePressure(double distance, double freq,
 bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut)
 {
   //ofstream log("log.txt", ofstream::app);
-  //log << "\nStart get coordinates" << endl;
+  //log << "Start get coordinates" << endl;
 
   bool isInside(false);
   double x, y, z, sc;
@@ -2890,6 +2891,7 @@ bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut)
     x = NAN; y = NAN; z = NAN;
   }
   ptOut = Point_3(x, y, z);
+  //log << "PtOut " << ptOut << endl;
   //log.close();
   return(isInside);
 }

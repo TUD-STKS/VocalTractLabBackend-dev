@@ -46,5 +46,12 @@ const double CRITICAL_REYNOLDS_NUMBER = 1800.0;
 const int SAMPLING_RATE = 44100;
 const double SYNTHETIC_SPEECH_BANDWIDTH_HZ = 12000.0;
 
+// ****************************************************************************
+// Constants for the 3D simulations geometry problems
+// ****************************************************************************
+
+const double MINIMAL_DISTANCE = 1e-14;
+const double MINIMAL_DISTANCE_DIFF_POLYGONS = 1.e-4;
+
 #endif
 
