@@ -152,9 +152,24 @@ C_EXPORT int vtlGetGlottisParamInfo(char* names, char* descriptions, char* units
 
 
 // ****************************************************************************
-// Returns the vocal tract parameters for the given shape as defined in the
+// Returns the sub-glottal parameters for the given shape as defined in the
 // speaker file.
-// The vector passed to this function must have at least as many elements as 
+// The array passed to this function must have at least as many elements as 
+// the number of glottis model parameters.
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// 2: A shape with the given name does not exist.
+// ****************************************************************************
+
+C_EXPORT int vtlGetGlottisParams(const char* shapeName, double *glottisParams);
+
+
+// ****************************************************************************
+// Returns the supra-glottal parameters for the given shape as defined in the
+// speaker file.
+// The array passed to this function must have at least as many elements as 
 // the number of vocal tract model parameters.
 //
 // Function return value:
@@ -163,7 +178,7 @@ C_EXPORT int vtlGetGlottisParamInfo(char* names, char* descriptions, char* units
 // 2: A shape with the given name does not exist.
 // ****************************************************************************
 
-C_EXPORT int vtlGetTractParams(const char *shapeName, double *param);
+C_EXPORT int vtlGetTractParams(const char *shapeName, double *tractParams);
 
 
 // ****************************************************************************

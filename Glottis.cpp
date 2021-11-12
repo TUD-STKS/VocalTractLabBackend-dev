@@ -63,6 +63,24 @@ Glottis::Shape *Glottis::getShape(const string &name)
 
 
 // ****************************************************************************
+// Returns the index of the glottis shape with the given name.
+// ****************************************************************************
+
+int Glottis::getShapeIndex(const string& name)
+{
+    int k, index = -1;
+    int numShapes = (int)shape.size();
+    for (k = 0; (k < numShapes) && (index == -1); k++)
+    {
+        if (shape[k].name == name)
+        {
+            index = k;
+        }
+    }
+    return index;
+}
+
+// ****************************************************************************
 /// Have any changes to the shapes been made since the last saving?
 // ****************************************************************************
 

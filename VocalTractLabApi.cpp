@@ -452,9 +452,47 @@ int vtlGetGlottisParamInfo(char* names, char* descriptions, char* units,
 
 
 // ****************************************************************************
-// Returns the vocal tract parameters for the given shape as defined in the
+// Returns the sub-glottal parameters for the given shape as defined in the
 // speaker file.
-// The vector passed to this function must have at least as many elements as 
+// The array passed to this function must have at least as many elements as 
+// the number of glottis model parameters.
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// 2: A shape with the given name does not exist.
+// ****************************************************************************
+
+int vtlGetGlottisParams(const char *shapeName, double *glottisParams)
+{
+    if (!vtlApiInitialized)
+    {
+        printf("Error: The API has not been initialized.\n");
+        return 1;
+    }
+
+    int index = glottis[selectedGlottis]->getShapeIndex(string(shapeName));
+    if (index == -1)
+    {
+        return 2;
+    }
+
+    int numGlottisParams = (int)glottis[selectedGlottis]->controlParam.size();
+    int i;
+    for (i = 0; i < numGlottisParams; i++)
+    {
+        glottisParams[i] = glottis[selectedGlottis]->shape[index].controlParam[i];
+    }
+
+    return 0;
+}
+
+
+
+// ****************************************************************************
+// Returns the supra-glottal parameters for the given shape as defined in the
+// speaker file.
+// The array passed to this function must have at least as many elements as 
 // the number of vocal tract model parameters.
 //
 // Function return value:
@@ -463,27 +501,27 @@ int vtlGetGlottisParamInfo(char* names, char* descriptions, char* units,
 // 2: A shape with the given name does not exist.
 // ****************************************************************************
 
-int vtlGetTractParams(const char *shapeName, double *param)
+int vtlGetTractParams(const char *shapeName, double *tractParams)
 {
-  if (!vtlApiInitialized)
-  {
-    printf("Error: The API has not been initialized.\n");
-    return 1;
-  }
+    if (!vtlApiInitialized)
+    {
+        printf("Error: The API has not been initialized.\n");
+        return 1;
+    }
 
-  int index = vocalTract->getShapeIndex(string(shapeName));
-  if (index == -1)
-  {
-    return 2;
-  }
+    int index = vocalTract->getShapeIndex(string(shapeName));
+    if (index == -1)
+    {
+        return 2;
+    }
 
-  int i;
-  for (i=0; i < VocalTract::NUM_PARAMS; i++)
-  {
-    param[i] = vocalTract->shapes[index].param[i];
-  }
+    int i;
+    for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+    {
+        tractParams[i] = vocalTract->shapes[index].param[i];
+    }
 
-  return 0;
+    return 0;
 }
 
 
