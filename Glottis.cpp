@@ -63,7 +63,7 @@ Glottis::Shape *Glottis::getShape(const string &name)
 
 
 // ****************************************************************************
-// Returns the index of the vocal tract shape with the given name.
+// Returns the index of the glottis shape with the given name.
 // ****************************************************************************
 
 int Glottis::getShapeIndex(const string& name)
