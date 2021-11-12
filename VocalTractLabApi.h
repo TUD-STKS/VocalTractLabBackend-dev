@@ -182,8 +182,12 @@ C_EXPORT int vtlGetTractParams(const char *shapeName, double *tractParams);
 
 
 // ****************************************************************************
-// Exports the vocal tract contours for the given vector of vocal tract
+// Exports the vocal tract contours for the given array of vocal tract
 // parameters as a SVG file (scalable vector graphics).
+//
+// Parameters out:
+// o outTractParams: The bio-mechanically constrained tract parameter array
+// that is actually used to determine the shape.
 //
 // Function return value:
 // 0: success.
@@ -191,7 +195,7 @@ C_EXPORT int vtlGetTractParams(const char *shapeName, double *tractParams);
 // 2: Writing the SVG file failed.
 // ****************************************************************************
 
-C_EXPORT int vtlExportTractSvg(double *tractParams, const char *fileName);
+C_EXPORT int vtlExportTractSvg(double* inTractParams, double* outTractParams, const char* fileName);
 
 
 // ****************************************************************************
@@ -206,7 +210,7 @@ C_EXPORT int vtlExportTractSvg(double *tractParams, const char *fileName);
 // 1: The API has not been initialized.
 // ****************************************************************************
 
-C_EXPORT int vtlTractToTube(double* tractParams,
+C_EXPORT int vtlTractToTube(double* inTractParams, double *outTractParams,
   double* tubeLength_cm, double* tubeArea_cm2, int* tubeArticulator,
   double* incisorPos_cm, double* tongueTipSideElevation, double* velumOpening_cm2);
 
@@ -306,8 +310,8 @@ C_EXPORT int vtlGetDefaultTransferFunctionOptions(TransferFunctionOptions* opts)
 // 1: The API has not been initialized.
 // ****************************************************************************
 
-C_EXPORT int vtlGetTransferFunction(double* tractParams, int numSpectrumSamples,
-    TransferFunctionOptions* opts, double* magnitude, double* phase_rad);
+C_EXPORT int vtlGetTransferFunction(double *inTractParams, int numSpectrumSamples,
+    TransferFunctionOptions *opts, double *outTractParams, double *magnitude, double *phase_rad);
 
 
 // ****************************************************************************

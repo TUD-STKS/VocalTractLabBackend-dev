@@ -526,8 +526,12 @@ int vtlGetTractParams(const char *shapeName, double *tractParams)
 
 
 // ****************************************************************************
-// Exports the vocal tract contours for the given vector of vocal tract
+// Exports the vocal tract contours for the given array of vocal tract
 // parameters as a SVG file (scalable vector graphics).
+//
+// Parameters out:
+// o outTractParams: The bio-mechanically constrained tract parameter array
+// that is actually used to determine the shape.
 //
 // Function return value:
 // 0: success.
@@ -535,7 +539,7 @@ int vtlGetTractParams(const char *shapeName, double *tractParams)
 // 2: Writing the SVG file failed.
 // ****************************************************************************
 
-int vtlExportTractSvg(double *tractParams, const char *fileName)
+int vtlExportTractSvg(double *inTractParams, double *outTractParams, const char *fileName)
 {
   if (!vtlApiInitialized)
   {
@@ -550,9 +554,17 @@ int vtlExportTractSvg(double *tractParams, const char *fileName)
   int i;
   for (i = 0; i < VocalTract::NUM_PARAMS; i++)
   {
-    vocalTract->param[i].x = tractParams[i];
+    vocalTract->param[i].x = inTractParams[i];
   }
   vocalTract->calculateAll();
+ 
+  if (outTractParams != NULL)
+  {
+      for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+      {
+          outTractParams[i] = vocalTract->param[i].limitedX;
+      }
+  }
   
   // Save the contour as SVG file.
   bool ok = vocalTract->exportTractContourSvg(string(fileName), false, false);
@@ -576,7 +588,7 @@ int vtlExportTractSvg(double *tractParams, const char *fileName)
 
 // ****************************************************************************
 // Provides the tube data (especially the area function) for the given vector
-// of tractParams. The vectors tubeLength_cm, tubeArea_cm2, and tubeArticulator, 
+// of tractParams. The arrays tubeLength_cm, tubeArea_cm2, and tubeArticulator, 
 // must each have as many elements as tube sections.
 // The values incisorPos_cm, tongueTipSideElevation, and velumOpening_cm2 are 
 // one double value each.
@@ -586,7 +598,7 @@ int vtlExportTractSvg(double *tractParams, const char *fileName)
 // 1: The API has not been initialized.
 // ****************************************************************************
 
-int vtlTractToTube(double *tractParams,
+int vtlTractToTube(double *inTractParams, double *outTractParams,
   double *tubeLength_cm, double *tubeArea_cm2, int *tubeArticulator,
   double *incisorPos_cm, double *tongueTipSideElevation, double *velumOpening_cm2)
 {
@@ -609,7 +621,7 @@ int vtlTractToTube(double *tractParams,
   int i;
   for (i = 0; i < VocalTract::NUM_PARAMS; i++)
   {
-    vocalTract->param[i].x = tractParams[i];
+    vocalTract->param[i].x = inTractParams[i];
   }
 
   // ****************************************************************
@@ -618,6 +630,13 @@ int vtlTractToTube(double *tractParams,
 
   Tube tube;
   vocalTract->calculateAll();
+  if (outTractParams != NULL)
+  {
+      for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+      {
+          outTractParams[i] = vocalTract->param[i].limitedX;
+      }
+  }
   vocalTract->getTube(&tube);
 
   // ****************************************************************
@@ -684,7 +703,7 @@ int vtlGetDefaultTransferFunctionOptions(TransferFunctionOptions* opts)
 // returns the spectrum in terms of magnitude and phase.
 //
 // Parameters in:
-// o tractParams: Is a vector of vocal tract parameters with 
+// o inTractParams: Is an array of vocal tract parameters with 
 //     numVocalTractParams elements.
 // o numSpectrumSamples: The number of samples (points) in the requested 
 //     spectrum. This number of samples includes the negative frequencies and
@@ -701,9 +720,12 @@ int vtlGetDefaultTransferFunctionOptions(TransferFunctionOptions* opts)
 //     vtlGetDefaultTransferFunctionOptions()).
 // 
 // Parameters out:
-// o magnitude: Vector of spectral magnitudes at equally spaced discrete 
+// o outTractParams: Array with the bio-mechanically constrained tract parameters
+//     used to determine the actual vocal tract shape. Set to NULL, if not interested 
+//     in these values.
+// o magnitude: Array of spectral magnitudes at equally spaced discrete 
 //     frequencies. This vector mus have at least numSpectrumSamples elements.
-// o phase_rad: Vector of the spectral phase in radians at equally 
+// o phase_rad: Array of the spectral phase in radians at equally 
 //     spaced discrete frequencies. This vector must have at least 
 //     numSpectrumSamples elements.
 //
@@ -712,7 +734,8 @@ int vtlGetDefaultTransferFunctionOptions(TransferFunctionOptions* opts)
 // 1: The API has not been initialized.
 // ****************************************************************************
 
-int vtlGetTransferFunction(double* tractParams, int numSpectrumSamples, TransferFunctionOptions* opts, double* magnitude, double* phase_rad)
+int vtlGetTransferFunction(double* inTractParams, int numSpectrumSamples, TransferFunctionOptions* opts, 
+    double *outTractParams, double* magnitude, double* phase_rad)
 {
     if (!vtlApiInitialized)
     {
@@ -728,13 +751,23 @@ int vtlGetTransferFunction(double* tractParams, int numSpectrumSamples, Transfer
         numSpectrumSamples = 16;
     }
 
+    // Why does this function not store and restore the control params like the other API functions? P. Krug
+
     // Calculate the vocal tract shape from the vocal tract parameters.
 
     for (i = 0; i < VocalTract::NUM_PARAMS; i++)
     {
-        vocalTract->param[i].x = tractParams[i];
+        vocalTract->param[i].x = inTractParams[i];
     }
     vocalTract->calculateAll();
+
+    if (outTractParams != NULL)
+    {
+        for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+        {
+            outTractParams[i] = vocalTract->param[i].limitedX;
+        }
+    }
 
     // Calculate the transfer function.
 
