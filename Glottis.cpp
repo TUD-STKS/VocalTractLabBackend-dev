@@ -271,8 +271,6 @@ bool Glottis::readFromXml(XmlNode &rootNode)
   double max;
   double neutral;
 
-  this->isSelected(rootNode.getAttributeInt("selected") == 1);
-
   // ****************************************************************
   // Read the static parameter values.
   // ****************************************************************

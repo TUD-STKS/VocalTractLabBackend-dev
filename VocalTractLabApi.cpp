@@ -104,12 +104,9 @@ bool vtlLoadSpeaker(const char *speakerFileName, VocalTract *vocalTract,
     int i = 0;
 	for (const auto& g : glottisInfo)
     {
-        if (g->isSelected())
-        {
-            selectedGlottis = i;
-        }
         glottis[i++] = g;
-	}  
+	}
+    selectedGlottis = speaker.getSelectedGlottis();
 
 
   return true;
@@ -1586,7 +1583,7 @@ int vtlTractSequenceToAudio(const char* tractSequenceFileName, const char* wavFi
 // ****************************************************************************
 int vtlSaveSpeaker(const char* speakerFileName)
 {
-    Speaker speaker(vocalTract, { std::begin(glottis), std::end(glottis) });
+    Speaker speaker(vocalTract, { std::begin(glottis), std::end(glottis) }, selectedGlottis);
     try
     {
         speaker.save(speakerFileName);
