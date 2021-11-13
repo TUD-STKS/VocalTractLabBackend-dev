@@ -1,8 +1,10 @@
 #include "Speaker.h"
 
 #include <fstream>
+#include <sstream>
 
 #include "GlottisFactory.h"
+#include "XmlHelper.h"
 #include "XmlNode.h"
 
 
@@ -44,21 +46,22 @@ VocalTract* Speaker::getVocalTract() const
 
 std::ostream& Speaker::save(std::ostream& os) const
 {
-    os << "<speaker>" << std::endl;
+    std::ostringstream xml;
+    xml << "<speaker>" << std::endl;
 
-    os << *vocalTract;
+    xml << *vocalTract;
 
-    os << "  <glottis_models" << std::endl;
+    xml << "<glottis_models" << std::endl;
 
     for (const auto glottisModel : glottisModels)
     {
-        os << *glottisModel;
+        xml << *glottisModel;
     }
 
-    os << "  </glottis_models>" << std::endl;
-    os << "</speaker>" << std::endl;
+    xml << "</glottis_models>" << std::endl;
+    xml << "</speaker>" << std::endl;
 
-    return os;
+    return os << XmlHelper::formatXmlString(xml.str());
 }
 
 void Speaker::read(const std::string& path)

@@ -38,6 +38,8 @@ public:
   static void readAttribute(XmlNode *node, const char *attrName, double &attrValue);
   static void readAttribute(XmlNode *node, const char *attrName, int &attrValue);
   static void readAttribute(XmlNode *node, const char *attrName, std::string &attrValue);
+
+  static std::string formatXmlString(const std::string& unformattedString);
 };
 
 // ****************************************************************************
