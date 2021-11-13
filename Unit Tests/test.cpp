@@ -8,6 +8,7 @@
 
 #include "../VocalTractLabApi.h"
 
+
 // Some files used in or produced by the various tests
 const char* gesFile = "example01.ges";
 const char* speakerFile = "../JD3.speaker";
@@ -254,4 +255,10 @@ TEST(ApiTest, TractToAudio_DataOut)
 	EXPECT_EQ(ret, 0);
 
 	vtlClose();
+}
+
+TEST(ApiTest, SaveSpeaker)
+{	
+	vtlInitialize(speakerFile);
+	vtlSaveSpeaker("newSpeakerFile.speaker");
 }

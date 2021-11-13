@@ -1907,9 +1907,9 @@ void VocalTract::writeAnatomyXml(ostream &os, int indent)
 
   for (i=0; i < NUM_PARAMS; i++)
   {
-    sprintf(st, "<param index=\"%d\"  name=\"%s\"  min=\"%2.3f\"  max=\"%2.3f\"  neutral=\"%2.3f\"  "
+    sprintf(st, "<param index=\"%d\"  name=\"%s\"  description=\"%s\"  min=\"%2.3f\"  max=\"%2.3f\"  neutral=\"%2.3f\"  "
       "positive_velocity_factor=\"%2.3f\"  negative_velocity_factor=\"%2.3f\" />",
-      i, param[i].name.c_str(), param[i].min, param[i].max, param[i].neutral,
+      i, param[i].name.c_str(), param[i].description.c_str(), param[i].min, param[i].max, param[i].neutral,
       anatomy.positiveVelocityFactor[i], anatomy.negativeVelocityFactor[i]);
     os << string(indent, ' ') << st << endl;
   }

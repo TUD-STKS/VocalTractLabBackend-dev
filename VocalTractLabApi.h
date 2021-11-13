@@ -62,6 +62,15 @@ extern "C"{ /* start extern "C" */
 
 C_EXPORT int vtlInitialize(const char *speakerFileName);
 
+// ****************************************************************************
+// Save the current speaker information (vocal tract and glottis shape) in
+// a speaker file (e.g., "JD2.speaker")
+// Return values:
+// 0: success.
+// 1: Saving the speaker file failed.
+// ****************************************************************************
+
+C_EXPORT int vtlSaveSpeaker(const char* speakerFileName);
 
 // ****************************************************************************
 // Clean up the memory and shut down the synthesizer.

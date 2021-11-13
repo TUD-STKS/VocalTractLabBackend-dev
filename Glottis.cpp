@@ -229,9 +229,9 @@ bool Glottis::writeToXml(ostream &os, int initialIndent, bool isSelected)
     os << string(indent, ' ') << "<shape name=\"" << shape[k].name << "\">" << endl;
     indent+= 2;
 
-    for (i=0; i < (int)controlParam.size(); i++)
+    for (i = 0; i < (int)controlParam.size(); i++)
     {
-      sprintf(st, "<control_param index=\"%d\" value=\"%f\"/>", i, shape[k].controlParam[i]);
+        sprintf(st, "<control_param name=\"%s\" value=\"%f\"/>", controlParam[i].name.c_str(), shape[k].controlParam[i]);
       os << string(indent, ' ') << st << endl;
     }
 

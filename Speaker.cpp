@@ -1,8 +1,15 @@
 #include "Speaker.h"
 
+#include <fstream>
+
 #include "GlottisFactory.h"
 #include "XmlNode.h"
 
+
+Speaker::Speaker(VocalTract* vocalTract, const std::vector<Glottis*>& glottisModels) : glottisModels(glottisModels), vocalTract(vocalTract)
+{
+
+}
 
 Speaker::Speaker(const std::string& path) : Speaker()
 {
@@ -107,4 +114,29 @@ void Speaker::read(const std::string& path)
 
     // Free the memory of the XML tree !
     delete rootNode;
+}
+
+void Speaker::save(const std::string& path)
+{
+    std::ofstream os(path);
+    if (!os)
+    {
+        throw std::runtime_error("[Speaker::save()] Could not open " + path + "for writing!");
+    }
+
+    os << "<speaker>" << std::endl;
+
+    vocalTract->writeToXml(os, 2);
+
+    os << "  <glottis_models" << std::endl;
+
+    for (size_t i = 0; i < glottisModels.size(); ++i)
+    {
+        glottisModels[i]->writeToXml(os, 4, selectedGlottis == i);
+    }
+
+    os << "  </glottis_models>" << std::endl;
+    os << "</speaker>" << std::endl;
+
+    os.close();
 }

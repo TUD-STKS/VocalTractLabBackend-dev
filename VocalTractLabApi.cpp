@@ -113,6 +113,7 @@ bool vtlLoadSpeaker(const char *speakerFileName, VocalTract *vocalTract,
 }
 
 
+
 // ****************************************************************************
 // Init. the synthesis with the given speaker file name, e.g. "JD2.speaker".
 // This function should be called before any other function of this API.
@@ -1577,6 +1578,21 @@ int vtlTractSequenceToAudio(const char* tractSequenceFileName, const char* wavFi
   // ****************************************************************
 
   return 0;
+}
+
+// ****************************************************************************
+int vtlSaveSpeaker(const char* speakerFileName)
+{
+    Speaker speaker(vocalTract, { std::begin(glottis), std::end(glottis) });
+    try
+    {
+        speaker.save(speakerFileName);
+        return 0;
+    }
+    catch (std::exception&)
+    {
+        return 1;
+    }    
 }
 
 // ****************************************************************************

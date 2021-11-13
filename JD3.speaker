@@ -1798,7 +1798,7 @@
         <param index="2" name="XB" description="Lower rest displacement" unit="cm"   min="-0.050000"  max="0.300000"     neutral="0.010000"   />
         <param index="3" name="XT" description="Upper rest displacement" unit="cm"   min="-0.050000"  max="0.300000"     neutral="0.010000"   />
         <param index="4" name="AA" description="Arytenoid area"          unit="cm^2" min="-0.100000"  max="0.500000"     neutral="0.000000"   />
-        <param index="5" name="AS" escription="Aspiration strength"      unit="dB"   min="-40.000000" max="0.000000"     neutral="-40.000000" />
+        <param index="5" name="AS" description="Aspiration strength"      unit="dB"   min="-40.000000" max="0.000000"     neutral="-40.000000" />
       </control_params>
       <shapes>
         <shape name="default">

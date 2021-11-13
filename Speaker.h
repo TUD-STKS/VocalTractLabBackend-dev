@@ -9,6 +9,7 @@ class Speaker
 {
 public:
 	Speaker() = default;
+	Speaker(VocalTract* vocalTract, const std::vector<Glottis*>& glottisModels);
 	Speaker(const std::string& path);
 
 public:
