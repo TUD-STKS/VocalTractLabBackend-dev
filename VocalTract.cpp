@@ -1724,7 +1724,7 @@ void VocalTract::readFromXml(const string& speakerFileName)
 // Write the anatomy parameters in xml-format into the ouput stream os.
 // ****************************************************************************
 
-void VocalTract::writeAnatomyXml(ostream &os, int indent)
+void VocalTract::writeAnatomyXml(ostream &os, int indent) const
 {
   int i;
   char st[1024];
@@ -1926,12 +1926,11 @@ void VocalTract::writeAnatomyXml(ostream &os, int indent)
 /// stream os.
 // ****************************************************************************
 
-void VocalTract::writeShapesXml(std::ostream &os, int indent)
+void VocalTract::writeShapesXml(std::ostream &os, int indent) const
 {
   int i, k;
   char st[1024];
-  Shape *s = NULL;
-
+  
   os << string(indent, ' ') << "<shapes>" << endl;
   indent+= 2;
 
@@ -1941,7 +1940,7 @@ void VocalTract::writeShapesXml(std::ostream &os, int indent)
 
   for (i=0; i < (int)shapes.size(); i++)
   {
-    s = &(shapes[i]);
+    const Shape* s = &(shapes[i]);
     os << string(indent, ' ') << "<shape name=\"" << s->name <<"\">" << endl;
     indent+= 2;
 
@@ -1966,7 +1965,7 @@ void VocalTract::writeShapesXml(std::ostream &os, int indent)
 /// given xml stream.
 // ****************************************************************************
 
-void VocalTract::writeToXml(std::ostream &os, int indent)
+void VocalTract::writeToXml(std::ostream &os, int indent) const
 {
   os << string(indent, ' ') << "<vocal_tract_model>" << endl;
   indent+= 2;

@@ -104,8 +104,18 @@ public:
   int getShapeIndex(const string& name);
   bool hasUnsavedChanges();
   void clearUnsavedChanges();
+
+  bool isSelected() const { return isCurrentlySelected; }
+  void isSelected(bool doSelect) { isCurrentlySelected = doSelect; }
+
   bool writeToXml(ostream &os, int initialIndent, bool isSelected);
   bool readFromXml(XmlNode &node);
+
+  friend std::ostream& operator<<(std::ostream& os, Glottis& obj)
+  {
+      obj.writeToXml(os, 0, false);
+	  return os;
+  }
 
   void printParamNames(ostream &os);
   void printParamValues(ostream& os, double glottalFlow_cm3_s,
@@ -123,6 +133,7 @@ public:
 private:
   bool hasStoredControlParams;
   double storedControlParams[MAX_CONTROL_PARAMS];
+  bool isCurrentlySelected;
 };
 
 

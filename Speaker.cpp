@@ -22,24 +22,14 @@ size_t Speaker::addGlottisModel(Glottis& newModel)
 	return glottisModels.size();
 }
 
-std::pair<std::vector<Glottis*>, size_t> Speaker::getGlottisModels() const
+std::vector<Glottis*> Speaker::getGlottisModels() const
 {
-	return make_pair(glottisModels, getSelectedGlottis());
-}
-
-size_t Speaker::getSelectedGlottis() const
-{
-	return selectedGlottis;
+	return glottisModels;
 }
 
 void Speaker::setGlottisModels(const std::vector<Glottis*>& newModels)
 {
 	glottisModels = newModels;
-}
-
-void Speaker::setSelectedGlottis(size_t index)
-{
-	selectedGlottis = index;
 }
 
 void Speaker::setVocalTract(VocalTract* newModel)
@@ -50,6 +40,25 @@ void Speaker::setVocalTract(VocalTract* newModel)
 VocalTract* Speaker::getVocalTract() const
 {
 	return vocalTract;
+}
+
+std::ostream& Speaker::save(std::ostream& os) const
+{
+    os << "<speaker>" << std::endl;
+
+    os << *vocalTract;
+
+    os << "  <glottis_models" << std::endl;
+
+    for (const auto glottisModel : glottisModels)
+    {
+        os << *glottisModel;
+    }
+
+    os << "  </glottis_models>" << std::endl;
+    os << "</speaker>" << std::endl;
+
+    return os;
 }
 
 void Speaker::read(const std::string& path)
@@ -70,8 +79,6 @@ void Speaker::read(const std::string& path)
 	// Load the data for the glottis models.
 	// ****************************************************************
 
-	// This may be overwritten later.
-	selectedGlottis = 0;
     XmlNode* glottisModelsNode = rootNode->getChildElement("glottis_models");
     if (glottisModelsNode != nullptr)
     {
@@ -81,12 +88,6 @@ void Speaker::read(const std::string& path)
             // Create a new glottis from the XML item and add it to the list
             auto* newGlottis = GlottisFactory::makeGlottis(*node);
             glottisModels.push_back(newGlottis);
-
-            // Check if the current model is the default model
-            if (node->getAttributeInt("selected") == 1)
-            {
-                selectedGlottis = glottisModels.size() - 1;
-            }
         }
     }
     else
@@ -116,7 +117,7 @@ void Speaker::read(const std::string& path)
     delete rootNode;
 }
 
-void Speaker::save(const std::string& path)
+void Speaker::save(const std::string& path) const
 {
     std::ofstream os(path);
     if (!os)
@@ -124,19 +125,7 @@ void Speaker::save(const std::string& path)
         throw std::runtime_error("[Speaker::save()] Could not open " + path + "for writing!");
     }
 
-    os << "<speaker>" << std::endl;
-
-    vocalTract->writeToXml(os, 2);
-
-    os << "  <glottis_models" << std::endl;
-
-    for (size_t i = 0; i < glottisModels.size(); ++i)
-    {
-        glottisModels[i]->writeToXml(os, 4, selectedGlottis == i);
-    }
-
-    os << "  </glottis_models>" << std::endl;
-    os << "</speaker>" << std::endl;
+    os << *this;
 
     os.close();
 }

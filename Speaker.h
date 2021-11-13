@@ -1,5 +1,6 @@
 #ifndef SPEAKERFILE_H
 #define SPEAKERFILE_H
+#include <ostream>
 #include <string>
 
 #include "Glottis.h"
@@ -15,22 +16,25 @@ public:
 public:
 	// Getter and Setter
 	size_t addGlottisModel(Glottis& newModel);
-	std::pair<std::vector<Glottis*>, size_t> getGlottisModels() const;
-	size_t getSelectedGlottis() const;
+	std::vector<Glottis*> getGlottisModels() const;
 	void setGlottisModels(const std::vector<Glottis*>& newModels);
-	void setSelectedGlottis(size_t index);
 
 	void setVocalTract(VocalTract* newModel);
 	VocalTract* getVocalTract() const;
 
-	// File I/O
+	// Stream and file I/O
+	std::ostream& save(std::ostream& os) const;
 	void read(const std::string& path);
-	void save(const std::string& path);
+	void save(const std::string& path) const;
+
+	friend std::ostream& operator<<(std::ostream& os, const Speaker& obj)
+	{
+		return obj.save(os);
+	}
 
 private:
 	std::vector<Glottis*> glottisModels;
 	VocalTract* vocalTract;
-	size_t selectedGlottis{ 0 };
 };
 
 #endif // SPEAKERFILE_H

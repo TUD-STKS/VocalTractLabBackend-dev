@@ -102,11 +102,14 @@ bool vtlLoadSpeaker(const char *speakerFileName, VocalTract *vocalTract,
     *vocalTract = *speaker.getVocalTract();
     const auto glottisInfo = speaker.getGlottisModels();
     int i = 0;
-	for (const auto& g : glottisInfo.first)
+	for (const auto& g : glottisInfo)
     {
+        if (g->isSelected())
+        {
+            selectedGlottis = i;
+        }
         glottis[i++] = g;
-	}
-    selectedGlottis = glottisInfo.second;
+	}  
 
 
   return true;
