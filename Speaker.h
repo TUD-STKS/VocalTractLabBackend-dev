@@ -10,14 +10,16 @@ class Speaker
 {
 public:
 	Speaker() = default;
-	Speaker(VocalTract* vocalTract, const std::vector<Glottis*>& glottisModels);
+	Speaker(VocalTract* vocalTract, const std::vector<Glottis*>& glottisModels, size_t selectedGlottis = 0);
 	Speaker(const std::string& path);
 
 public:
 	// Getter and Setter
 	size_t addGlottisModel(Glottis& newModel);
 	std::vector<Glottis*> getGlottisModels() const;
+	size_t getSelectedGlottis() const { return selectedGlottis; }
 	void setGlottisModels(const std::vector<Glottis*>& newModels);
+	void setSelectedGlottis(size_t idx) { selectedGlottis = idx; }
 
 	void setVocalTract(VocalTract* newModel);
 	VocalTract* getVocalTract() const;
@@ -34,6 +36,7 @@ public:
 
 private:
 	std::vector<Glottis*> glottisModels;
+	size_t selectedGlottis;
 	VocalTract* vocalTract;
 };
 

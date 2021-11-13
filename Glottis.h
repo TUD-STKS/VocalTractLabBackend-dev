@@ -105,9 +105,6 @@ public:
   bool hasUnsavedChanges();
   void clearUnsavedChanges();
 
-  bool isSelected() const { return isCurrentlySelected; }
-  void isSelected(bool doSelect) { isCurrentlySelected = doSelect; }
-
   bool writeToXml(ostream &os, int initialIndent, bool isSelected);
   bool readFromXml(XmlNode &node);
 
@@ -133,7 +130,6 @@ public:
 private:
   bool hasStoredControlParams;
   double storedControlParams[MAX_CONTROL_PARAMS];
-  bool isCurrentlySelected;
 };
 
 

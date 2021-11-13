@@ -8,7 +8,8 @@
 #include "XmlNode.h"
 
 
-Speaker::Speaker(VocalTract* vocalTract, const std::vector<Glottis*>& glottisModels) : glottisModels(glottisModels), vocalTract(vocalTract)
+Speaker::Speaker(VocalTract* vocalTract, const std::vector<Glottis*>& glottisModels, size_t selectedGlottis) :
+	glottisModels(glottisModels), selectedGlottis(selectedGlottis), vocalTract(vocalTract)
 {
 
 }
@@ -53,9 +54,17 @@ std::ostream& Speaker::save(std::ostream& os) const
 
     xml << "<glottis_models" << std::endl;
 
-    for (const auto glottisModel : glottisModels)
+    for (size_t i = 0; i < glottisModels.size(); ++i)
     {
-        xml << *glottisModel;
+        if (i != selectedGlottis)
+        {
+            xml << *glottisModels[i];
+        }
+        else
+        {
+            glottisModels[i]->writeToXml(xml, 0, true);
+        }
+			
     }
 
     xml << "</glottis_models>" << std::endl;
@@ -90,6 +99,10 @@ void Speaker::read(const std::string& path)
         {
             // Create a new glottis from the XML item and add it to the list
             auto* newGlottis = GlottisFactory::makeGlottis(*node);
+            if (node->getAttributeInt("selected") == 1)
+            {
+                this->setSelectedGlottis(glottisModels.size());
+            }                
             glottisModels.push_back(newGlottis);
         }
     }
