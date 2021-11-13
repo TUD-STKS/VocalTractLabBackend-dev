@@ -114,6 +114,12 @@
     <ClInclude Include="XmlExceptions.h">
       <Filter>Sources</Filter>
     </ClInclude>
+    <ClInclude Include="GlottisFactory.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="Speaker.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="VocalTractLabApi.def" />
@@ -213,6 +219,12 @@
       <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="GesturalScore.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="GlottisFactory.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="Speaker.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
   </ItemGroup>

@@ -364,6 +364,7 @@ public:
 
 public:
   VocalTract();
+  VocalTract(XmlNode& xml);
   ~VocalTract();
 
   // ****************************************************************
@@ -386,6 +387,7 @@ public:
 
   void readAnatomyXml(XmlNode *anatomyNode);
   void readShapesXml(XmlNode *shapeListNode);
+  void readFromXml(XmlNode& node);
   void readFromXml(const string &speakerFileName);
   void writeAnatomyXml(std::ostream &os, int indent);
   void writeShapesXml(std::ostream &os, int indent);

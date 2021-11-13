@@ -88,6 +88,8 @@ public:
   // **************************************************************************
 
 public:
+  Glottis() = default;
+  Glottis(XmlNode& node);
   virtual ~Glottis() {}
   virtual string getName() = 0;
   virtual void resetMotion() = 0;

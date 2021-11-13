@@ -28,8 +28,13 @@
 const double Glottis::DEFAULT_ASPIRATION_STRENGTH_DB = -40.0;
 
 // ****************************************************************************
-/// Default implementation.
+/// Construct a glottis object from XML
 // ****************************************************************************
+
+Glottis::Glottis(XmlNode& node)
+{
+    this->readFromXml(node);
+}
 
 double Glottis::getAspirationStrength_dB()
 {
