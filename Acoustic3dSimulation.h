@@ -95,6 +95,7 @@ public:
   //void propagateAcPressure(vector<Eigen::MatrixXcd> inputPressure, double freq);
   void RayleighSommerfeldIntegral(vector<Point_3> points,
     Eigen::VectorXcd &radPress, double freq, int radSecIdx);
+  complex<double> acousticFieldInside(Point_3 queryPt);
   void acousticFieldInPlane(Eigen::MatrixXcd& field);
   void staticSimulation(VocalTract* tract);
   void computeAcousticField(VocalTract* tract);

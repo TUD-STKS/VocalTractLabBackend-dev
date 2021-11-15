@@ -125,7 +125,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_idxSecNoiseSource(46), // for /sh/ 212, for vowels 46
   m_idxConstriction(40),
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
-  m_contInterpMeth(AREA)
+  m_contInterpMeth(BOUNDING_BOX)
 {
   m_simuParams.temperature = 31.4266;
   m_simuParams.volumicMass = STATIC_PRESSURE_CGS * MOLECULAR_MASS / (GAS_CONSTANT *
@@ -1827,8 +1827,10 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
             prevPress += 
                 (F[0].transpose()) *
               m_crossSections[i]->Pout()
-              / m_crossSections[i]->scaleOut()
+              * m_crossSections[i]->scaleOut()
               / m_crossSections[nextSec]->scaleIn()
+              /// m_crossSections[i]->scaleOut()
+              /// m_crossSections[nextSec]->scaleIn()
               ;
             prevVelo +=
               m_crossSections[nextSec]->Yin() * prevPress;
@@ -1847,7 +1849,9 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
             //  pow(m_crossSections[nextSec]->scaleIn(), 2)) *
               (F[0].transpose()) * m_crossSections[i]->Qout()
             * m_crossSections[i]->scaleOut()
-            * m_crossSections[nextSec]->scaleIn()
+            / m_crossSections[nextSec]->scaleIn()
+            //* m_crossSections[i]->scaleOut()
+            //* m_crossSections[nextSec]->scaleIn()
             ;
           prevPress += m_crossSections[nextSec]->Zin() * prevVelo;
           }
@@ -2006,6 +2010,40 @@ void Acoustic3dSimulation::propagatePressure(Eigen::MatrixXcd startPress, double
 }
 
 // **************************************************************************
+// Extract the internal acoustic field at a point 
+// (given in cartesian coordinates)
+
+complex<double> Acoustic3dSimulation::acousticFieldInside(Point_3 queryPt)
+{
+  bool ptFound(false);
+  int numSec(m_crossSections.size());
+  Point_3 outPt;
+  complex<double> field;
+
+  //ofstream log("log.txt", ofstream::app);
+  //log << "Start acoustic field inside numSec " << numSec << endl;
+
+  for (int s(0); s < numSec; s++)
+  {
+    if (m_crossSections[s]->getCoordinateFromCartesianPt(queryPt, outPt))
+    {
+      //log << "Pt found" << endl;
+      ptFound = true;
+      field = m_crossSections[s]->interiorField(outPt, m_simuParams, PRESSURE);
+      //log << "field computed" << endl;
+      break;
+    }
+  }
+  if (!ptFound)
+  {
+    field = complex<double>(NAN, NAN);
+  }
+  //log.close();
+
+  return(field);
+}
+
+// **************************************************************************
 // Extract the internal acoustic field in a plane
 
 void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
@@ -2037,23 +2075,7 @@ void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
       //log << "Point " << cnt << " out of " << nPtx * nPty << "  "
       //  << queryPt << endl;
 
-      // search if the query point is inside one of the sections
-      ptFound = false;
-      for (int s(0); s < numSec; s++)
-      {
-        if (m_crossSections[s]->getCoordinateFromCartesianPt(queryPt, outPt))
-        {
-          //log << "Point found in section " << s << endl;
-          ptFound = true;
-          field(i,j) = m_crossSections[s]->interiorField(outPt, m_simuParams, PRESSURE);
-          //log << "Field computed" << endl;
-          break;
-        }
-      }
-      if (!ptFound)
-      {
-        field(i, j) = complex<double>(NAN, NAN);
-      }
+      field(i, j) = acousticFieldInside(queryPt);
     }
   }
   log.close();
@@ -2067,11 +2089,15 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   int numSec, lastSec; 
   double freq, freqSteps((double)SAMPLING_RATE/2./(double)m_numFreq);
   int numFreqComputed((int)ceil(m_simuParams.maxComputedFreq / freqSteps));
+  int mn; // mode number in the last section
   complex<double> pressure, velocity;
   Eigen::MatrixXcd endPressAmpl, endVelAmpl, startPressure,
     radAdmit, radImped, upStreamImpAdm, totalImped, prevVelo, prevPress
     ,pp ,pm;
   Matrix F;
+  Point_3 internalFieldPt;
+  Point internalFieldPt2D;
+  bool radiationCondition(true);
   ofstream prop;
 
   generateLogFileHeader(true);
@@ -2165,6 +2191,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   // create the mesh and compute modes
   computeMeshAndModes();
   log << "Modes computed" << endl;
+  mn = m_crossSections[lastSec]->numberOfModes();
 
   // compute junction matrices
   auto start = std::chrono::system_clock::now();
@@ -2261,6 +2288,17 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   // generate one point in front
   radPts.push_back(Point_3(3., 0., 0.));
 
+  // get the coordinates of the point where to compute the internal field
+  Transformation rotate(CGAL::ROTATION, sin(M_PI / 2.),
+    cos(M_PI / 2.));
+  Transformation translate(CGAL::TRANSLATION, 0.3 * rotate(
+    m_crossSections[lastSec]->normalOut()
+  ));
+  internalFieldPt2D = translate(m_crossSections[lastSec]->ctrLinePtOut());
+  log << "Internal field point 2D " << internalFieldPt2D << endl;
+  internalFieldPt = Point_3(internalFieldPt2D.x(), 0., internalFieldPt2D.y());
+  log << "Internal field point " << internalFieldPt << endl;
+
   // print radiation points coordinates in the log file
   log << "Radiation point(s) coordinates (m):" << endl;
   for (auto const& it : radPts)
@@ -2273,8 +2311,11 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   // create vector containing the radiated field
   Eigen::VectorXcd radPress;
 
-  // Precompute the radiation impedance and admittance at a few frequencies
-  preComputeRadiationMatrices(16, lastSec);
+  if (radiationCondition)
+  {
+    // Precompute the radiation impedance and admittance at a few frequencies
+    preComputeRadiationMatrices(16, lastSec);
+  }
 
   end = std::chrono::system_clock::now();
   elapsed_seconds = end - startTot;
@@ -2305,11 +2346,16 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     //m_crossSections[lastSec]->characteristicAdmittance(radAdmit,
     //  freq, m_soundSpeed, m_volumicMass, 0);
 
-    interpolateRadiationImpedance(radImped, freq, lastSec);
-    interpolateRadiationAdmittance(radAdmit, freq, lastSec);
-
-    //radImped.setConstant(mn , mn,complex<double>(0., 0.));
-    //radAdmit.setConstant(mn, mn, complex<double>(1.e+10, 0.));
+    if (radiationCondition)
+    {
+      interpolateRadiationImpedance(radImped, freq, lastSec);
+      interpolateRadiationAdmittance(radAdmit, freq, lastSec);
+    }
+    else
+    {
+      radAdmit.setConstant(mn, mn, complex<double>(1., 0.));
+      radImped = radAdmit.inverse();
+    }
 
     end = std::chrono::system_clock::now();
     elapsed_seconds = end - start;
@@ -2394,7 +2440,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     start = std::chrono::system_clock::now();
 
     //*****************************************************************************
-    //  Compute radiated field
+    //  Compute acoustic pressure inside and outside
     //*****************************************************************************
 
     RayleighSommerfeldIntegral(radPts, radPress, freq, lastSec);
@@ -2409,6 +2455,9 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 
     spectrum.setValue(i, radPress(0,0));
 
+    pressure = acousticFieldInside(internalFieldPt);
+    spectrumConst.setValue(i, pressure);
+
     log << "Radiated pressure computed" << endl;
 
     //*****************************************************************************
@@ -2417,9 +2466,9 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 
     if (m_idxSecNoiseSource < lastSec)
     {
-      // get the transfer function from the glottis to the constriction
-      // location for vowels
-      spectrumConst.setValue(i, m_crossSections[m_idxConstriction]->Pout()(0, 0));
+      //// get the transfer function from the glottis to the constriction
+      //// location for vowels
+      //spectrumConst.setValue(i, m_crossSections[m_idxConstriction]->Pout()(0, 0));
 
       // save the input impedance of the upstream part
       // if the section expends
@@ -2520,8 +2569,8 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     spectrum.im[i] = -spectrum.im[2 * m_numFreq - i - 1];
     spectrumNoise.re[i] = spectrumNoise.re[2 * m_numFreq - i - 1];
     spectrumNoise.im[i] = -spectrumNoise.im[2 * m_numFreq - i - 1];
-    //spectrumConst.re[i] = spectrumConst.re[2 * m_numFreq - i - 1];
-    //spectrumConst.im[i] = -spectrumConst.im[2 * m_numFreq - i - 1];
+    spectrumConst.re[i] = spectrumConst.re[2 * m_numFreq - i - 1];
+    spectrumConst.im[i] = -spectrumConst.im[2 * m_numFreq - i - 1];
   }
 
   // create the file containing the transfer function
@@ -2536,6 +2585,8 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
       << spectrum.getPhase(i) << "  "
       << spectrumNoise.getMagnitude(i) << "  "
       << spectrumNoise.getPhase(i) << "  "
+      << spectrumConst.getMagnitude(i) << "  "
+      << spectrumConst.getPhase(i)
       << endl;
   }
   prop.close();
@@ -2695,7 +2746,7 @@ void Acoustic3dSimulation::coneConcatenationSimulation(string fileName)
   vector<int> surfaceIdx(nbAngles, 0);
 
   // for solving the wave problem 
-  bool reverse(true);
+  bool reverse(false);
   int mn;
   double freq, freqMax, x, y, totalLength;
   Eigen::MatrixXcd radImped, radAdmit, inputVelocity, inputPressure;
@@ -4237,9 +4288,6 @@ void Acoustic3dSimulation::getCurvatureAngleShift(Point2D P1, Point2D P2,
 
   // compute the vertical shift to apply to the contour
   shift = radii[0] - radius;
-  ofstream log("log.txt", ofstream::app);
-  log << "shift " << shift << endl;
-  log.close();
 
   // compute the angle between both angular positions
   angle = max(angles[0], angles[1]) - min(angles[0], angles[1]);
@@ -4520,6 +4568,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   getCurvatureAngleShift(centerLine[lastCtl - 2], centerLine[lastCtl], 
     normals[lastCtl - 2], normals[lastCtl], curvRadius, angle, shift);
 
+  log << "Curv radius " << curvRadius << endl;
+
   Point pt(Point(centerLine.back().x, centerLine.back().y));
   Vector N(Vector(normals.back().x, normals.back().y));
 
@@ -4535,7 +4585,14 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     centerLine[lastCtl - 1].x = pt.x();
     centerLine[lastCtl - 1].y = pt.y();
 
-    angle *= 2.;
+    if (curvRadius > 0.)
+    {
+      angle *= 2.;
+    }
+    else
+    {
+      angle *= -2.;
+    }
     Transformation rotateN(CGAL::ROTATION, sin(angle), cos(angle));
     N = rotateN(N);
     normals[lastCtl - 1].x = N.x();
@@ -4686,9 +4743,11 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
       // set the curvature radius
       m_crossSections[secIdx]->setCurvatureRadius(prevCurvRadius);
+      log << "Curv radius " << prevCurvRadius << endl;
 
       // set the curvature angle
       m_crossSections[secIdx]->setCurvatureAngle(prevAngle);
+      log << "angle " << prevAngle << endl;
 
       log << "Section " << secIdx << " created" << endl;
       secIdx++;
@@ -4933,7 +4992,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   // create last cross-sections
   //********************************
 
-  log << "Create last cross-section" << endl;
+  log << "\nCreate last cross-section" << endl;
 
   radius = 0.;  // initalise the radius of the radiation cross-section
   tmpPrevSection.clear(); // the list of section connected to the radiation section
@@ -4945,6 +5004,11 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
     area = abs(contours.back()[c].area());
     length = centerLine.rbegin()[1].getDistanceFrom(centerLine.back());
+
+    log << "length " << length << endl;
+    log << "Scaling factors " << prevScalingFactors[0] << "  "
+      << prevScalingFactors[1] << endl;
+
     addCrossSectionFEM(area, sqrt(area)/m_meshDensity, contours.back()[c],
       surfaceIdx.back()[c], length, centerLine.rbegin()[1], normals.rbegin()[1],
       prevScalingFactors);
@@ -4960,9 +5024,11 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     }
     // set the curvature radius
     m_crossSections[secIdx]->setCurvatureRadius(prevCurvRadius);
+    log << "Curv radius " << prevCurvRadius << endl;
 
     // set the curvature angle
     m_crossSections[secIdx]->setCurvatureAngle(prevAngle);
+    log << "angle " << prevAngle << endl;
 
     // set the radius of the radiation cross-section so that the last 
     // cross-sections are contained inside
