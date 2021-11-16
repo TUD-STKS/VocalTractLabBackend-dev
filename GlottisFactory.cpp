@@ -43,7 +43,7 @@ Glottis* GlottisFactory::makeGlottis(GlottisModel type)
 		case TRIANGULAR_GLOTTIS: 
 			return new TriangularGlottis();
 		default: 
-			throw std::invalid_argument("[GlottisFactory::getGlottis()] Invalid glottis type requested: " + std::to_string(type));
+			throw std::invalid_argument("[GlottisFactory::makeGlottis()] Invalid glottis type requested: " + std::to_string(type));
 	}
 }
 
@@ -58,14 +58,14 @@ Glottis* GlottisFactory::makeGlottis(GlottisModel type, XmlNode& xml)
 	case TRIANGULAR_GLOTTIS:
 		return new TriangularGlottis(xml);
 	default:
-		throw std::invalid_argument("[GlottisFactory::getGlottis()] Invalid glottis type requested: " + std::to_string(type));
+		throw std::invalid_argument("[GlottisFactory::makeGlottis()] Invalid glottis type requested: " + std::to_string(type));
 	}
 }
 
 Glottis* GlottisFactory::makeGlottis(const std::string& type)
 {
 	const auto enumIt = string_to_enum.find(type);
-	if (enumIt == string_to_enum.end()) throw std::invalid_argument("[GlottisFactory::getGlottis()] Invalid glottis name: " + type);
+	if (enumIt == string_to_enum.end()) throw std::invalid_argument("[GlottisFactory::makeGlottis()] Invalid glottis name: " + type);
 
 	return makeGlottis(enumIt->second);
 }
@@ -73,7 +73,7 @@ Glottis* GlottisFactory::makeGlottis(const std::string& type)
 Glottis* GlottisFactory::makeGlottis(const std::string& type, XmlNode& xml)
 {
 	const auto enumIt = string_to_enum.find(type);
-	if (enumIt == string_to_enum.end()) throw std::invalid_argument("[GlottisFactory::getGlottis()] Invalid glottis name: " + type);
+	if (enumIt == string_to_enum.end()) throw std::invalid_argument("[GlottisFactory::makeGlottis()] Invalid glottis name: " + type);
 
 	return makeGlottis(enumIt->second, xml);
 }
