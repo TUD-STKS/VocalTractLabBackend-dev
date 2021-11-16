@@ -22,7 +22,8 @@ typedef CGAL::Point_3<K>                Point_3;
 enum openEndBoundaryCond {
   RADIATION,
   IFINITE_WAVGUIDE,
-  HARD_WALL
+  HARD_WALL,
+  ADMITTANCE_1
 };
 
 enum contourInterpolationMethod {

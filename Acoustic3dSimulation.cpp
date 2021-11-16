@@ -125,7 +125,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_idxSecNoiseSource(46), // for /sh/ 212, for vowels 46
   m_idxConstriction(40),
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
-  m_mouthBoundaryCond(RADIATION),
+  m_mouthBoundaryCond(ADMITTANCE_1),
   m_contInterpMeth(BOUNDING_BOX)
 {
   m_simuParams.temperature = 31.4266;
@@ -298,6 +298,22 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
     break;
   case IFINITE_WAVGUIDE:
     log << "IFINITE_WAVGUIDE" << endl;
+    break;
+  }
+  log << "mouth boundary condition: ";
+  switch (m_mouthBoundaryCond)
+  {
+  case RADIATION:
+    log << "RADIATION" << endl;
+    break;
+  case IFINITE_WAVGUIDE:
+    log << "IFINITE_WAVGUIDE" << endl;
+    break;
+  case HARD_WALL:
+    log << "HARD_WALL" << endl;
+    break;
+  case ADMITTANCE_1:
+    log << "ADMITTANCE_1" << endl;
     break;
   }
   log << "Mesh density: " << m_meshDensity << endl;
@@ -1828,10 +1844,10 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
             prevPress += 
                 (F[0].transpose()) *
               m_crossSections[i]->Pout()
-              * m_crossSections[i]->scaleOut()
-              / m_crossSections[nextSec]->scaleIn()
-              /// m_crossSections[i]->scaleOut()
+              //* m_crossSections[i]->scaleOut()
               /// m_crossSections[nextSec]->scaleIn()
+              / m_crossSections[i]->scaleOut()
+              / m_crossSections[nextSec]->scaleIn()
               ;
             prevVelo +=
               m_crossSections[nextSec]->Yin() * prevPress;
@@ -1849,10 +1865,10 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
             //(pow(m_crossSections[i]->scaleOut(),2) /
             //  pow(m_crossSections[nextSec]->scaleIn(), 2)) *
               (F[0].transpose()) * m_crossSections[i]->Qout()
-            * m_crossSections[i]->scaleOut()
-            / m_crossSections[nextSec]->scaleIn()
             //* m_crossSections[i]->scaleOut()
-            //* m_crossSections[nextSec]->scaleIn()
+            /// m_crossSections[nextSec]->scaleIn()
+            * m_crossSections[i]->scaleOut()
+            * m_crossSections[nextSec]->scaleIn()
             ;
           prevPress += m_crossSections[nextSec]->Zin() * prevVelo;
           }
@@ -2028,7 +2044,7 @@ complex<double> Acoustic3dSimulation::acousticFieldInside(Point_3 queryPt)
   {
     if (m_crossSections[s]->getCoordinateFromCartesianPt(queryPt, outPt))
     {
-      //log << "Pt found" << endl;
+      //log << "Pt found " << outPt << endl;
       ptFound = true;
       field = m_crossSections[s]->interiorField(outPt, m_simuParams, PRESSURE);
       //log << "field computed" << endl;
@@ -2069,14 +2085,18 @@ void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
     {
       cnt++;
 
+  //    log << "Point " << cnt << " out of " << nPtx * nPty << "  "
+  //<< queryPt << endl;
+
       // generate cartesian coordinates point to search
       queryPt = Point_3(lx * (double)j / (double)(nPtx - 1) + m_simuParams.bboxField[0].x(), 0.,
         ly * (double)i / (double)(nPty - 1) + m_simuParams.bboxField[0].y());
 
-      //log << "Point " << cnt << " out of " << nPtx * nPty << "  "
-      //  << queryPt << endl;
+      //log << "Guery point coordinate computed" << endl;
 
       field(i, j) = acousticFieldInside(queryPt);
+
+      //log << "Field computed" << endl;
     }
   }
   log.close();
@@ -2294,7 +2314,8 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   Transformation translate(CGAL::TRANSLATION, 0.3 * rotate(
     m_crossSections[lastSec]->normalOut()
   ));
-  internalFieldPt2D = translate(m_crossSections[lastSec]->ctrLinePtOut());
+  //internalFieldPt2D = translate(m_crossSections[lastSec]->ctrLinePtOut());
+  internalFieldPt2D = m_crossSections[lastSec]->ctrLinePtOut();
   log << "Internal field point 2D " << internalFieldPt2D << endl;
   internalFieldPt = Point_3(internalFieldPt2D.x(), 0., internalFieldPt2D.y());
   log << "Internal field point " << internalFieldPt << endl;
@@ -2346,15 +2367,17 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     //m_crossSections[lastSec]->characteristicAdmittance(radAdmit,
     //  freq, m_soundSpeed, m_volumicMass, 0);
 
-    if (m_mouthBoundaryCond == RADIATION)
+    switch (m_mouthBoundaryCond)
     {
+    case RADIATION:
       interpolateRadiationImpedance(radImped, freq, lastSec);
       interpolateRadiationAdmittance(radAdmit, freq, lastSec);
-    }
-    else
-    {
-      radAdmit.setConstant(mn, mn, complex<double>(1., 0.));
+      break;
+    case ADMITTANCE_1:
+      radAdmit.setConstant(mn, mn, complex<double>(
+        pow(m_crossSections[lastSec]->scaleOut(), 2), 0.));
       radImped = radAdmit.inverse();
+      break;
     }
 
     end = std::chrono::system_clock::now();
@@ -2455,7 +2478,8 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 
     spectrum.setValue(i, radPress(0,0));
 
-    pressure = acousticFieldInside(internalFieldPt);
+    //pressure = acousticFieldInside(internalFieldPt);
+    pressure = m_crossSections[lastSec]->pout(Point(0., 0.));
     spectrumConst.setValue(i, pressure);
 
     log << "Radiated pressure computed" << endl;
@@ -2655,13 +2679,19 @@ void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
 
   // Compute the radiation impedance and admittance 
   Eigen::MatrixXcd radImped, radAdmit;
-  //radiationImpedance(radImped, freq, 15., lastSec);
-  //radAdmit = radImped.inverse();
   int mn(m_crossSections[lastSec]->numberOfModes());
-  radAdmit = Eigen::MatrixXcd::Zero(mn, mn);
-  radAdmit.diagonal().setConstant(pow(m_crossSections[lastSec]->scaleOut(), 2));
-  radImped = radAdmit.inverse();
-  log << "Radiation impedance computed" << endl;
+  switch (m_mouthBoundaryCond)
+  {
+  case RADIATION:
+    radiationImpedance(radImped, freq, 15., lastSec);
+    radAdmit = radImped.inverse();
+    break;
+  case ADMITTANCE_1:
+    radAdmit = Eigen::MatrixXcd::Zero(mn, mn);
+    radAdmit.diagonal().setConstant(pow(m_crossSections[lastSec]->scaleOut(), 2));
+    radImped = radAdmit.inverse();
+  }
+  log << "End impedance computed" << endl;
 
   // propagate impedance and admittance
   propagateImpedAdmit(radImped, radAdmit, freq, lastSec, 0);

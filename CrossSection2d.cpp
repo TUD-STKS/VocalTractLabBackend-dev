@@ -2827,6 +2827,7 @@ bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut)
     // if there is no curvature 
     if (m_circleArcAngle < MINIMAL_DISTANCE)
     {
+      //log << "No curvature" << endl;
       x = pt.x() - ctl.x();
       sc = scaling(x / length());
       y = pt.y() / sc;
@@ -2834,6 +2835,7 @@ bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut)
     }
     else
     {
+      //log << "Curvature" << endl;
       // curvature radius
       double R(abs(m_curvatureRadius));
       // center of the circle arc
@@ -3123,12 +3125,23 @@ Point CrossSection2dFEM::ctrLinePtOut() const
   {
     Point Pt = ctrLinePtIn();
     Vector N(normalIn());
-    double theta(m_circleArcAngle / 2.);
-    Transformation rotate(CGAL::ROTATION, sin(theta - M_PI / 2.),
-      cos(theta - M_PI / 2.));
-    Transformation translate(CGAL::TRANSLATION,
-      2. * abs(m_curvatureRadius) * sin(theta) * rotate(N));
-    return(translate(Pt));
+    double theta;
+    if (m_circleArcAngle < MINIMAL_DISTANCE)
+    {
+      theta = -M_PI / 2.;
+      Transformation rotate(CGAL::ROTATION, sin(theta), cos(theta));
+      Transformation translate(CGAL::TRANSLATION, length() * rotate(N));
+      return(translate(Pt));
+    }
+    else
+    {
+      theta = m_circleArcAngle / 2.;
+      Transformation rotate(CGAL::ROTATION, sin(theta - M_PI / 2.),
+        cos(theta - M_PI / 2.));
+      Transformation translate(CGAL::TRANSLATION,
+        2. * abs(m_curvatureRadius) * sin(theta) * rotate(N));
+      return(translate(Pt));
+    }
   }
   else
   {
