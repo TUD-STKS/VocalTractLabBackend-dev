@@ -125,6 +125,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_idxSecNoiseSource(46), // for /sh/ 212, for vowels 46
   m_idxConstriction(40),
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
+  m_mouthBoundaryCond(RADIATION),
   m_contInterpMeth(BOUNDING_BOX)
 {
   m_simuParams.temperature = 31.4266;
@@ -2097,7 +2098,6 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   Matrix F;
   Point_3 internalFieldPt;
   Point internalFieldPt2D;
-  bool radiationCondition(true);
   ofstream prop;
 
   generateLogFileHeader(true);
@@ -2311,7 +2311,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   // create vector containing the radiated field
   Eigen::VectorXcd radPress;
 
-  if (radiationCondition)
+  if (m_mouthBoundaryCond == RADIATION)
   {
     // Precompute the radiation impedance and admittance at a few frequencies
     preComputeRadiationMatrices(16, lastSec);
@@ -2346,7 +2346,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     //m_crossSections[lastSec]->characteristicAdmittance(radAdmit,
     //  freq, m_soundSpeed, m_volumicMass, 0);
 
-    if (radiationCondition)
+    if (m_mouthBoundaryCond == RADIATION)
     {
       interpolateRadiationImpedance(radImped, freq, lastSec);
       interpolateRadiationAdmittance(radAdmit, freq, lastSec);

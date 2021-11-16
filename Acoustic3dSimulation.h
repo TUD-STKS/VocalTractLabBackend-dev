@@ -19,7 +19,8 @@ typedef CGAL::Point_3<K>                Point_3;
 // Identifiers for the glotis boundary condition
 // **************************************************************************
 
-enum glottisBoundaryCond {
+enum openEndBoundaryCond {
+  RADIATION,
   IFINITE_WAVGUIDE,
   HARD_WALL
 };
@@ -69,6 +70,7 @@ public:
   void addCrossSectionRadiation(Point2D ctrLinePt, Point2D normal,
     double radius, double PMLThickness);
 
+  // For geometry creation
   void extractContours(VocalTract* tract, 
     vector<vector<Polygon_2>>& contours, vector<vector<vector<int>>>& surfaceIdx,
     vector<Point2D>& centerLine, vector<Point2D>& normals);
@@ -78,6 +80,8 @@ public:
     vector<pair<double, double>>& scalingFactors, bool simplifyContours);
   bool createCrossSections(VocalTract* tract, bool createRadSection);
   void exportGeoInCsv(string fileName);
+
+  // For solving the wave problem 
   void computeMeshAndModes();
   void computeJunctionMatrices(bool computeG);
   void propagateImpedAdmitBranch(vector< Eigen::MatrixXcd> Q0, double freq,
@@ -93,6 +97,8 @@ public:
     double freq, int startSection, int endSection);
   void propagatePressure(Eigen::MatrixXcd startVelocity, double freq);
   //void propagateAcPressure(vector<Eigen::MatrixXcd> inputPressure, double freq);
+
+  // For acoustic field and transfer function computation
   void RayleighSommerfeldIntegral(vector<Point_3> points,
     Eigen::VectorXcd &radPress, double freq, int radSecIdx);
   complex<double> acousticFieldInside(Point_3 queryPt);
@@ -153,7 +159,8 @@ private:
   int m_numFreq;
   int m_idxSecNoiseSource;
   int m_idxConstriction;
-  glottisBoundaryCond m_glottisBoundaryCond;
+  openEndBoundaryCond m_glottisBoundaryCond;
+  openEndBoundaryCond m_mouthBoundaryCond;
   vector<vector<vector<vector<double>>>> m_radiationMatrixInterp;
   vector<double> m_radiationFreqs;
 
