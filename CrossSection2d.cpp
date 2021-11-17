@@ -62,8 +62,8 @@ typedef CGAL::Data_access<Point_value_map>        Value_access;
 // Initialize constants
 // ****************************************************************************
 
-//const double MINIMAL_DISTANCE = 1e-14;
 const double NON_SENS_VALUE = 1e14;
+
 
 // ****************************************************************************
 // Independant function
@@ -206,6 +206,18 @@ void BesselJDerivativeZero(int v, int n, map<double, pair<int,int>> &zeros)
 // ****************************************************************************
 /// Constructors
 // ****************************************************************************
+
+CrossSection2d::CrossSection2d()
+{
+  m_maxCutOnFreq = 20000.;
+  m_ctrLinePt = Point2D(0., 0.);
+  m_normal = Point2D(0., 1.);
+  m_modesNumber = 0;
+  setZdir(-1);
+  setYdir(-1);
+  setQdir(1);
+  setPdir(1);
+}
 
 CrossSection2d::CrossSection2d(double maxCutOnFreq, Point2D ctrLinePt, Point2D normal)
   : m_maxCutOnFreq(maxCutOnFreq), 
@@ -3058,6 +3070,8 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
   //log.close();
 }
 
+
+
 // **************************************************************************
 // accessors
 
@@ -3466,3 +3480,52 @@ Matrix CrossSection2dFEM::getMatrixGEnd() const { return m_Gend; }
 //  }
 //}
 
+// ****************************************************************************
+// Operator overload
+// ****************************************************************************
+
+// **************************************************************************
+// Print cross-section parameters
+
+//ostream& operator<<(ostream &os, const CrossSection2d &cs)
+//{
+  //os << "Centerline points " << cs.ctrLinePt().x << "  "
+   //<< cs.ctrLinePt().y << endl;
+  //return(os);
+//}
+
+ostream& operator<<(ostream &os, const CrossSection2d &cs)
+{
+  // write previous sections
+  if (cs.numPrevSec() > 0)
+  {
+    os << "Previous sections: ";
+    for (int i(0); i < cs.numPrevSec(); i++)
+    {
+      os << cs.prevSec(i) << "  ";
+    }
+  }
+  os << endl;
+
+  // write next sections
+  if (cs.numNextSec() > 0)
+  {
+    os << "Next sections: ";
+    for (int i(0); i < cs.numNextSec(); i++)
+    {
+      os << cs.nextSec(i) << "  ";
+    }
+  }
+  os << endl;
+
+  os << "Centerline points " << cs.ctrLinePtIn() << "  "
+    << cs.ctrLinePtOut()<< endl;
+  os << "Normals " << cs.normalIn() << "  "
+    << cs.normalOut() << endl;
+  os << "Saclings " << cs.scaleIn() << "  " << cs.scaleOut() << endl;
+  os << "Length " << cs.length() << endl;
+  os << "Curvature radius " << cs.curvRadius() << endl;
+  os << "Circle arc angle " << cs.circleArcAngle() << endl;
+
+  return os;
+}

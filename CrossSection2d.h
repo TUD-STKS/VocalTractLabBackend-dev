@@ -80,7 +80,6 @@ struct simulationParameters
   int fieldResolution; // number of points per cm
 };
 
-
 /////////////////////////////////////////////////////////////////////////////
 // classe Cross section 2d
 /////////////////////////////////////////////////////////////////////////////
@@ -90,6 +89,7 @@ class CrossSection2d
 
 public:
 
+  CrossSection2d();
   CrossSection2d(double maxCutOnFreq, Point2D ctrLinePt, Point2D normal);
   ~CrossSection2d();
 
@@ -518,6 +518,8 @@ private:
   void setBesselParam(double soundSpeed);
 };
 
-
+// Print cross-section parameters
+//ostream& operator<<(ostream &os, const CrossSection2d &cs);
+ostream& operator<<(ostream &os, const CrossSection2d &cs);
 
 #endif

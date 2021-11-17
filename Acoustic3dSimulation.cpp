@@ -327,7 +327,7 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   log << "Varying cross-sectional area: ";
   if (m_simuParams.varyingArea)
   {
-    log << "yes contour interpolation method: ";
+    log << "yes\nscaling factor computation method: ";
     switch (m_contInterpMeth)
     {
       case AREA:
@@ -361,19 +361,18 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
 
   if (m_geometryImported)
   {
-    log << "Geometry imported from csv file " << m_geometryFile << endl;
+    log << "Geometry imported from csv file:\n  " << m_geometryFile << endl;
   }
   else
   {
     log << "Geometry is from vocal tract lab" << endl;
   }
   log << "Acoustic field computation at " << m_simuParams.freqField
-  << "with " << m_simuParams.fieldResolution << " points per cm" << endl;
-  log << "Bounding box: min x "
-    << m_simuParams.bboxField[0].x() << " min y "
-    << m_simuParams.bboxField[0].y() << " max x "
-    << m_simuParams.bboxField[1].x() << " max y "
-    << m_simuParams.bboxField[1].y() << endl;
+  << " Hz with " << m_simuParams.fieldResolution << " points per cm" << endl;
+  log << "Bounding box: min x " << m_simuParams.bboxField[0].x() 
+    << " max x " << m_simuParams.bboxField[1].x() 
+    << " min y " << m_simuParams.bboxField[0].y() 
+    << " max y " << m_simuParams.bboxField[1].y() << endl;
   log.close();
 }
 
@@ -2374,7 +2373,8 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
       interpolateRadiationAdmittance(radAdmit, freq, lastSec);
       break;
     case ADMITTANCE_1:
-      radAdmit.setConstant(mn, mn, complex<double>(
+      radAdmit.setZero(mn, mn);
+      radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(
         pow(m_crossSections[lastSec]->scaleOut(), 2), 0.));
       radImped = radAdmit.inverse();
       break;
@@ -2659,6 +2659,13 @@ void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
   lastSec = numSec - 1;
   log << "Number of sections: " << numSec << endl;
 
+  // Export cross-sections parameters
+  for (int i(0); i < numSec; i++)
+  {
+    log << "\nSection " << i << endl;
+    log << *m_crossSections[i] << endl;
+  }
+
   // create the mesh and compute modes
   computeMeshAndModes();
   log << "Modes computed" << endl;
@@ -2688,7 +2695,8 @@ void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
     break;
   case ADMITTANCE_1:
     radAdmit = Eigen::MatrixXcd::Zero(mn, mn);
-    radAdmit.diagonal().setConstant(pow(m_crossSections[lastSec]->scaleOut(), 2));
+    radAdmit.diagonal().setConstant(complex<double>(
+          pow(m_crossSections[lastSec]->scaleOut(), 2), 0.));
     radImped = radAdmit.inverse();
   }
   log << "End impedance computed" << endl;
@@ -2943,6 +2951,13 @@ void Acoustic3dSimulation::coneConcatenationSimulation(string fileName)
   m_maxCSBoundingBox.second = Point2D(2. * maxRad, 2. * maxRad);
 
   log << nbSec << " sections created" << endl;
+
+  // Export cross-sections parameters
+  for (int i(0); i < nbSec; i++)
+  {
+    log << "\nSection " << i << endl;
+    log << *m_crossSections[i] << endl;
+  }
 
   //*********************
   // solve wave problem
