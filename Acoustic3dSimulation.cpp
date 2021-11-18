@@ -125,7 +125,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_idxSecNoiseSource(46), // for /sh/ 212, for vowels 46
   m_idxConstriction(40),
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
-  m_mouthBoundaryCond(ADMITTANCE_1),
+  m_mouthBoundaryCond(RADIATION),
   m_contInterpMeth(BOUNDING_BOX)
 {
   m_simuParams.temperature = 31.4266;
@@ -2305,7 +2305,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   //}
 
   // generate one point in front
-  radPts.push_back(Point_3(3., 0., 0.));
+  radPts.push_back(Point_3(25., 0., 0.));
 
   // get the coordinates of the point where to compute the internal field
   Transformation rotate(CGAL::ROTATION, sin(M_PI / 2.),
