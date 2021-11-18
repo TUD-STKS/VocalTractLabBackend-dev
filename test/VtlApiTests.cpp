@@ -4,19 +4,24 @@
 #include <string>
 #include <vector>
 
+#include <cstring>
+#include <cstdlib>
+
 #include "VocalTractLabApi.h"
 
+#include <filesystem>
 
-// Some files used in or produced by the various tests
-const char* gesFile = "../test/resources/example01.ges";
-const char* speakerFile = "../resources/JD3.speaker";
-const char* svgFile = "../test/resources/ExportTractSvg.svg";
-const char* tractSeqFile = "../test/resources/TractSequence.seq";
-const char* wavFile = "../test/resources/example01.wav";
+// Some files used in or produced by the various tests. Paths are relative to repo root (set executable working directory accordingly!)
+const char* gesFile = "test/resources/example01.ges";
+const char* speakerFile = "resources/JD3.speaker";
+const char* svgFile = "test/resources/ExportTractSvg.svg";
+const char* tractSeqFile = "test/resources/TractSequence.seq";
+const char* wavFile = "test/resources/example01.wav";
 
 
 TEST(ApiTest, Version) 
 {
+    std::cout << std::filesystem::current_path() << std::endl;
 	char version[32];
 	vtlGetVersion(version);
 	std::string s(version);

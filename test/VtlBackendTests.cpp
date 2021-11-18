@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "Sampa.h"
+#include "Backend/Sampa.h"
 
 TEST(BackendTest, Sampa) 
 {
