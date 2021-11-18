@@ -28,6 +28,6 @@ cmake --build . --config Release
 ```
 
 ### Build using Visual Studio 2019 (Windows)
-- Open ``VocalTractLabApi.sln``
+- Open ``VocalTractLabApi.sln`` in the folder `build/msw`
 - Build the project ``VocalTractLabApi``
 
