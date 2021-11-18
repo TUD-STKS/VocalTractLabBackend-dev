@@ -7,7 +7,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VocalTractLabApi", "VocalTr
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VocalTractLabBackend", "VocalTractLabBackend.vcxproj", "{3AB3C9B5-17B7-4201-BE87-B07D00541BE8}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VtkApiTests", "VtkApiTests.vcxproj", "{3A67EB7E-0996-4213-A1C1-5A29A95A841D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VtlApiTests", "VtlApiTests.vcxproj", "{3A67EB7E-0996-4213-A1C1-5A29A95A841D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
