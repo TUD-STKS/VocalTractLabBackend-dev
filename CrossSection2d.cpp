@@ -3496,36 +3496,42 @@ Matrix CrossSection2dFEM::getMatrixGEnd() const { return m_Gend; }
 
 ostream& operator<<(ostream &os, const CrossSection2d &cs)
 {
-  // write previous sections
-  if (cs.numPrevSec() > 0)
-  {
-    os << "Previous sections: ";
-    for (int i(0); i < cs.numPrevSec(); i++)
-    {
-      os << cs.prevSec(i) << "  ";
-    }
-  }
-  os << endl;
+  string csType = typeid(cs).name();
+  os << csType << endl;
 
-  // write next sections
-  if (cs.numNextSec() > 0)
+  if (csType == "class CrossSection2dFEM")
   {
-    os << "Next sections: ";
-    for (int i(0); i < cs.numNextSec(); i++)
+    // write previous sections
+    if (cs.numPrevSec() > 0)
     {
-      os << cs.nextSec(i) << "  ";
+      os << "Previous sections: ";
+      for (int i(0); i < cs.numPrevSec(); i++)
+      {
+        os << cs.prevSec(i) << "  ";
+      }
     }
-  }
-  os << endl;
+    os << endl;
 
-  os << "Centerline points " << cs.ctrLinePtIn() << "  "
-    << cs.ctrLinePtOut()<< endl;
-  os << "Normals " << cs.normalIn() << "  "
-    << cs.normalOut() << endl;
-  os << "Saclings " << cs.scaleIn() << "  " << cs.scaleOut() << endl;
-  os << "Length " << cs.length() << endl;
-  os << "Curvature radius " << cs.curvRadius() << endl;
-  os << "Circle arc angle " << cs.circleArcAngle() << endl;
+    // write next sections
+    if (cs.numNextSec() > 0)
+    {
+      os << "Next sections: ";
+      for (int i(0); i < cs.numNextSec(); i++)
+      {
+        os << cs.nextSec(i) << "  ";
+      }
+    }
+    os << endl;
+
+    os << "Centerline points " << cs.ctrLinePtIn() << "  "
+      << cs.ctrLinePtOut() << endl;
+    os << "Normals " << cs.normalIn() << "  "
+      << cs.normalOut() << endl;
+    os << "Scalings " << cs.scaleIn() << "  " << cs.scaleOut() << endl;
+    os << "Length " << cs.length() << endl;
+    os << "Curvature radius " << cs.curvRadius() << endl;
+    os << "Circle arc angle " << cs.circleArcAngle() << endl;
+  }
 
   return os;
 }

@@ -125,10 +125,10 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_idxSecNoiseSource(46), // for /sh/ 212, for vowels 46
   m_idxConstriction(40),
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
-  m_mouthBoundaryCond(RADIATION),
+  m_mouthBoundaryCond(ADMITTANCE_1),
   m_contInterpMeth(BOUNDING_BOX)
 {
-  m_simuParams.temperature = 31.4266;
+  m_simuParams.temperature = 21.0735; // for 344 m/s  31.4266; <-- for 350 m/s
   m_simuParams.volumicMass = STATIC_PRESSURE_CGS * MOLECULAR_MASS / (GAS_CONSTANT *
     (m_simuParams.temperature + KELVIN_SHIFT));
   m_simuParams.numIntegrationStep = 25;
@@ -1843,10 +1843,10 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
             prevPress += 
                 (F[0].transpose()) *
               m_crossSections[i]->Pout()
-              //* m_crossSections[i]->scaleOut()
-              /// m_crossSections[nextSec]->scaleIn()
-              / m_crossSections[i]->scaleOut()
+              * m_crossSections[i]->scaleOut()
               / m_crossSections[nextSec]->scaleIn()
+              /// m_crossSections[i]->scaleOut()
+              /// m_crossSections[nextSec]->scaleIn()
               ;
             prevVelo +=
               m_crossSections[nextSec]->Yin() * prevPress;
@@ -1864,10 +1864,10 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
             //(pow(m_crossSections[i]->scaleOut(),2) /
             //  pow(m_crossSections[nextSec]->scaleIn(), 2)) *
               (F[0].transpose()) * m_crossSections[i]->Qout()
-            //* m_crossSections[i]->scaleOut()
-            /// m_crossSections[nextSec]->scaleIn()
             * m_crossSections[i]->scaleOut()
-            * m_crossSections[nextSec]->scaleIn()
+            / m_crossSections[nextSec]->scaleIn()
+            //* m_crossSections[i]->scaleOut()
+            //* m_crossSections[nextSec]->scaleIn()
             ;
           prevPress += m_crossSections[nextSec]->Zin() * prevVelo;
           }
@@ -2795,7 +2795,7 @@ void Acoustic3dSimulation::coneConcatenationSimulation(string fileName)
   Point_3 pointComputeField;
 
   m_geometryImported = true; // to have the good bounding box for modes plot
-  m_simuParams.sndSpeed = 34400;
+  //m_simuParams.sndSpeed = 34400;
 
   generateLogFileHeader(true);
   ofstream log("log.txt", ofstream::app);
@@ -3076,12 +3076,14 @@ void Acoustic3dSimulation::coneConcatenationSimulation(string fileName)
     if (reverse)
     {
       radAdmit.setZero(vIdx[0], vIdx[0]);
-      radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx[0], complex<double>(endAdmit, 0.));
+      radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx[0], complex<double>(
+        pow(m_crossSections[0]->scaleIn(), 2) * endAdmit, 0.));
     }
     else
     {
       radAdmit.setZero(vIdx.back(), vIdx.back());
-      radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx.back(), complex<double>(endAdmit, 0.));
+      radAdmit.diagonal() = Eigen::VectorXcd::Constant(vIdx.back(), complex<double>(
+        pow(m_crossSections[nbSec - 1]->scaleOut(), 2) * endAdmit, 0.));
     }
     radImped = radAdmit.inverse();
 
