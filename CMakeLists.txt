@@ -40,6 +40,8 @@ add_executable(
   "test/VtlApiTests.cpp"
  )
 
+target_include_directories (VtlApiTests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/VocalTractLabApi)
+
 target_link_libraries(
   VtlApiTests
   gtest_main
@@ -50,6 +52,8 @@ add_executable(
   "VtlBackendTests"
   "test/VtlBackendTests.cpp"
  )
+
+target_include_directories (VtlBackendTests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_link_libraries(
   VtlBackendTests
