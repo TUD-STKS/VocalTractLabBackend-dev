@@ -25,34 +25,34 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: nuget restore ${{env.SOLUTION_FILE_PATH}}
 
-    - name: Build Backend
+    - name: Build backend as a static library
       working-directory: ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}} /ignore:.vcxproj /t:VocalTractLabBackend
       
-    - name: Build Backend Tests
+    - name: Build backend tests
       working-directory: ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}} /ignore:.vcxproj /t:VtlBackendTests
 
-    - name: Run backend Tests
+    - name: Run backend tests
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: .\lib\Release\VtlBackendTests.exe
 
-    - name: Build API
+    - name: Build API as a DLL
       working-directory: ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}} /ignore:.vcxproj /t:VocalTractLabApi
       
-    - name: Build API Tests
+    - name: Build API tests
       working-directory: ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}} /ignore:.vcxproj /t:VtlApiTests
 
-    - name: API Tests
+    - name: Run API tests
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: .\lib\Release\VtlApiTests.exe
