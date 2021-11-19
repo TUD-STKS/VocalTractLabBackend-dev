@@ -2146,23 +2146,6 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     log << *m_crossSections[i] << endl;
   }
 
-  //// check connexions of sections
-  //for (int i(0); i < m_crossSections.size(); i++)
-  //{
-  //  log << "sec " << i << " length " << m_crossSections[i]->length() 
-  //    << endl;
-  //}
-  //for (int i(1); i < m_crossSections.size(); i++)
-  //{
-  //  log << "sec " << i
-  //    << " prev sec " << m_crossSections[i]->prevSec(0) << endl;
-  //}
-  //for (int i(0); i < m_crossSections.size() - 1; i++)
-  //{
-  //  log << "sec " << i
-  //    << " next sec " << m_crossSections[i]->nextSec(0) << endl;
-  //}
-
   //// exctract some contours
   //ostringstream os;
   //for (int i(97); i < 103; i++)
