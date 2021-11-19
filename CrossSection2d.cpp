@@ -3531,6 +3531,8 @@ ostream& operator<<(ostream &os, const CrossSection2d &cs)
     os << "Length " << cs.length() << endl;
     os << "Curvature radius " << cs.curvRadius() << endl;
     os << "Circle arc angle " << cs.circleArcAngle() << endl;
+    os << "Area " << cs.area() << endl;
+    os << "Is junction " << cs.isJunction() << endl;
   }
 
   return os;

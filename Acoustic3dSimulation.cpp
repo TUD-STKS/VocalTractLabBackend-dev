@@ -126,9 +126,10 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_idxConstriction(40),
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
   m_mouthBoundaryCond(ADMITTANCE_1),
-  m_contInterpMeth(BOUNDING_BOX)
+  m_contInterpMeth(AREA)
 {
-  m_simuParams.temperature = 21.0735; // for 344 m/s  31.4266; <-- for 350 m/s
+  //m_simuParams.temperature = 31.4266; // for 350 m/s
+  m_simuParams.temperature = 21.0735; // for 344 m/s 
   m_simuParams.volumicMass = STATIC_PRESSURE_CGS * MOLECULAR_MASS / (GAS_CONSTANT *
     (m_simuParams.temperature + KELVIN_SHIFT));
   m_simuParams.numIntegrationStep = 25;
@@ -497,6 +498,7 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
   double quadPtCoord[3][2]{ {1. / 6., 1. / 6.}, {2. / 3., 1. / 6.}, {1. / 6., 2. / 3.} };
   double quadPtWeight = 1. / 3.;
   vector<Matrix> matrixF;
+  int idxMinArea;
   int tmpNextcontained, tmpPrevContained;
   Pwh_list_2 differencesLoc;
   vector<Matrix> matrixGStart;
@@ -565,6 +567,14 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
         scaling[1] = m_crossSections[nextSec]->scaleIn();
         Transformation scale(CGAL::SCALING, scaling[1]);
         nextContour = transform(scale, m_crossSections[nextSec]->contour());
+        if (contour.area() >= nextContour.area())
+        {
+          idxMinArea = 1;
+        }
+        else
+        {
+          idxMinArea = 0;
+        }
         //nextContour = m_crossSections[nextSec]->contour();
         //log << "Next contour, sec " << nextSec << " scaling in " << scaling[1] 
         //  << " area " << nextContour.area() << endl;
@@ -718,7 +728,8 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
                     {
                       F(m, n) += areaFaces[f] * interpolation1(f * 3 + g,m) *
                         interpolation2(f * 3 + g,n) * quadPtWeight
-                            / scaling[0] / scaling[1]
+                         / pow(scaling[idxMinArea], 2)
+                             /// scaling[0] / scaling[1]
                         ;
                     }
                   }
@@ -1464,26 +1475,26 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
             pow(m_crossSections[prevSec]->scaleIn(), 2)))
         {
           prevAdmit += 
-              (pow(m_crossSections[i]->scaleOut(), 2)/
-           pow(m_crossSections[prevSec]->scaleIn(), 2))*
+           //   (pow(m_crossSections[i]->scaleOut(), 2)/
+           //pow(m_crossSections[prevSec]->scaleIn(), 2))*
             F[0] * m_crossSections[prevSec]->Yin()
             * (F[0].transpose())
-            //- wallInterfaceAdmit*
+            - wallInterfaceAdmit*
             //////m_crossSections[i]->curvature() *
-            //G
+            G
             ;
         }
       // case of an expansion: area(i) < area(ps)
         else
         {
           prevImped += 
-            (pow(m_crossSections[prevSec]->scaleIn(),2) /
-            pow(m_crossSections[i]->scaleOut(), 2))* 
+            //(pow(m_crossSections[prevSec]->scaleIn(),2) /
+            //pow(m_crossSections[i]->scaleOut(), 2))* 
             F[0] * m_crossSections[prevSec]->Zin()
-            //*(Matrix::Identity(nPs, nPs) - 
-            //  wallInterfaceAdmit * 
+            *(Matrix::Identity(nPs, nPs) -
+              wallInterfaceAdmit * 
             //  ////m_crossSections[prevSec]->curvature() * 
-            //  G*m_crossSections[prevSec]->Zin()).inverse()
+              G*m_crossSections[prevSec]->Zin()).inverse()
             * (F[0].transpose())
             ;
         prevAdmit += prevImped.fullPivLu().inverse();
@@ -1723,14 +1734,11 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
     case MAGNUS:
       //m_crossSections[i]->propagatePressureVelocityRiccati(prevVelo, prevPress,m_simuParams, 
       //  m_crossSections[nextSec]->area(), freq, (double)direction);
-      //log << "Propagate Magnus" << endl;
       m_crossSections[i]->propagateMagnus(prevPress, m_simuParams,
         freq, (double)direction, PRESSURE);
       tmpQ.clear(); P.clear(); Y.clear();
       P = m_crossSections[i]->P();
-      //log << "P " << P.back()(0, 0) << endl;
       Y = m_crossSections[i]->Y();
-      //log << "Y " << Y.back()(0, 0) << endl;
       numX = Y.size();
       for (int pt(0); pt < numX; pt++ )
       {
@@ -1747,11 +1755,9 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
         {
           tau = 1.;
         }
-        //log << "tau " << tau << endl;
         scaling = m_crossSections[i]->scaling(tau);
-        //log << "scaling " << scaling << endl;
-        tmpQ.push_back(Y[numX - 1 - pt] * P[pt] / pow(scaling, 2));
-        //log << "tmpQ " << tmpQ.back()(0, 0) << endl;
+        tmpQ.push_back(Y[numX - 1 - pt] * P[pt]);
+        //tmpQ.push_back(Y[numX - 1 - pt] * P[pt] / pow(scaling, 2));
       }
       m_crossSections[i]->setAxialVelocity(tmpQ);
       break;
@@ -1821,9 +1827,6 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
             //  + wallInterfaceAdmit *
             //  ////m_crossSections[nextSec]->curvature()*
             //  G * m_crossSections[nextSec]->Zin()).inverse() *
-
-            //(pow(m_crossSections[i]->scaleIn(), 2) / 
-            //  pow(m_crossSections[nextSec]->scaleOut(),2)) *
             F[0] * m_crossSections[i]->Qin()
               * m_crossSections[i]->scaleIn()
               * m_crossSections[nextSec]->scaleOut();
@@ -1843,9 +1846,7 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
             prevPress += 
                 (F[0].transpose()) *
               m_crossSections[i]->Pout()
-              * m_crossSections[i]->scaleOut()
-              / m_crossSections[nextSec]->scaleIn()
-              /// m_crossSections[i]->scaleOut()
+              //* m_crossSections[i]->scaleOut()
               /// m_crossSections[nextSec]->scaleIn()
               ;
             prevVelo +=
@@ -1856,18 +1857,13 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
           {
             //log << "area(i) < area(ns), compute velocity" << endl;
           prevVelo +=
-            //(Matrix::Identity(nNs, nNs)
-            //  - wallInterfaceAdmit *
+            (Matrix::Identity(nNs, nNs)
+              - wallInterfaceAdmit *
             //  ////m_crossSections[nextSec]->curvature() * 
-            //  G * m_crossSections[nextSec]->Zin()).inverse() *
-
-            //(pow(m_crossSections[i]->scaleOut(),2) /
-            //  pow(m_crossSections[nextSec]->scaleIn(), 2)) *
+              G * m_crossSections[nextSec]->Zin()).inverse() *
               (F[0].transpose()) * m_crossSections[i]->Qout()
-            * m_crossSections[i]->scaleOut()
-            / m_crossSections[nextSec]->scaleIn()
-            //* m_crossSections[i]->scaleOut()
             //* m_crossSections[nextSec]->scaleIn()
+            /// m_crossSections[i]->scaleOut()
             ;
           prevPress += m_crossSections[nextSec]->Zin() * prevVelo;
           }
@@ -1958,7 +1954,8 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
         tau = 1.;
       }
       scaling = m_crossSections[endSection]->scaling(tau);
-      tmpQ.push_back(Y[numX - 1 - pt] * P[pt] / pow(scaling, 2));
+      tmpQ.push_back(Y[numX - 1 - pt] * P[pt]);
+      //tmpQ.push_back(Y[numX - 1 - pt] * P[pt] / pow(scaling, 2));
     }
     m_crossSections[endSection]->setAxialVelocity(tmpQ);
     break;
@@ -2142,23 +2139,12 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 
   log << "Number of sections: " << numSec << endl;
 
-  //// export cross-sections parameters
-  //prop.open("sec.txt");
-  //// check cross-section properties
-  //for (int i(0); i < numSec - 2; i++)
-  //{
-  //  prop << m_crossSections[i]->ctrLinePt().x
-  //    << "  " << m_crossSections[i]->ctrLinePt().y
-  //    << "  " << m_crossSections[i]->normal().x
-  //    << "  " << m_crossSections[i]->normal().y
-  //    << "  " << m_crossSections[i]->area()
-  //    << "  " << m_crossSections[i]->length()
-  //    << "  " << m_crossSections[i]->curvature()
-  //    << "  " << m_crossSections[i]->circleArcAngle()
-  //    << "  " << m_crossSections[i]->isJunction()
-  //    << endl;
-  //}
-  //prop.close();
+  // export cross-sections parameters
+  for (int i(0); i < numSec; i++)
+  {
+    log << "Scetion " << i << endl;
+    log << *m_crossSections[i] << endl;
+  }
 
   //// check connexions of sections
   //for (int i(0); i < m_crossSections.size(); i++)
@@ -4520,8 +4506,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   vector<array<double, 4>> bboxes;
   array<double, 4> arrayZeros = { 0., 0., 0., 0. };
 
-  ofstream log("log.txt", ofstream::app);
-  log << "Start cross-section creation" << endl;
+  //ofstream log("log.txt", ofstream::app);
+  //log << "Start cross-section creation" << endl;
 
   if (m_geometryImported)
   {
@@ -4603,19 +4589,19 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   centerLine.push_back(centerLine.back());
   normals.push_back(normals.back());
   int lastCtl(centerLine.size() - 1);
-  log << "Before last ctl " << centerLine[lastCtl - 2].x << "  "
-    << centerLine[lastCtl - 2].y << " normal "
-    << normals[lastCtl - 2].x << "  "
-    << normals[lastCtl - 2].y << endl;
-  log << "Last ctl " << centerLine[lastCtl].x << "  "
-    << centerLine[lastCtl].y << " normal "
-    << normals[lastCtl].x << "  "
-    << normals[lastCtl].y << endl;
+  //log << "Before last ctl " << centerLine[lastCtl - 2].x << "  "
+  //  << centerLine[lastCtl - 2].y << " normal "
+  //  << normals[lastCtl - 2].x << "  "
+  //  << normals[lastCtl - 2].y << endl;
+  //log << "Last ctl " << centerLine[lastCtl].x << "  "
+  //  << centerLine[lastCtl].y << " normal "
+  //  << normals[lastCtl].x << "  "
+  //  << normals[lastCtl].y << endl;
 
   getCurvatureAngleShift(centerLine[lastCtl - 2], centerLine[lastCtl], 
     normals[lastCtl - 2], normals[lastCtl], curvRadius, angle, shift);
 
-  log << "Curv radius " << curvRadius << endl;
+  //log << "Curv radius " << curvRadius << endl;
 
   Point pt(Point(centerLine.back().x, centerLine.back().y));
   Vector N(Vector(normals.back().x, normals.back().y));
@@ -4649,7 +4635,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   {
     Vector tr((centerLine[lastCtl - 2].x - centerLine[lastCtl].x)/2.,
       (centerLine[lastCtl - 2].y - centerLine[lastCtl].y)/2.);
-    log << "Vec tr " << tr << endl;
+    //log << "Vec tr " << tr << endl;
     Transformation translateInit(CGAL::TRANSLATION, tr);
 
     pt = translateInit(pt);
@@ -4657,8 +4643,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     centerLine[lastCtl - 1].y = pt.y();
   }
 
-  log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
-    << N.x() << "  " << N.y() << endl;
+  //log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
+  //  << N.x() << "  " << N.y() << endl;
 
   //*******************************************
   // Create the cross-sections
@@ -4702,14 +4688,14 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   // create the cross-sections
   for (int i(1); i < nbCont; i++)
   {
-    log << "\ni= " << i << endl;
+    //log << "\ni= " << i << endl;
 
     //**********************************
     // Create previous cross-sections
     //**********************************
 
       length = centerLine[i-1].getDistanceFrom(centerLine[i]);
-      log << "length " << length << endl;
+      //log << "length " << length << endl;
 
     // compute the scaling factors
     if (m_simuParams.varyingArea)
@@ -4768,7 +4754,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
         }
       }
     }
-    log << "SCaling factors " << scalingFactors[0] << "  " << scalingFactors[1] << endl;
+    //log << "SCaling factors " << scalingFactors[0] << "  " << scalingFactors[1] << endl;
 
     // loop over the created contours
     for (int c(0); c < contours[i-1].size(); c++)
@@ -4790,13 +4776,13 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
       // set the curvature radius
       m_crossSections[secIdx]->setCurvatureRadius(prevCurvRadius);
-      log << "Curv radius " << prevCurvRadius << endl;
+      //log << "Curv radius " << prevCurvRadius << endl;
 
       // set the curvature angle
       m_crossSections[secIdx]->setCurvatureAngle(prevAngle);
-      log << "angle " << prevAngle << endl;
+      //log << "angle " << prevAngle << endl;
 
-      log << "Section " << secIdx << " created" << endl;
+      //log << "Section " << secIdx << " created" << endl;
       secIdx++;
     }
 
@@ -4881,7 +4867,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       Polygon_2 cont(transform(scale, contours[i][c]));
 
       //log << "Contour extracted and scaled sc = " 
-        //<< scalingFactors[0] << endl;
+      //  << scalingFactors[0] << endl;
 
       // loop over the contours of the previous cross-section
       for (int cp(0); cp < contours[i-1].size(); cp++)
@@ -4891,7 +4877,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
         Polygon_2 prevCont(transform(scale, contours[i - 1][cp]));
 
         //log << "Prev Contour extracted and scaled sc = " 
-          //<< prevScalingFactors[1] << endl;
+        //  << prevScalingFactors[1] << endl;
 
         if (!similarContours(cont, prevCont, MINIMAL_DISTANCE_DIFF_POLYGONS))
         {
@@ -4921,6 +4907,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
               //os.open("pcont.txt");
               //for (auto pt : prevCont) { os << pt.x() << "  " << pt.y() << endl; }
               //os.close();
+
+              //log << "Before intersection" << endl;
 
               // compute the intersections of both contours
               intersections.clear();
@@ -5039,7 +5027,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   // create last cross-sections
   //********************************
 
-  log << "\nCreate last cross-section" << endl;
+  //log << "\nCreate last cross-section" << endl;
 
   radius = 0.;  // initalise the radius of the radiation cross-section
   tmpPrevSection.clear(); // the list of section connected to the radiation section
@@ -5052,9 +5040,9 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     area = abs(contours.back()[c].area());
     length = centerLine.rbegin()[1].getDistanceFrom(centerLine.back());
 
-    log << "length " << length << endl;
-    log << "Scaling factors " << prevScalingFactors[0] << "  "
-      << prevScalingFactors[1] << endl;
+    //log << "length " << length << endl;
+    //log << "Scaling factors " << prevScalingFactors[0] << "  "
+    //  << prevScalingFactors[1] << endl;
 
     addCrossSectionFEM(area, sqrt(area)/m_meshDensity, contours.back()[c],
       surfaceIdx.back()[c], length, centerLine.rbegin()[1], normals.rbegin()[1],
@@ -5071,11 +5059,11 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     }
     // set the curvature radius
     m_crossSections[secIdx]->setCurvatureRadius(prevCurvRadius);
-    log << "Curv radius " << prevCurvRadius << endl;
+    //log << "Curv radius " << prevCurvRadius << endl;
 
     // set the curvature angle
     m_crossSections[secIdx]->setCurvatureAngle(prevAngle);
-    log << "angle " << prevAngle << endl;
+    //log << "angle " << prevAngle << endl;
 
     // set the radius of the radiation cross-section so that the last 
     // cross-sections are contained inside
@@ -5109,7 +5097,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     }
   }
   return true;
-  log.close();
+  //log.close();
 }
 
 //*************************************************************************
