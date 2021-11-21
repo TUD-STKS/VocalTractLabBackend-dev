@@ -2071,26 +2071,26 @@ void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
   bool ptFound;
   ofstream log("log.txt", ofstream::app);
 
-  field.resize(nPtx, nPty);
+  field.resize(nPty, nPtx);
 
-  for (int i(0); i < nPty; i++)
+  for (int i(0); i < nPtx; i++)
   {
     log << "Point " << cnt << " out of " << nPtx * nPty << "  "
       << queryPt << endl;
-    for (int j(0); j < nPtx; j++)
+    for (int j(0); j < nPty; j++)
     {
       cnt++;
 
-  //    log << "Point " << cnt << " out of " << nPtx * nPty << "  "
+      //log << "Point " << cnt << " out of " << nPtx * nPty << "  "
   //<< queryPt << endl;
 
       // generate cartesian coordinates point to search
-      queryPt = Point_3(lx * (double)j / (double)(nPtx - 1) + m_simuParams.bboxField[0].x(), 0.,
-        ly * (double)i / (double)(nPty - 1) + m_simuParams.bboxField[0].y());
+      queryPt = Point_3(lx * (double)i / (double)(nPtx - 1) + m_simuParams.bboxField[0].x(), 0.,
+        ly * (double)j / (double)(nPty - 1) + m_simuParams.bboxField[0].y());
 
-      //log << "Guery point coordinate computed" << endl;
+      //log << "Query point coordinate computed " << queryPt << endl;
 
-      field(i, j) = acousticFieldInside(queryPt);
+      field(j, i) = acousticFieldInside(queryPt);
 
       //log << "Field computed" << endl;
     }
