@@ -72,7 +72,10 @@ struct simulationParameters
   bool wallLosses;
   bool curved;
   bool varyingArea;
+
+  // for transfer function computation
   double maxComputedFreq;
+  Point_3 tfPoint;
 
   // for acoustic field computation
   double freqField;

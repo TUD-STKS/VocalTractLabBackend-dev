@@ -53,7 +53,8 @@ public:
   void setBoundarySpecificAdmittance();
   void setSimulationParameters(double meshDensity, double maxCutOnFreq, 
     int secNoiseSource, int secConstriction,
-    int expSpectrumLgth, struct simulationParameters simuParams);
+    int expSpectrumLgth, struct simulationParameters simuParams,
+    enum openEndBoundaryCond cond);
   void generateLogFileHeader(bool cleanLog);
 
   void setGeometryImported(bool isImported) {
@@ -128,6 +129,7 @@ public:
   int idxConstriction() const { return m_idxConstriction; }
   pair<Point2D, Point2D> maxCSBoundingBox() const { return m_maxCSBoundingBox; }
   int numCrossSections(){ return m_crossSections.size(); }
+  openEndBoundaryCond mouthBoundaryCond() const {return m_mouthBoundaryCond;}
 
 // **************************************************************************
 /// Public data
