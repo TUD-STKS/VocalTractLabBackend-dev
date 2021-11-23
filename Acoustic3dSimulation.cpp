@@ -137,6 +137,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_simuParams.propMethod = MAGNUS;
   m_simuParams.freqDepLosses = false;
   m_simuParams.wallLosses = false;
+  m_simuParams.junctionLosses = true;
   m_simuParams.sndSpeed = (sqrt(ADIABATIC_CONSTANT * STATIC_PRESSURE_CGS / m_simuParams.volumicMass));
   m_crossSections.reserve(2 * VocalTract::NUM_CENTERLINE_POINTS);
   m_simuParams.percentageLosses = 1.;
@@ -1482,29 +1483,45 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
            (m_crossSections[prevSec]->area() * 
             pow(m_crossSections[prevSec]->scaleIn(), 2)))
         {
-          prevAdmit += 
-              (pow(m_crossSections[i]->scaleOut(), 2)/
-           pow(m_crossSections[prevSec]->scaleIn(), 2))*
-            F[0] * m_crossSections[prevSec]->Yin()
-            * (F[0].transpose())
-            - wallInterfaceAdmit*
-            //////m_crossSections[i]->curvature() *
-            G
-            ;
+          if (m_simuParams.junctionLosses)
+          {
+            prevAdmit +=
+              (pow(m_crossSections[i]->scaleOut(), 2) /
+                pow(m_crossSections[prevSec]->scaleIn(), 2)) *
+              F[0] * m_crossSections[prevSec]->Yin()
+              * (F[0].transpose()) - wallInterfaceAdmit * G;
+          }
+          else
+          {
+            prevAdmit +=
+              (pow(m_crossSections[i]->scaleOut(), 2) /
+                pow(m_crossSections[prevSec]->scaleIn(), 2)) *
+              F[0] * m_crossSections[prevSec]->Yin()
+              * (F[0].transpose());
+          }
         }
       // case of an expansion: area(i) < area(ps)
         else
         {
-          prevImped += 
-            (pow(m_crossSections[prevSec]->scaleIn(),2) /
-            pow(m_crossSections[i]->scaleOut(), 2))* 
-            F[0] * m_crossSections[prevSec]->Zin()
-            *(Matrix::Identity(nPs, nPs) -
-              wallInterfaceAdmit * 
-            //  ////m_crossSections[prevSec]->curvature() * 
-              G*m_crossSections[prevSec]->Zin()).inverse()
-            * (F[0].transpose())
-            ;
+          if (m_simuParams.junctionLosses)
+          {
+            prevImped +=
+              (pow(m_crossSections[prevSec]->scaleIn(), 2) /
+                pow(m_crossSections[i]->scaleOut(), 2)) *
+              F[0] * m_crossSections[prevSec]->Zin()
+              * (Matrix::Identity(nPs, nPs) -
+                wallInterfaceAdmit *
+                G * m_crossSections[prevSec]->Zin()).inverse()
+              * (F[0].transpose());
+          }
+          else
+          {
+            prevImped +=
+              (pow(m_crossSections[prevSec]->scaleIn(), 2) /
+                pow(m_crossSections[i]->scaleOut(), 2)) *
+              F[0] * m_crossSections[prevSec]->Zin()
+              * (F[0].transpose());
+          }
         prevAdmit += prevImped.fullPivLu().inverse();
         }
       }
@@ -1516,29 +1533,43 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
            (m_crossSections[prevSec]->area() * 
             pow(m_crossSections[prevSec]->scaleOut(), 2)))
         {
-          prevAdmit += 
-              (pow(m_crossSections[i]->scaleIn(), 2)/
-            pow(m_crossSections[prevSec]->scaleOut(), 2)) * 
-            (F[0].transpose()) *
-            m_crossSections[prevSec]->Yout() * F[0]
-            //+ wallInterfaceAdmit * 
-            //////m_crossSections[i]->curvature() * 
-            //G
-            ;
+          if (m_simuParams.junctionLosses)
+          {
+            prevAdmit +=
+              (pow(m_crossSections[i]->scaleIn(), 2) /
+                pow(m_crossSections[prevSec]->scaleOut(), 2)) *
+                (F[0].transpose()) *
+              m_crossSections[prevSec]->Yout() * F[0]
+              + wallInterfaceAdmit * G;
+          }
+          else
+          {
+            prevAdmit +=
+              (pow(m_crossSections[i]->scaleIn(), 2) /
+                pow(m_crossSections[prevSec]->scaleOut(), 2)) *
+                (F[0].transpose()) *
+              m_crossSections[prevSec]->Yout() * F[0];
+          }
         }
       // case of an expansion: area(i) < area(ps)
         else
         {
-          prevImped += 
-              (pow(m_crossSections[prevSec]->scaleOut(),2) /
-            pow(m_crossSections[i]->scaleIn(),2)) * 
-            (F[0].transpose()) * m_crossSections[prevSec]->Zout()
-            //*(Matrix::Identity(nPs, nPs) + 
-            //  wallInterfaceAdmit *
-            //  ////m_crossSections[prevSec]->curvature() * 
-            //  G*m_crossSections[prevSec]->Zout()).inverse()
-            * F[0]
-            ;
+          if (m_simuParams.junctionLosses)
+          {
+            prevImped +=
+              (pow(m_crossSections[prevSec]->scaleOut(), 2) /
+                pow(m_crossSections[i]->scaleIn(), 2)) *
+                F[0].transpose() * m_crossSections[prevSec]->Zout()
+              * (Matrix::Identity(nPs, nPs) + wallInterfaceAdmit *
+                G*m_crossSections[prevSec]->Zout()).inverse() * F[0];
+          }
+          else
+          {
+            prevImped +=
+              (pow(m_crossSections[prevSec]->scaleOut(), 2) /
+                pow(m_crossSections[i]->scaleIn(), 2)) *
+                F[0].transpose() * m_crossSections[prevSec]->Zout() * F[0];
+          }
         prevAdmit += prevImped.fullPivLu().inverse();
         }
       }
@@ -1830,15 +1861,23 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
           else
           {
             //log << "area(i) < area(ns) compute velocity" << endl;
-            prevVelo +=
-            //(Matrix::Identity(nNs, nNs)
-            //  + wallInterfaceAdmit *
-            //  ////m_crossSections[nextSec]->curvature()*
-            //  G * m_crossSections[nextSec]->Zin()).inverse() *
-            F[0] * m_crossSections[i]->Qin()
-              * m_crossSections[i]->scaleIn()
-              * m_crossSections[nextSec]->scaleOut();
-            prevPress +=
+            if (m_simuParams.junctionLosses)
+            {
+              prevVelo +=
+                (Matrix::Identity(nNs, nNs) + wallInterfaceAdmit *
+                  G * m_crossSections[nextSec]->Zin()).inverse() *
+                F[0] * m_crossSections[i]->Qin()
+                * m_crossSections[i]->scaleIn()
+                * m_crossSections[nextSec]->scaleOut();
+            }
+            else
+            {
+              prevVelo +=
+                F[0] * m_crossSections[i]->Qin()
+                * m_crossSections[i]->scaleIn()
+                * m_crossSections[nextSec]->scaleOut();
+            }
+              prevPress +=
               m_crossSections[nextSec]->Zout() * prevVelo;
           }
       }
@@ -1855,8 +1894,7 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
                 (F[0].transpose()) *
               m_crossSections[i]->Pout()
               * m_crossSections[i]->scaleOut()
-              / m_crossSections[nextSec]->scaleIn()
-              ;
+              / m_crossSections[nextSec]->scaleIn();
             prevVelo +=
               m_crossSections[nextSec]->Yin() * prevPress;
           }
@@ -1864,15 +1902,21 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
           else
           {
             //log << "area(i) < area(ns), compute velocity" << endl;
-          prevVelo +=
-            (Matrix::Identity(nNs, nNs)
-              - wallInterfaceAdmit *
-            //  ////m_crossSections[nextSec]->curvature() * 
-              G * m_crossSections[nextSec]->Zin()).inverse() *
-              (F[0].transpose()) * m_crossSections[i]->Qout()
-            * m_crossSections[nextSec]->scaleIn()
-            / m_crossSections[i]->scaleOut()
-            ;
+            if (m_simuParams.junctionLosses)
+            {
+              prevVelo +=
+                (Matrix::Identity(nNs, nNs) - wallInterfaceAdmit *
+                  G * m_crossSections[nextSec]->Zin()).inverse() *
+                (F[0].transpose()) * m_crossSections[i]->Qout()
+                * m_crossSections[nextSec]->scaleIn()
+                / m_crossSections[i]->scaleOut();
+            }
+            {
+              prevVelo +=
+                  (F[0].transpose()) * m_crossSections[i]->Qout()
+                * m_crossSections[nextSec]->scaleIn()
+                / m_crossSections[i]->scaleOut();
+            }
           prevPress += m_crossSections[nextSec]->Zin() * prevVelo;
           }
       }
@@ -2287,11 +2331,11 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   // get the coordinates of the point where to compute the internal field
   Transformation rotate(CGAL::ROTATION, sin(M_PI / 2.),
     cos(M_PI / 2.));
-  Transformation translate(CGAL::TRANSLATION, 0.3 * rotate(
+  Transformation translate(CGAL::TRANSLATION, 0. * rotate(
     m_crossSections[lastSec]->normalOut()
   ));
-  //internalFieldPt2D = translate(m_crossSections[lastSec]->ctrLinePtOut());
-  internalFieldPt2D = m_crossSections[lastSec]->ctrLinePtOut();
+  internalFieldPt2D = translate(m_crossSections[lastSec]->ctrLinePtOut());
+  //internalFieldPt2D = m_crossSections[lastSec]->ctrLinePtOut();
   log << "Internal field point 2D " << internalFieldPt2D << endl;
   internalFieldPt = Point_3(internalFieldPt2D.x(), 0., internalFieldPt2D.y());
   log << "Internal field point " << internalFieldPt << endl;
@@ -2446,8 +2490,8 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 
     spectrum.setValue(i, radPress(0,0));
 
-    //pressure = acousticFieldInside(internalFieldPt);
-    pressure = m_crossSections[lastSec]->pout(Point(0., 0.));
+    pressure = acousticFieldInside(internalFieldPt);
+    //pressure = m_crossSections[lastSec]->pout(Point(0., 0.));
     spectrumConst.setValue(i, pressure);
 
     log << "Radiated pressure computed" << endl;

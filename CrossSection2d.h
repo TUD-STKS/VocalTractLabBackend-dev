@@ -72,6 +72,7 @@ struct simulationParameters
   bool wallLosses;
   bool curved;
   bool varyingArea;
+  bool junctionLosses;
 
   // for transfer function computation
   double maxComputedFreq;
