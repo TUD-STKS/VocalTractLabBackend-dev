@@ -137,7 +137,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_simuParams.propMethod = MAGNUS;
   m_simuParams.freqDepLosses = false;
   m_simuParams.wallLosses = false;
-  m_simuParams.junctionLosses = true;
+  m_simuParams.junctionLosses = false;
   m_simuParams.sndSpeed = (sqrt(ADIABATIC_CONSTANT * STATIC_PRESSURE_CGS / m_simuParams.volumicMass));
   m_crossSections.reserve(2 * VocalTract::NUM_CENTERLINE_POINTS);
   m_simuParams.percentageLosses = 1.;
@@ -153,6 +153,8 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_simuParams.bboxField[0] = Point(-5., -10.);
   m_simuParams.bboxField[1] = Point(10., 5.);
   m_simuParams.fieldResolution = 30;
+  m_simuParams.computeRadiatedField = false;
+
   m_numFreq = 1 << (m_spectrumLgthExponent - 1);
   spectrum.setNewLength(2 * m_numFreq);
   spectrumNoise.setNewLength(2 * m_numFreq);
@@ -273,31 +275,36 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   // print the date of the simulation
   time_t start_time = std::chrono::system_clock::to_time_t(chrono::system_clock::now());
   log << ctime(&start_time) << endl;
-  log << "Start simulation\n" << endl;
-  log << "Air volumic mass: " << m_simuParams.volumicMass << " g/cm^3" << endl;
+
+  if (m_geometryImported)
+  {
+    log << "Geometry imported from csv file:\n  " << m_geometryFile << endl;
+  }
+  else
+  {
+    log << "Geometry is from VocalTractLab" << endl;
+  }
+  log << endl;
+
+  log << "PHYSICAL PARAMETERS:" << endl;
+  log << "Temperature " << m_simuParams.temperature << " \xB0" <<  "C" << endl;
+  log << "Volumic mass: " << m_simuParams.volumicMass << " g/cm^3" << endl;
   log << "Sound speed: " << m_simuParams.sndSpeed << " cm/s" << endl;
+  log << endl;
+
+  log << "BOUNDARY CONDITIONS:" << endl;
+  log << "Percentage losses " << m_simuParams.percentageLosses * 100. << " %" << endl;
   log << "viscous boundary specific admittance " << m_simuParams.viscousBndSpecAdm
     << " g.cm^-2 .s^-1" << endl;
   log << "thermal boundary specific admittance " << m_simuParams.thermalBndSpecAdm
     << " g.cm^-2 .s^-1" << endl;
-  log << "Percentage losses " << m_simuParams.percentageLosses * 100. << " %" << endl;
-  log << "Frequency dependant losses: ";
   if (m_simuParams.freqDepLosses)
   {
-    log << "yes" << endl;
+    log << "Frequency dependant losses" << endl;
   }
-  else
-  {
-    log << "no" << endl;
-  }
-  log << "Wall losses: ";
   if (m_simuParams.wallLosses)
   {
-    log << "yes" << endl;
-  }
-  else
-  {
-    log << "no" << endl;
+    log << "Wall losse included" << endl;
   }
   log << "glottis boundary condition: ";
   switch (m_glottisBoundaryCond)
@@ -325,64 +332,70 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
     log << "ADMITTANCE_1" << endl;
     break;
   }
+  log << endl;
+
+  log << "MODE COMPUTATION PARAMETERS:" << endl;
   log << "Mesh density: " << m_meshDensity << endl;
   log << "Max cut-on frequency: " << m_maxCutOnFreq << " Hz" << endl;
-  log << "Number of integration steps: " << m_simuParams.numIntegrationStep << endl;
+  log << endl;
+
+  log << "INTEGRATION SCHEME PARAMETERS:" << endl;
+  log << "Propagation mmethod: ";
+  switch (m_simuParams.propMethod)
+  {
+  case MAGNUS:
+    log << "MAGNUS order " << m_simuParams.orderMagnusScheme << endl;
+    log << "Number of integration steps: " << m_simuParams.numIntegrationStep << endl;
+    break;
+  case STRAIGHT_TUBES:
+    log << "STRAIGHT_TUBES" << endl;
+    break;
+  }
+  if (m_simuParams.curved)
+  {
+    log << "Take into account curvature" << endl;
+  }
+  if (m_simuParams.varyingArea)
+  {
+    log << "Area variation within segments taken into account" << endl;
+    log << "scaling factor computation method : ";
+    switch (m_contInterpMeth)
+    {
+    case AREA:
+      log << "AREA" << endl;
+      break;
+    case BOUNDING_BOX:
+      log << "BOUNDING_BOX" << endl;
+      break;
+    case FROM_FILE:
+      log << "FROM_FILE" << endl;
+      break;
+    }
+  }
+  if (m_simuParams.junctionLosses)
+  {
+    log << "Take into account losses at the junctions" << endl;
+  }
+  log << endl;
+
+  log << "TRANSFER FUNCTION COMPUTATION PARAMETERS:" << endl;
   log << "Index of noise source section: " << m_idxSecNoiseSource << endl;
   log << "Index of constriction section: " << m_idxConstriction << endl;
   log << "Maximal computed frequency: " << m_simuParams.maxComputedFreq
     << " Hz" << endl;
   log << "Number of simulated frequencies: " << numFreqComputed << endl;
   log << "Transfer function point (cm): " << m_simuParams.tfPoint << endl;
-  log << "Varying cross-sectional area: ";
-  if (m_simuParams.varyingArea)
-  {
-    log << "yes\nscaling factor computation method: ";
-    switch (m_contInterpMeth)
-    {
-      case AREA:
-        log << "AREA" << endl;
-        break;
-      case BOUNDING_BOX:
-        log << "BOUNDING_BOX" << endl;
-        break;
-      case FROM_FILE:
-        log << "FROM_FILE" << endl;
-        break;
-    }
-  }
-  else
-  {
-    log << "no" << endl;
-  }
-  log << "Take into account curvature: ";
-  if (m_simuParams.curved) { log << "yes" << endl; }
-  else { log << "no" << endl; }
-  log << "Propagation mmethod: ";
-  switch (m_simuParams.propMethod)
-  {
-  case MAGNUS:
-    log << "MAGNUS order " << m_simuParams.orderMagnusScheme << endl;
-    break;
-  case STRAIGHT_TUBES:
-    log << "STRAIGHT_TUBES" << endl;
-    break;
-  }
+  log << endl;
 
-  if (m_geometryImported)
-  {
-    log << "Geometry imported from csv file:\n  " << m_geometryFile << endl;
-  }
-  else
-  {
-    log << "Geometry is from vocal tract lab" << endl;
-  }
+  log << "ACOUSTIC FIELD COMPUTATION PARAMETERS:" << endl;
   log << "Acoustic field computation at " << m_simuParams.freqField
   << " Hz with " << m_simuParams.fieldResolution << " points per cm" << endl;
-  log << "Bounding box: min x " << m_simuParams.bboxField[0].x() 
-    << " max x " << m_simuParams.bboxField[1].x() 
-    << " min y " << m_simuParams.bboxField[0].y() 
-    << " max y " << m_simuParams.bboxField[1].y() << endl;
+  log << "Bounding box:" << endl;
+  log << "min x " << m_simuParams.bboxField[0].x() << endl;
+  log << "max x " << m_simuParams.bboxField[1].x() << endl;
+  log << "min y " << m_simuParams.bboxField[0].y() << endl;
+  log << "max y " << m_simuParams.bboxField[1].y() << endl;
+  log << endl;
   log.close();
 }
 
@@ -2078,30 +2091,52 @@ void Acoustic3dSimulation::propagatePressure(Eigen::MatrixXcd startPress, double
 // Extract the internal acoustic field at a point 
 // (given in cartesian coordinates)
 
-complex<double> Acoustic3dSimulation::acousticFieldInside(Point_3 queryPt)
+complex<double> Acoustic3dSimulation::acousticField(Point_3 queryPt)
 {
   bool ptFound(false);
   int numSec(m_crossSections.size());
   Point_3 outPt;
   complex<double> field;
 
+  Vector vec, endNormal(m_crossSections.back()->normalOut());
+  Point endCenterLine(m_crossSections.back()->ctrLinePtOut());
+  double angle;
+  vector<Point_3> radPts;
+  Eigen::VectorXcd radPress;
+  radPts.reserve(1);
+  radPts.push_back(Point_3());
+
   //ofstream log("log.txt", ofstream::app);
   //log << "Start acoustic field inside numSec " << numSec << endl;
 
-  for (int s(0); s < numSec; s++)
+  // check if the point is in the radiation domain
+  vec = Vector(endCenterLine, Point(queryPt.x(), queryPt.z()));
+  angle = fmod(atan2(vec.y(), vec.x()) -
+    atan2(endNormal.y(), endNormal.x()) + 2. * M_PI, 2. * M_PI) - M_PI;
+
+  if (angle <= 0.)
   {
-    if (m_crossSections[s]->getCoordinateFromCartesianPt(queryPt, outPt))
+    for (int s(0); s < numSec; s++)
     {
-      //log << "Pt found " << outPt << endl;
-      ptFound = true;
-      field = m_crossSections[s]->interiorField(outPt, m_simuParams, PRESSURE);
-      //log << "field computed" << endl;
-      break;
+      if (m_crossSections[s]->getCoordinateFromCartesianPt(queryPt, outPt))
+      {
+        //log << "Pt found " << outPt << endl;
+        ptFound = true;
+        field = m_crossSections[s]->interiorField(outPt, m_simuParams, PRESSURE);
+        //log << "field computed" << endl;
+        break;
+      }
+    }
+    if (!ptFound)
+    {
+      field = complex<double>(NAN, NAN);
     }
   }
-  if (!ptFound)
+  else if (m_simuParams.computeRadiatedField)
   {
-    field = complex<double>(NAN, NAN);
+    radPts[0] = Point_3(vec.x(), queryPt.y(), vec.y());
+    RayleighSommerfeldIntegral(radPts, radPress, m_simuParams.freqField, numSec - 1);
+    field = radPress(0);
   }
   //log.close();
 
@@ -2121,14 +2156,16 @@ void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
   int numSec(m_crossSections.size());
   Point_3 queryPt, outPt;
   bool ptFound;
+
   ofstream log("log.txt", ofstream::app);
 
   field.resize(nPty, nPtx);
 
   for (int i(0); i < nPtx; i++)
   {
-    log << "Point " << cnt << " out of " << nPtx * nPty << "  "
-      << queryPt << endl;
+    log << 100 * cnt / nPtx / nPty << " % of field points computed" << endl;
+    //log << "Point " << cnt << " out of " << nPtx * nPty << "  "
+    //  << queryPt << endl;
     for (int j(0); j < nPty; j++)
     {
       cnt++;
@@ -2142,7 +2179,7 @@ void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
 
       //log << "Query point coordinate computed " << queryPt << endl;
 
-      field(j, i) = acousticFieldInside(queryPt);
+      field(j, i) = acousticField(queryPt);
 
       //log << "Field computed" << endl;
     }
@@ -2164,8 +2201,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     radAdmit, radImped, upStreamImpAdm, totalImped, prevVelo, prevPress
     ,pp ,pm;
   Matrix F;
-  Point_3 internalFieldPt;
-  Point internalFieldPt2D;
+  Point_3 tfPoint;
   ofstream prop;
 
   generateLogFileHeader(true);
@@ -2298,50 +2334,15 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 
   log << "source generated" << endl;
 
-  //*****************************************************************************
-  //  Compute points for acoustic field computation
-  //*****************************************************************************
+  // compute the coordinates of the transfer function point
+  m_simuParams.computeRadiatedField = true;
+  tfPoint = Point_3(
+    m_simuParams.tfPoint.x() + m_crossSections[lastSec]->ctrLinePtOut().x(),
+    m_simuParams.tfPoint.y(),
+    m_simuParams.tfPoint.z() + m_crossSections[lastSec]->ctrLinePtOut().y()
+  );
 
-  vector<Point_3> radPts;
-
-  //// generate points distributed on a plane
-  //int nPtsX(50), nPtsY(100);
-  //double dX(5./(double)(nPtsX));
-  //for (int i(0); i < nPtsX; i++)
-  //{
-  //  for (int j(0); j < nPtsY; j++)
-  //  {
-  //    radPts.push_back(Point_3((double)(i + 1) * dX, 
-  //      ((double)(j) - (double)(nPtsY)/2.) * dX, 0.));
-  //  }
-  //}
-
-  //// generate points on a cicle arc
-  //double radius(50.);
-  //int nPts(91);
-  //for (int p(0); p < nPts; p++)
-  //{
-  //  radPts.push_back(Point_3(radius * sin((double)p * M_PI / (double)(nPts-1)),
-  //    radius * cos((double)p * M_PI / (double)(nPts-1)), 0.));
-  //}
-
-  // generate one point in front
-  radPts.push_back(m_simuParams.tfPoint);
-
-  // get the coordinates of the point where to compute the internal field
-  Transformation rotate(CGAL::ROTATION, sin(M_PI / 2.),
-    cos(M_PI / 2.));
-  Transformation translate(CGAL::TRANSLATION, 0. * rotate(
-    m_crossSections[lastSec]->normalOut()
-  ));
-  internalFieldPt2D = translate(m_crossSections[lastSec]->ctrLinePtOut());
-  //internalFieldPt2D = m_crossSections[lastSec]->ctrLinePtOut();
-  log << "Internal field point 2D " << internalFieldPt2D << endl;
-  internalFieldPt = Point_3(internalFieldPt2D.x(), 0., internalFieldPt2D.y());
-  log << "Internal field point " << internalFieldPt << endl;
-
-  // create vector containing the radiated field
-  Eigen::VectorXcd radPress;
+  log << "Tf point " << tfPoint << endl;
 
   if (m_mouthBoundaryCond == RADIATION)
   {
@@ -2475,26 +2476,14 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     start = std::chrono::system_clock::now();
 
     //*****************************************************************************
-    //  Compute acoustic pressure inside and outside
+    //  Compute acoustic pressure 
     //*****************************************************************************
 
-    RayleighSommerfeldIntegral(radPts, radPress, freq, lastSec);
+    pressure = acousticField(tfPoint);
 
-    //// save radiated field
-    //prop.open("radR.txt", ofstream::app);
-    //prop << radPress.transpose().real() << endl;
-    //prop.close();
-    //prop.open("radI.txt", ofstream::app);
-    //prop << radPress.transpose().imag() << endl;
-    //prop.close();
+    spectrum.setValue(i, pressure);
 
-    spectrum.setValue(i, radPress(0,0));
-
-    pressure = acousticFieldInside(internalFieldPt);
-    //pressure = m_crossSections[lastSec]->pout(Point(0., 0.));
-    spectrumConst.setValue(i, pressure);
-
-    log << "Radiated pressure computed" << endl;
+    log << "Acoustic pressure computed" << endl;
 
     //*****************************************************************************
     //  Compute transfer function of the noise source
@@ -2577,11 +2566,11 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 
       log << "Velocity and pressure propagated" << endl;
 
-      RayleighSommerfeldIntegral(radPts, radPress, freq, lastSec);
+      pressure = acousticField(tfPoint);
 
       end = std::chrono::system_clock::now();
 
-      spectrumNoise.setValue(i, radPress(0,0));
+      spectrumNoise.setValue(i, pressure);
     }
     elapsed_seconds = end - start;
     log << "Remaining time " << elapsed_seconds.count() << " s" << endl;

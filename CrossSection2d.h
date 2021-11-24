@@ -82,6 +82,7 @@ struct simulationParameters
   double freqField;
   Point bboxField[2];
   int fieldResolution; // number of points per cm
+  bool computeRadiatedField;
 };
 
 /////////////////////////////////////////////////////////////////////////////
