@@ -52,9 +52,6 @@
     <ClCompile Include="..\..\src\VocalTractLabBackend\Signal.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\VocalTractLabBackend\SoundLib.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\VocalTractLabBackend\Splines.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
@@ -163,9 +160,6 @@
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\VocalTractLabBackend\Signal.h">
-      <Filter>Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\VocalTractLabBackend\SoundLib.h">
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\VocalTractLabBackend\Splines.h">
