@@ -584,9 +584,9 @@ bool SoundOpenAL::stopRecording()
 SoundInterface *SoundInterface::getInstance()
 {
 #if defined(HAVE_OPENAL)
-  static std::auto_ptr<SoundInterface> instance(new SoundOpenAL);
+  static std::unique_ptr<SoundInterface> instance(new SoundOpenAL);
 #elif defined(WIN32)
-  static std::auto_ptr<SoundInterface> instance(new SoundWinMM);
+  static std::unique_ptr<SoundInterface> instance(new SoundWinMM);
 #else
 #error Missing implementation for SoundInterface on this platform.
 #endif

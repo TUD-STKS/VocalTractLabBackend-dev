@@ -26,8 +26,6 @@
 #include "Signal.h"
 #include "Dsp.h"
 
-using namespace std;
-
 // ****************************************************************************
 
 class SoundInterface
