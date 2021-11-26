@@ -30,6 +30,8 @@ TEST(ApiTest, Version)
 
 TEST(ApiTest, Constants)
 {
+
+	std::cout << std::filesystem::current_path() << std::endl;
 	vtlInitialize(speakerFile);
 
 	int audioSamplingRate, numTubeSections, numVocalTractParams, numGlottisParams, numAudioSamplesPerTractState;
@@ -197,6 +199,9 @@ TEST(ApiTest, GetTransferFunction)
 
 TEST(ApiTest, GesToAudio_FileOut)
 {
+
+	std::cout << std::filesystem::current_path() << std::endl;
+
 	vtlInitialize(speakerFile);
 	
 	int ret = vtlGesturalScoreToAudio(gesFile, wavFile, NULL, NULL, true);
@@ -253,4 +258,10 @@ TEST(ApiTest, TractToAudio_DataOut)
 	EXPECT_EQ(ret, 0);
 
 	vtlClose();
+}
+
+TEST(ApiTest, SaveSpeaker)
+{	
+	vtlInitialize(speakerFile);
+	vtlSaveSpeaker("newSpeakerFile.speaker");
 }

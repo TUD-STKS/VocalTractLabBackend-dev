@@ -33,8 +33,9 @@
 #include "VocalTract.h"
 #include "TdsModel.h"
 #include "GesturalScore.h"
-#include "XmlHelper.h"
-#include "XmlNode.h"
+
+#include "Speaker.h"
+
 #include "TlModel.h"
 
 #include <iostream>
@@ -93,90 +94,28 @@ BOOL APIENTRY DllMain( HANDLE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 bool vtlLoadSpeaker(const char *speakerFileName, VocalTract *vocalTract, 
   Glottis *glottis[], int &selectedGlottis)
 {
+    //// ****************************************************************
+	//// Load the speaker from XML file
+	//// ****************************************************************
+    Speaker speaker(speakerFileName);
 
-  // ****************************************************************
-  // Load the XML data from the speaker file.
-  // ****************************************************************
-
-  vector<XmlError> xmlErrors;
-  XmlNode *rootNode = xmlParseFile(string(speakerFileName), "speaker", &xmlErrors);
-  if (rootNode == NULL)
-  {
-    xmlPrintErrors(xmlErrors);
-    return false;
-  }
-
-  // ****************************************************************
-  // Load the data for the glottis models.
-  // ****************************************************************
-
-  // This may be overwritten later.
-  selectedGlottis = GEOMETRIC_GLOTTIS;
-
-  XmlNode *glottisModelsNode = rootNode->getChildElement("glottis_models");
-  if (glottisModelsNode != NULL)
-  {
-    int i;
-    XmlNode *glottisNode;
-
-    for (i=0; (i < (int)glottisModelsNode->childElement.size()) && (i < NUM_GLOTTIS_MODELS); i++)
+    *vocalTract = *speaker.getVocalTract();
+    const auto glottisInfo = speaker.getGlottisModels();
+    int i = 0;
+	for (const auto& g : glottisInfo)
     {
-      glottisNode = glottisModelsNode->childElement[i];
-      if (glottisNode->getAttributeString("type") == glottis[i]->getName())
-      {
-        if (glottisNode->getAttributeInt("selected") == 1)
-        {
-          selectedGlottis = i;
-        }
-        if (glottis[i]->readFromXml(*glottisNode) == false)
-        {
-          printf("Error: Failed to read glottis data for glottis model %d!\n", i);
-          delete rootNode;
-          return false;
-        }
-      }
-      else
-      {
-        printf("Error: The type of the glottis model %d in the speaker file is '%s' "
-          "but should be '%s'!\n", i, 
-          glottisNode->getAttributeString("type").c_str(), 
-          glottis[i]->getName().c_str());
+        glottis[i++] = g;
+	}
+    selectedGlottis = speaker.getSelectedGlottis();
 
-        delete rootNode;
-        return false;
-      }
-    }
-  }
-  else
-  {
-    printf("Warning: No glottis model data found in the speaker file %s!\n", speakerFileName);
-  }
-
-  // Free the memory of the XML tree !
-  delete rootNode;
-
-  // ****************************************************************
-  // Load the vocal tract anatomy and vocal tract shapes.
-  // ****************************************************************
-
-  try
-  {
-    vocalTract->readFromXml(string(speakerFileName));
-    vocalTract->calculateAll();
-  }
-  catch (std::string st)
-  {
-    printf("%s\n", st.c_str());
-    printf("Error reading the anatomy data from %s.\n", speakerFileName);
-    return false;
-  }
 
   return true;
 }
 
 
+
 // ****************************************************************************
-// Init. the synthesis with the given speaker file name, e.g. "JD2.speaker".
+// Init. the synthesis with the given speaker file name, e.g. "JD3.speaker".
 // This function should be called before any other function of this API.
 // Return values:
 // 0: success.
@@ -1639,6 +1578,21 @@ int vtlTractSequenceToAudio(const char* tractSequenceFileName, const char* wavFi
   // ****************************************************************
 
   return 0;
+}
+
+// ****************************************************************************
+int vtlSaveSpeaker(const char* speakerFileName)
+{
+    Speaker speaker(vocalTract, { std::begin(glottis), std::end(glottis) }, selectedGlottis);
+    try
+    {
+        speaker.save(speakerFileName);
+        return 0;
+    }
+    catch (std::exception&)
+    {
+        return 1;
+    }    
 }
 
 // ****************************************************************************

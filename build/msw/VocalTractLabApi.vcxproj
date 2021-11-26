@@ -27,6 +27,7 @@
     <ClCompile Include="..\..\src\VocalTractLabBackend\Geometry.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\GesturalScore.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\Glottis.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\GlottisFactory.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\IirFilter.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\ImpulseExcitation.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\LfPulse.cpp" />
@@ -36,6 +37,7 @@
     <ClCompile Include="..\..\src\VocalTractLabBackend\SegmentSequence.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\Signal.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\SoundLib.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Speaker.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\Splines.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\StaticPhone.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\Surface.cpp" />
@@ -66,6 +68,7 @@
     <ClInclude Include="..\..\include\VocalTractLabBackend\Geometry.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\GesturalScore.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\Glottis.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\GlottisFactory.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\IirFilter.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\ImpulseExcitation.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\LfPulse.h" />
@@ -75,6 +78,7 @@
     <ClInclude Include="..\..\include\VocalTractLabBackend\SegmentSequence.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\Signal.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\SoundLib.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\Speaker.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\Splines.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\StaticPhone.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\Surface.h" />

@@ -108,6 +108,12 @@
     <ClCompile Include="..\..\src\VocalTractLabBackend\XmlNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Speaker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\GlottisFactory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\VocalTractLabBackend\Constants.h">
@@ -213,6 +219,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\VocalTractLabBackend\AudioFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\VocalTractLabBackend\GlottisFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\VocalTractLabBackend\Speaker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

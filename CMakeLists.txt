@@ -10,7 +10,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 
 add_definitions(-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS)
 
-
 set(BackendSources 
  src/VocalTractLabBackend/AnatomyParams.cpp 
  src/VocalTractLabBackend/Dsp.cpp 
@@ -19,6 +18,7 @@ set(BackendSources
  src/VocalTractLabBackend/Geometry.cpp 
  src/VocalTractLabBackend/GesturalScore.cpp 
  src/VocalTractLabBackend/Glottis.cpp 
+ src/VocalTractLabBackend/GlottisFactory.cpp 
  src/VocalTractLabBackend/IirFilter.cpp 
  src/VocalTractLabBackend/ImpulseExcitation.cpp 
  src/VocalTractLabBackend/LfPulse.cpp 
@@ -27,6 +27,7 @@ set(BackendSources
  src/VocalTractLabBackend/Sampa.cpp 
  src/VocalTractLabBackend/SegmentSequence.cpp 
  src/VocalTractLabBackend/Signal.cpp 
+ src/VocalTractLabBackend/Speaker.cpp
  src/VocalTractLabBackend/Splines.cpp 
  src/VocalTractLabBackend/StaticPhone.cpp 
  src/VocalTractLabBackend/Surface.cpp 

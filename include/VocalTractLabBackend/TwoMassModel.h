@@ -101,6 +101,7 @@ public:
 
 public:
   TwoMassModel();
+  TwoMassModel(XmlNode& xml) : TwoMassModel() { this->readFromXml(xml); }
 
   // Functions that overwrite the virtual functions in the base class.
 
