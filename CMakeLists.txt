@@ -90,7 +90,7 @@ add_executable(
   "test/VtlBackendTests.cpp"
  )
 
-target_include_directories (VtlBackendTests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories (VtlBackendTests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/VocalTractLabBackend)
 
 target_link_libraries(
   VtlBackendTests
