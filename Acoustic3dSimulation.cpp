@@ -253,7 +253,10 @@ void Acoustic3dSimulation::setSimulationParameters(double meshDensity, double ma
   spectrumNoise.reset(2 * m_numFreq);
   spectrumConst.reset(2 * m_numFreq);
 
-  setBoundarySpecificAdmittance();
+  if (m_simuParams.freqDepLosses)
+  {
+    setBoundarySpecificAdmittance();
+  }
 }
 
 // ****************************************************************************
@@ -2230,7 +2233,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   // export cross-sections parameters
   for (int i(0); i < numSec; i++)
   {
-    log << "Scetion " << i << endl;
+    log << "Section " << i << endl;
     log << *m_crossSections[i] << endl;
   }
 
@@ -4798,6 +4801,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       //log << "angle " << prevAngle << endl;
 
       //log << "Section " << secIdx << " created" << endl;
+      //log << *m_crossSections.back() << endl;
+
       secIdx++;
     }
 
@@ -5086,6 +5091,9 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       contours.back()[c].bbox().ymax(),
       abs(contours.back()[c].bbox().xmin()),
       abs(contours.back()[c].bbox().ymin()) }));
+
+    //log << "Section " << secIdx << " created" << endl;
+    //log << *m_crossSections.back() << endl;
 
     secIdx++;
   }
