@@ -51,6 +51,43 @@
     <ClCompile Include="..\..\src\VocalTractLabBackend\XmlHelper.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\XmlNode.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\VocalTractLabBackend\AnatomyParams.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\AudioFile.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\Constants.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\Dsp.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\F0EstimatorYin.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\GeometricGlottis.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\Geometry.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\GesturalScore.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\Glottis.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\IirFilter.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\ImpulseExcitation.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\LfPulse.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\Matrix2x2.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\PoleZeroPlan.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\Sampa.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\SegmentSequence.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\Signal.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\SoundLib.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\Splines.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\StaticPhone.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\Surface.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\Synthesizer.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\TdsModel.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\TimeFunction.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\TlModel.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\TriangularGlottis.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\Tube.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\TubeSequence.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\TwoMassModel.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\VocalTract.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\VoiceQualityEstimator.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\VowelLf.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\XmlExceptions.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\XmlHelper.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\XmlNode.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
