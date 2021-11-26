@@ -60,9 +60,6 @@
     <ClCompile Include="..\..\src\VocalTractLabBackend\Signal.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\VocalTractLabBackend\SoundLib.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\VocalTractLabBackend\Splines.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

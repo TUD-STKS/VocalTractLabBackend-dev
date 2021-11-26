@@ -35,7 +35,6 @@
     <ClCompile Include="..\..\src\VocalTractLabBackend\Sampa.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\SegmentSequence.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\Signal.cpp" />
-    <ClCompile Include="..\..\src\VocalTractLabBackend\SoundLib.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\Speaker.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\Splines.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\StaticPhone.cpp" />
