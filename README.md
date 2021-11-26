@@ -1,4 +1,4 @@
-![CMake](https://github.com/TUD-STKS/VocalTractLabBackend-dev/workflows/cmake.yml/badge.svg) ![MSBuild](https://github.com/TUD-STKS/VocalTractLabBackend-dev/workflows/msbuild.yml/badge.svg)
+![CMake](https://github.com/TUD-STKS/VocalTractLabBackend-dev/actions/workflows/cmake.yml/badge.svg) ![MSBuild](https://github.com/TUD-STKS/VocalTractLabBackend-dev/actions/workflows/msbuild.yml/badge.svg)
 
 # VocalTractLabBackend-dev
 This repo contains the VocalTractLab backend source code and the C/C++ API for on-going development work. *This is not the place for official stable releases!* 
