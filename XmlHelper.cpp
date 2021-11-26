@@ -22,6 +22,8 @@
 #include "XmlHelper.h"
 #include <cstdio>
 
+#include <regex>
+#include <sstream>
 
 // ****************************************************************************
 // ****************************************************************************
@@ -102,6 +104,50 @@ void XmlHelper::readAttribute(XmlNode *node, const char *attrName, std::string &
   }
 
   attrValue = node->getAttributeString(attrName);
+}
+
+// ****************************************************************************
+// A very basic XML formatter. Currently only does indentation and requires
+// closing tags to be on their own line.
+// ****************************************************************************
+
+std::string XmlHelper::formatXmlString(const std::string& unformattedString)
+{
+    // Get rid of current indentation
+    std::stringstream ss(std::regex_replace(unformattedString, std::regex(R"(\n\s+)"), "\n"));
+
+    // Split into lines
+	std::string line;
+	std::vector<std::string> lines;
+    while (std::getline(ss, line))
+    {
+        lines.push_back(line);
+    }
+
+    // Indent properly
+    unsigned indent{ 0 };
+    std::ostringstream os;
+    for (auto& line : lines)
+    {
+        // If the line is a closing tag, reduce indent by one step
+        if (line.substr(0, 2) == "</")
+        {
+            indent -= 2;
+        }
+        // Indent
+        line = std::string(indent, ' ') + line;
+
+    	// Add line to string
+        os << line << std::endl;
+
+        // If the current line is not a self-closing or closing tag, increase indentation by one step
+	    if (line.substr(line.size() - 2, 2) != "/>" && line.substr(indent, 2) != "</")
+	    {
+            indent += 2;
+	    }
+    }
+
+    return os.str();
 }
 
 // ****************************************************************************

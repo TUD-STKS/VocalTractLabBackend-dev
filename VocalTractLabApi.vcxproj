@@ -28,6 +28,7 @@
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="GesturalScore.h" />
     <ClInclude Include="Glottis.h" />
+    <ClInclude Include="GlottisFactory.h" />
     <ClInclude Include="IirFilter.h" />
     <ClInclude Include="ImpulseExcitation.h" />
     <ClInclude Include="LfPulse.h" />
@@ -37,6 +38,7 @@
     <ClInclude Include="SegmentSequence.h" />
     <ClInclude Include="Signal.h" />
     <ClInclude Include="SoundLib.h" />
+    <ClInclude Include="Speaker.h" />
     <ClInclude Include="Splines.h" />
     <ClInclude Include="StaticPhone.h" />
     <ClInclude Include="Surface.h" />
@@ -67,6 +69,7 @@
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="GesturalScore.cpp" />
     <ClCompile Include="Glottis.cpp" />
+    <ClCompile Include="GlottisFactory.cpp" />
     <ClCompile Include="IirFilter.cpp" />
     <ClCompile Include="ImpulseExcitation.cpp" />
     <ClCompile Include="LfPulse.cpp" />
@@ -76,6 +79,7 @@
     <ClCompile Include="SegmentSequence.cpp" />
     <ClCompile Include="Signal.cpp" />
     <ClCompile Include="SoundLib.cpp" />
+    <ClCompile Include="Speaker.cpp" />
     <ClCompile Include="Splines.cpp" />
     <ClCompile Include="StaticPhone.cpp" />
     <ClCompile Include="Surface.cpp" />

@@ -22,6 +22,7 @@
 #ifndef __VOCALTRACT_H__
 #define __VOCALTRACT_H__
 
+#include <ostream>
 #include <string>
 #include "Surface.h"
 #include "Splines.h"
@@ -364,6 +365,7 @@ public:
 
 public:
   VocalTract();
+  VocalTract(XmlNode& xml);
   ~VocalTract();
 
   // ****************************************************************
@@ -386,12 +388,20 @@ public:
 
   void readAnatomyXml(XmlNode *anatomyNode);
   void readShapesXml(XmlNode *shapeListNode);
+  void readFromXml(XmlNode& node);
   void readFromXml(const string &speakerFileName);
-  void writeAnatomyXml(std::ostream &os, int indent);
-  void writeShapesXml(std::ostream &os, int indent);
-  void writeToXml(std::ostream &os, int indent);
+  void writeAnatomyXml(std::ostream &os, int indent) const;
+  void writeShapesXml(std::ostream &os, int indent) const;
+  void writeToXml(std::ostream &os, int indent) const;
 
   bool saveAsObjFile(const string &fileName, bool saveBothSides = true);
+
+  friend std::ostream& operator<<(std::ostream& os, const VocalTract& obj)
+  {
+      obj.writeToXml(os, 0);
+      return os;
+  }
+
 
   // ****************************************************************
   // Calculate the surfaces, center line, and area functions

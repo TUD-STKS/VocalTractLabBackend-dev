@@ -34,12 +34,17 @@ using namespace std;
 class XmlException : public std::exception
 {
 public:
-    const char* what() const throw ();
+    XmlException() = default;
+    XmlException(const std::string& msg) : message(msg) {}
+    const char* what() const throw () override;
+
+private:
+    std::string message{ "An XML exception occurred!" };
 };
 
 inline const char* XmlException::what() const throw ()
 {
-    return "An XML exception occurred!";
+    return message.c_str();
 }
 
 // ****************************************************************************
@@ -47,16 +52,16 @@ inline const char* XmlException::what() const throw ()
 class XmlAttributeNotFound : public XmlException
 {
 public:
-    XmlAttributeNotFound(std::string attribute) : m_message(attribute) { }
-    const char* what() const throw ();
+    XmlAttributeNotFound(const std::string& attribute) : message(attribute) { }
+    const char* what() const throw () override;
 
 private:
-    std::string m_message;
+    std::string message;
 };
 
 inline const char* XmlAttributeNotFound::what() const throw ()
 {
-    return (std::string("Tag '") + m_message + std::string("' could not be found in node!")).c_str();
+    return (std::string("Tag '") + message + std::string("' could not be found in node!")).c_str();
 }
 
 // ****************************************************************************
@@ -64,12 +69,12 @@ inline const char* XmlAttributeNotFound::what() const throw ()
 class XmlBadAttribute : public XmlException
 {
 public:
-    const char* what() const throw ();
+    const char* what() const throw () override;
 };
 
 inline const char* XmlBadAttribute::what() const throw ()
 {
-    return "Attribute could not be converted to expected type";
+    return "Attribute could not be converted to expected type!";
 }
 
 #endif

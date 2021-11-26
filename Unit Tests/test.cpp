@@ -4,14 +4,17 @@
 #include <string>
 #include <vector>
 
+#include <filesystem>
+
 #include "../VocalTractLabApi.h"
 
+
 // Some files used in or produced by the various tests
-const char* gesFile = "../../Unit Tests/example01.ges";
-const char* speakerFile = "../../Unit Tests/JD2.speaker";
-const char* svgFile = "../../Unit Tests/ExportTractSvg.svg";
-const char* tractSeqFile = "../../Unit Tests/TractSequence.seq";
-const char* wavFile = "../../Unit Tests/example01.wav";
+const char* gesFile = "example01.ges";
+const char* speakerFile = "../JD3.speaker";
+const char* svgFile = "ExportTractSvg.svg";
+const char* tractSeqFile = "TractSequence.seq";
+const char* wavFile = "example01.wav";
 
 
 TEST(ApiTest, Version) 
@@ -24,11 +27,14 @@ TEST(ApiTest, Version)
 
 TEST(ApiTest, Constants)
 {
+
+	std::cout << std::filesystem::current_path() << std::endl;
 	vtlInitialize(speakerFile);
 
-	int audioSamplingRate, numTubeSections, numVocalTractParams, numGlottisParams;
+	int audioSamplingRate, numTubeSections, numVocalTractParams, numGlottisParams, numAudioSamplesPerTractState;
+	double internalAudioSamplingRate;
 	int ret = vtlGetConstants(&audioSamplingRate, &numTubeSections,
-		&numVocalTractParams, &numGlottisParams);
+		&numVocalTractParams, &numGlottisParams, &numAudioSamplesPerTractState, &internalAudioSamplingRate);
 
 	EXPECT_EQ(ret, 0);
 	EXPECT_EQ(audioSamplingRate, 44100);
@@ -44,14 +50,17 @@ TEST(ApiTest, TractParamInfo)
 	vtlInitialize(speakerFile);
 
 	int _, numVocalTractParams;
-	vtlGetConstants(&_, &_, &numVocalTractParams, &_);
+	double d_;
+	vtlGetConstants(&_, &_, &numVocalTractParams, &_, &_, &d_);
 
 	std::vector<char> names(numVocalTractParams * 10);
+	std::vector<char> descriptions(numVocalTractParams * 50);
+	std::vector<char> units(numVocalTractParams * 10);
 	std::vector<double> paramMin(numVocalTractParams);
 	std::vector<double> paramMax(numVocalTractParams);
-	std::vector<double> paramNeutral(numVocalTractParams);
+	std::vector<double> paramStandard(numVocalTractParams);
 
-	int ret = vtlGetTractParamInfo(&names[0], &paramMin[0], &paramMax[0], &paramNeutral[0]);
+	int ret = vtlGetTractParamInfo(&names[0], &descriptions[0], &units[0], &paramMin[0], &paramMax[0], &paramStandard[0]);
 	EXPECT_EQ(ret, 0);
 	
 	vtlClose();
@@ -62,14 +71,17 @@ TEST(ApiTest, GlottisParamInfo)
 	vtlInitialize(speakerFile);
 
 	int _, numGlottisParams;
-	vtlGetConstants(&_, &_,	&_, &numGlottisParams);
+	double d_;
+	vtlGetConstants(&_, &_,	&_, &numGlottisParams, &_, &d_);
 	
 	std::vector<char> names(numGlottisParams * 10);
+	std::vector<char> descriptions(numGlottisParams * 50);
+	std::vector<char> units(numGlottisParams * 10);
 	std::vector<double> paramMin(numGlottisParams);
 	std::vector<double> paramMax(numGlottisParams);
-	std::vector<double> paramNeutral(numGlottisParams);
+	std::vector<double> paramStandard(numGlottisParams);
 
-	int ret = vtlGetGlottisParamInfo(&names[0], &paramMin[0], &paramMax[0], &paramNeutral[0]);
+	int ret = vtlGetGlottisParamInfo(&names[0], &descriptions[0], &units[0], &paramMin[0], &paramMax[0], &paramStandard[0]);
 	EXPECT_EQ(ret, 0);
 
 	vtlClose();
@@ -80,7 +92,8 @@ TEST(ApiTest, TractParams)
 	vtlInitialize(speakerFile);
 
 	int _, numVocalTractParams;
-	vtlGetConstants(&_, &_, &numVocalTractParams, &_);
+	double d_;
+	vtlGetConstants(&_, &_, &numVocalTractParams, &_, &_, &d_);
 
 	const char* shapeName = "a";
 	std::vector<double> param(numVocalTractParams);
@@ -96,7 +109,8 @@ TEST(ApiTest, ExportTractSvg)
 	vtlInitialize(speakerFile);
 
 	int _, numVocalTractParams;
-	vtlGetConstants(&_, &_, &numVocalTractParams, &_);
+	double d_;
+	vtlGetConstants(&_, &_, &numVocalTractParams, &_, &_, &d_);
 	const char* shapeName = "a";
 	std::vector<double> param(numVocalTractParams);
 	vtlGetTractParams(shapeName, &param[0]);
@@ -113,7 +127,8 @@ TEST(ApiTest, TractToTube)
 	vtlInitialize(speakerFile);
 
 	int _, numTubeSections, numVocalTractParams;
-	vtlGetConstants(&_, &numTubeSections, &numVocalTractParams, &_);
+	double d_;
+	vtlGetConstants(&_, &numTubeSections, &numVocalTractParams, &_, &_, &d_);
 	const char* shapeName = "a";
 	std::vector<double> param(numVocalTractParams);
 	vtlGetTractParams(shapeName, &param[0]);
@@ -141,7 +156,7 @@ TEST(ApiTest, DefaultTransferFunctionOptions)
 	int ret = vtlGetDefaultTransferFunctionOptions(&defaultOpts);
 
 	EXPECT_EQ(ret, 0);
-	EXPECT_EQ(defaultOpts.radiation, PARALLEL_RADIATION);
+	EXPECT_EQ(defaultOpts.radiationType, PARALLEL_RADIATION);
 	EXPECT_EQ(defaultOpts.boundaryLayer, true);
 	EXPECT_EQ(defaultOpts.heatConduction, false);
 	EXPECT_EQ(defaultOpts.softWalls, true);
@@ -151,7 +166,7 @@ TEST(ApiTest, DefaultTransferFunctionOptions)
 	EXPECT_EQ(defaultOpts.paranasalSinuses, true);
 	EXPECT_EQ(defaultOpts.piriformFossa, true);
 	EXPECT_EQ(defaultOpts.staticPressureDrops, true);
-	EXPECT_EQ(defaultOpts.type, SPECTRUM_UU);
+	EXPECT_EQ(defaultOpts.spectrumType, SPECTRUM_UU);
 }
 
 TEST(ApiTest, GetTransferFunction)
@@ -160,10 +175,11 @@ TEST(ApiTest, GetTransferFunction)
 
 	TransferFunctionOptions opts;
 	vtlGetDefaultTransferFunctionOptions(&opts);
-	opts.type = SPECTRUM_PU;
+	opts.spectrumType = SPECTRUM_PU;
 
-	int _, numVocalTractParams;
-	vtlGetConstants(&_, &_, &numVocalTractParams, &_);
+	int _, numTubeSections, numVocalTractParams;
+	double d_;
+	vtlGetConstants(&_, &numTubeSections, &numVocalTractParams, &_, &_, &d_);
 	
 	std::vector<double> tractParams(numVocalTractParams);
 	vtlGetTractParams("a", &tractParams[0]);
@@ -180,6 +196,9 @@ TEST(ApiTest, GetTransferFunction)
 
 TEST(ApiTest, GesToAudio_FileOut)
 {
+
+	std::cout << std::filesystem::current_path() << std::endl;
+
 	vtlInitialize(speakerFile);
 	
 	int ret = vtlGesturalScoreToAudio(gesFile, wavFile, NULL, NULL, true);
@@ -236,4 +255,10 @@ TEST(ApiTest, TractToAudio_DataOut)
 	EXPECT_EQ(ret, 0);
 
 	vtlClose();
+}
+
+TEST(ApiTest, SaveSpeaker)
+{	
+	vtlInitialize(speakerFile);
+	vtlSaveSpeaker("newSpeakerFile.speaker");
 }

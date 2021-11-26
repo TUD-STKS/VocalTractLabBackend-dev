@@ -56,6 +56,11 @@ VocalTract::VocalTract()
   init();
 }
 
+VocalTract::VocalTract(XmlNode& xml) : VocalTract()
+{
+    this->readFromXml(xml);
+}
+
 
 // ****************************************************************************
 /// Destructor.
@@ -175,7 +180,7 @@ void VocalTract::init()
   // Init. the anatomy from the above xml-string.
   // ****************************************************************
 
-  XmlNode *node = xmlParseString(anatomyString, "anatomy");
+  XmlNode* node = xmlParseString(anatomyString, "anatomy");
   if (node == NULL)
   {
     printf("Fatal error: No <anatomy> node!\n");
@@ -1614,72 +1619,112 @@ void VocalTract::readShapesXml(XmlNode *shapeListNode)
 
 }
 
+// ****************************************************************************
+/// Read the speaker anatomy and vocal tract shape list from an xml entry.
+// ****************************************************************************
+
+void VocalTract::readFromXml(XmlNode& node)
+{
+    XmlNode* anatomyNode = node.getChildElement("anatomy");
+    if (anatomyNode == nullptr)
+    {
+        throw std::string("[VocalTract::readFromXml()] Cannot find <anatomy> tag in XML!");
+    }
+    try
+    {
+        this->readAnatomyXml(anatomyNode);
+    }
+    catch (std::string st)
+    {
+        throw;
+    }
+
+    // ****************************************************************
+  // Read the <shapes> part of the vocal tract model.
+  // ****************************************************************
+
+    XmlNode* shapeListNode = node.getChildElement("shapes");
+    if (shapeListNode == nullptr)
+    {
+        throw std::string("[VocalTract::readFromXml()] Cannot find <shapes> tag in XML!");
+    }
+    try
+    {
+        this->readShapesXml(shapeListNode);
+    }
+    catch (std::string st)
+    {
+        throw;
+    }
+}
+
 
 // ****************************************************************************
 /// Read the speaker anatomy and vocal tract shape list from an xml file.
 // ****************************************************************************
 
-void VocalTract::readFromXml(const string &speakerFileName)
+void VocalTract::readFromXml(const string& speakerFileName)
 {
-  XmlNode *rootNode = xmlParseFile(speakerFileName, "speaker");
-  if (rootNode == NULL)
-  {
-    throw std::string("Error parsing the file ") + speakerFileName + ".";
-  }
+    XmlNode *rootNode = xmlParseFile(speakerFileName, "speaker");
+    if (rootNode == NULL)
+    {
+        throw std::string("Error parsing the file ") + speakerFileName + ".";
+    }
 
-  XmlNode *vocalTractNode = rootNode->getChildElement("vocal_tract_model");
-  if (vocalTractNode == NULL)
-  {
-    throw std::string("The file ") + speakerFileName + " has no <vocal_tract_model> element!";
-  }
+    XmlNode *vocalTractNode = rootNode->getChildElement("vocal_tract_model");
+    if (vocalTractNode == NULL)
+    {
+        throw std::string("The file ") + speakerFileName + " has no <vocal_tract_model> element!";
+    }
 
-  // ****************************************************************
-  // Read the <anatomy> part of the vocal tract model.
-  // ****************************************************************
+    // ****************************************************************
+    // Read the <anatomy> part of the vocal tract model.
+    // ****************************************************************
 
-  XmlNode *anatomyNode = vocalTractNode->getChildElement("anatomy");
-  if (anatomyNode == NULL)
-  {
-    throw std::string("The file ") + speakerFileName + " has no <anatomy> element!";
-  }
-  try
-  {
-    readAnatomyXml(anatomyNode);
-  }
-  catch (std::string st)
-  {
-    throw;
-  }
+    XmlNode *anatomyNode = vocalTractNode->getChildElement("anatomy");
+    if (anatomyNode == NULL)
+    {
+        throw std::string("The file ") + speakerFileName + " has no <anatomy> element!";
+    }
+    try
+    {
+        readAnatomyXml(anatomyNode);
+    }
+    catch (std::string st)
+    {
+        throw;
+    }
 
-  // ****************************************************************
-  // Read the <shapes> part of the vocal tract model.
-  // ****************************************************************
+    // ****************************************************************
+    // Read the <shapes> part of the vocal tract model.
+    // ****************************************************************
 
-  XmlNode *shapeListNode = vocalTractNode->getChildElement("shapes");
-  if (shapeListNode == NULL)
-  {
-    throw std::string("The file ") + speakerFileName + " has no <shapes> element!";
-  }
-  try
-  {
-    readShapesXml(shapeListNode);
-  }
-  catch (std::string st)
-  {
-    throw;
-  }
+    XmlNode *shapeListNode = vocalTractNode->getChildElement("shapes");
+    if (shapeListNode == NULL)
+    {
+        throw std::string("The file ") + speakerFileName + " has no <shapes> element!";
+    }
+    try
+    {
+        readShapesXml(shapeListNode);
+    }
+    catch (std::string st)
+    {
+        throw;
+    }
 
-  // Delete the XML-tree.
+    // Delete the XML-tree.
 
-  delete rootNode;
+    delete rootNode;
 }
+
 
 
 // ****************************************************************************
 // Write the anatomy parameters in xml-format into the ouput stream os.
 // ****************************************************************************
 
-void VocalTract::writeAnatomyXml(ostream &os, int indent)
+void VocalTract::writeAnatomyXml(ostream &os, int indent) const
 {
   int i;
   char st[1024];
@@ -1862,9 +1907,9 @@ void VocalTract::writeAnatomyXml(ostream &os, int indent)
 
   for (i=0; i < NUM_PARAMS; i++)
   {
-    sprintf(st, "<param index=\"%d\"  name=\"%s\"  min=\"%2.3f\"  max=\"%2.3f\"  neutral=\"%2.3f\"  "
+    sprintf(st, "<param index=\"%d\"  name=\"%s\"  description=\"%s\"  min=\"%2.3f\"  max=\"%2.3f\"  neutral=\"%2.3f\"  "
       "positive_velocity_factor=\"%2.3f\"  negative_velocity_factor=\"%2.3f\" />",
-      i, param[i].name.c_str(), param[i].min, param[i].max, param[i].neutral,
+      i, param[i].name.c_str(), param[i].description.c_str(), param[i].min, param[i].max, param[i].neutral,
       anatomy.positiveVelocityFactor[i], anatomy.negativeVelocityFactor[i]);
     os << string(indent, ' ') << st << endl;
   }
@@ -1881,12 +1926,11 @@ void VocalTract::writeAnatomyXml(ostream &os, int indent)
 /// stream os.
 // ****************************************************************************
 
-void VocalTract::writeShapesXml(std::ostream &os, int indent)
+void VocalTract::writeShapesXml(std::ostream &os, int indent) const
 {
   int i, k;
   char st[1024];
-  Shape *s = NULL;
-
+  
   os << string(indent, ' ') << "<shapes>" << endl;
   indent+= 2;
 
@@ -1896,7 +1940,7 @@ void VocalTract::writeShapesXml(std::ostream &os, int indent)
 
   for (i=0; i < (int)shapes.size(); i++)
   {
-    s = &(shapes[i]);
+    const Shape* s = &(shapes[i]);
     os << string(indent, ' ') << "<shape name=\"" << s->name <<"\">" << endl;
     indent+= 2;
 
@@ -1921,7 +1965,7 @@ void VocalTract::writeShapesXml(std::ostream &os, int indent)
 /// given xml stream.
 // ****************************************************************************
 
-void VocalTract::writeToXml(std::ostream &os, int indent)
+void VocalTract::writeToXml(std::ostream &os, int indent) const
 {
   os << string(indent, ' ') << "<vocal_tract_model>" << endl;
   indent+= 2;

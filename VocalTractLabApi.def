@@ -1,6 +1,7 @@
 LIBRARY
 EXPORTS
 vtlInitialize
+vtlSaveSpeaker
 vtlClose
 vtlCalcTongueRootAutomatically
 vtlGetVersion
