@@ -53,7 +53,7 @@ extern "C"{ /* start extern "C" */
 // ****************************************************************************
 
 // ****************************************************************************
-// Init. the synthesis with the given speaker file name, e.g. "JD2.speaker".
+// Init. the synthesis with the given speaker file name, e.g. "JD3.speaker".
 // This function should be called before any other function of this API.
 // Return values:
 // 0: success.
@@ -64,7 +64,7 @@ C_EXPORT int vtlInitialize(const char *speakerFileName);
 
 // ****************************************************************************
 // Save the current speaker information (vocal tract and glottis shape) in
-// a speaker file (e.g., "JD2.speaker")
+// a speaker file (e.g., "JD3.speaker")
 // Return values:
 // 0: success.
 // 1: Saving the speaker file failed.

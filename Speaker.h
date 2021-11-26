@@ -49,7 +49,7 @@ public:
 	/// @brief Get the currently selected glottis model.
 	/// @return The index in the vector of glottis models (see getGlottisModels())
 	/// of the currently selected glottis model
-	size_t getSelectedGlottis() const { return selectedGlottis; }
+	size_t getSelectedGlottis() const;
 	/// @brief Set the speaker's glottis models.
 	/// @param newModels A vector containing pointers to Glottis-derived objects.
 	/// Speaker does not assume ownership of the pointers and thus never deletes them!
@@ -57,7 +57,7 @@ public:
 	/// @brief Set the currently selected glottis.
 	/// @param idx The index of the currently selected glottis w.r.t. the vector of
 	///	glottis models (see getGlottisModels()).
-	void setSelectedGlottis(size_t idx) { selectedGlottis = idx; }
+	void setSelectedGlottis(size_t idx);
 
 	/// @brief Set the speaker's vocal tract models.
 	/// @param newModel A pointer to a VocalTract object. Speaker does not assume
@@ -82,10 +82,7 @@ public:
 	/// @param os An already opened output stream.
 	/// @param obj The Speaker object to output.
 	/// @return The output stream.
-	friend std::ostream& operator<<(std::ostream& os, const Speaker& obj)
-	{
-		return obj.save(os);
-	}
+	friend std::ostream& operator<<(std::ostream& os, const Speaker& obj);
 
 private:
 	/// @brief Stores the glottis models. Does not assume ownership of the

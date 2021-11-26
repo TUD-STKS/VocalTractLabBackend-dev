@@ -64,16 +64,16 @@ Glottis* GlottisFactory::makeGlottis(GlottisModel type, XmlNode& xml)
 
 Glottis* GlottisFactory::makeGlottis(const std::string& type)
 {
-	const auto enumIt = string_to_enum.find(type);
-	if (enumIt == string_to_enum.end()) throw std::invalid_argument("[GlottisFactory::makeGlottis()] Invalid glottis name: " + type);
+	const auto enumIt = glottis_name_to_enum.find(type);
+	if (enumIt == glottis_name_to_enum.end()) throw std::invalid_argument("[GlottisFactory::makeGlottis()] Invalid glottis name: " + type);
 
 	return makeGlottis(enumIt->second);
 }
 
 Glottis* GlottisFactory::makeGlottis(const std::string& type, XmlNode& xml)
 {
-	const auto enumIt = string_to_enum.find(type);
-	if (enumIt == string_to_enum.end()) throw std::invalid_argument("[GlottisFactory::makeGlottis()] Invalid glottis name: " + type);
+	const auto enumIt = glottis_name_to_enum.find(type);
+	if (enumIt == glottis_name_to_enum.end()) throw std::invalid_argument("[GlottisFactory::makeGlottis()] Invalid glottis name: " + type);
 
 	return makeGlottis(enumIt->second, xml);
 }

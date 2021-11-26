@@ -180,7 +180,7 @@ void VocalTract::init()
   // Init. the anatomy from the above xml-string.
   // ****************************************************************
 
-  XmlNode *node = xmlParseString(anatomyString, "anatomy");
+  XmlNode* node = xmlParseString(anatomyString, "anatomy");
   if (node == NULL)
   {
     printf("Fatal error: No <anatomy> node!\n");
@@ -1665,13 +1665,13 @@ void VocalTract::readFromXml(XmlNode& node)
 
 void VocalTract::readFromXml(const string& speakerFileName)
 {
-    XmlNode* rootNode = xmlParseFile(speakerFileName, "speaker");
+    XmlNode *rootNode = xmlParseFile(speakerFileName, "speaker");
     if (rootNode == NULL)
     {
         throw std::string("Error parsing the file ") + speakerFileName + ".";
     }
 
-    XmlNode* vocalTractNode = rootNode->getChildElement("vocal_tract_model");
+    XmlNode *vocalTractNode = rootNode->getChildElement("vocal_tract_model");
     if (vocalTractNode == NULL)
     {
         throw std::string("The file ") + speakerFileName + " has no <vocal_tract_model> element!";
@@ -1681,7 +1681,7 @@ void VocalTract::readFromXml(const string& speakerFileName)
     // Read the <anatomy> part of the vocal tract model.
     // ****************************************************************
 
-    XmlNode* anatomyNode = vocalTractNode->getChildElement("anatomy");
+    XmlNode *anatomyNode = vocalTractNode->getChildElement("anatomy");
     if (anatomyNode == NULL)
     {
         throw std::string("The file ") + speakerFileName + " has no <anatomy> element!";
@@ -1699,7 +1699,7 @@ void VocalTract::readFromXml(const string& speakerFileName)
     // Read the <shapes> part of the vocal tract model.
     // ****************************************************************
 
-    XmlNode* shapeListNode = vocalTractNode->getChildElement("shapes");
+    XmlNode *shapeListNode = vocalTractNode->getChildElement("shapes");
     if (shapeListNode == NULL)
     {
         throw std::string("The file ") + speakerFileName + " has no <shapes> element!";

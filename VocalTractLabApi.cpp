@@ -115,7 +115,7 @@ bool vtlLoadSpeaker(const char *speakerFileName, VocalTract *vocalTract,
 
 
 // ****************************************************************************
-// Init. the synthesis with the given speaker file name, e.g. "JD2.speaker".
+// Init. the synthesis with the given speaker file name, e.g. "JD3.speaker".
 // This function should be called before any other function of this API.
 // Return values:
 // 0: success.

@@ -51,9 +51,19 @@ std::vector<Glottis*> Speaker::getGlottisModels() const
 	return glottisModels;
 }
 
+size_t Speaker::getSelectedGlottis() const
+{
+	return selectedGlottis;
+}
+
 void Speaker::setGlottisModels(const std::vector<Glottis*>& newModels)
 {
 	glottisModels = newModels;
+}
+
+void Speaker::setSelectedGlottis(size_t idx)
+{
+	selectedGlottis = idx;
 }
 
 void Speaker::setVocalTract(VocalTract* newModel)
@@ -165,4 +175,9 @@ void Speaker::save(const std::string& path) const
     os << *this;
 
     os.close();
+}
+
+std::ostream& operator<<(std::ostream& os, const Speaker& obj)
+{
+	return obj.save(os);
 }

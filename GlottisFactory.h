@@ -43,7 +43,7 @@ namespace GlottisFactory  // Factory design pattern
 {
 	/// @brief A map to convert a string representation of a glottis type
 	///	to the corresponding enum value.
-	const map<std::string, GlottisModel> string_to_enum
+	const map<std::string, GlottisModel> glottis_name_to_enum
 	{
 	{"Geometric glottis", GEOMETRIC_GLOTTIS},
 	{"Two-mass model", TWO_MASS_MODEL},
