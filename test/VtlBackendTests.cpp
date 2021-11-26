@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "Backend/Sampa.h"
+#include "VocalTractLabBackend/Sampa.h"
 
 TEST(BackendTest, Sampa) 
 {

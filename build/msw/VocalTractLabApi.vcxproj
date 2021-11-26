@@ -19,79 +19,41 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\AnatomyParams.cpp" />
-    <ClCompile Include="..\..\src\Dsp.cpp" />
-    <ClCompile Include="..\..\src\F0EstimatorYin.cpp" />
-    <ClCompile Include="..\..\src\GeometricGlottis.cpp" />
-    <ClCompile Include="..\..\src\Geometry.cpp" />
-    <ClCompile Include="..\..\src\GesturalScore.cpp" />
-    <ClCompile Include="..\..\src\Glottis.cpp" />
-    <ClCompile Include="..\..\src\IirFilter.cpp" />
-    <ClCompile Include="..\..\src\ImpulseExcitation.cpp" />
-    <ClCompile Include="..\..\src\LfPulse.cpp" />
-    <ClCompile Include="..\..\src\Matrix2x2.cpp" />
-    <ClCompile Include="..\..\src\PoleZeroPlan.cpp" />
-    <ClCompile Include="..\..\src\Sampa.cpp" />
-    <ClCompile Include="..\..\src\SegmentSequence.cpp" />
-    <ClCompile Include="..\..\src\Signal.cpp" />
-    <ClCompile Include="..\..\src\SoundLib.cpp" />
-    <ClCompile Include="..\..\src\Splines.cpp" />
-    <ClCompile Include="..\..\src\StaticPhone.cpp" />
-    <ClCompile Include="..\..\src\Surface.cpp" />
-    <ClCompile Include="..\..\src\Synthesizer.cpp" />
-    <ClCompile Include="..\..\src\TdsModel.cpp" />
-    <ClCompile Include="..\..\src\TimeFunction.cpp" />
-    <ClCompile Include="..\..\src\TlModel.cpp" />
-    <ClCompile Include="..\..\src\TriangularGlottis.cpp" />
-    <ClCompile Include="..\..\src\Tube.cpp" />
-    <ClCompile Include="..\..\src\TwoMassModel.cpp" />
-    <ClCompile Include="..\..\src\VocalTract.cpp" />
-    <ClCompile Include="..\..\src\VocalTractLabApi.cpp" />
-    <ClCompile Include="..\..\src\VoiceQualityEstimator.cpp" />
-    <ClCompile Include="..\..\src\VowelLf.cpp" />
-    <ClCompile Include="..\..\src\XmlHelper.cpp" />
-    <ClCompile Include="..\..\src\XmlNode.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabApi\VocalTractLabApi.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\AnatomyParams.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Dsp.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\F0EstimatorYin.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\GeometricGlottis.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Geometry.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\GesturalScore.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Glottis.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\IirFilter.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\ImpulseExcitation.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\LfPulse.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Matrix2x2.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\PoleZeroPlan.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Sampa.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\SegmentSequence.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Signal.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\SoundLib.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Splines.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\StaticPhone.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Surface.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Synthesizer.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\TdsModel.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\TimeFunction.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\TlModel.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\TriangularGlottis.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Tube.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\TwoMassModel.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\VocalTract.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\VoiceQualityEstimator.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\VowelLf.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\XmlHelper.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\XmlNode.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\src\VocalTractLabApi.def" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\include\Backend\AnatomyParams.h" />
-    <ClInclude Include="..\..\include\Backend\AudioFile.h" />
-    <ClInclude Include="..\..\include\Backend\Constants.h" />
-    <ClInclude Include="..\..\include\Backend\Dsp.h" />
-    <ClInclude Include="..\..\include\Backend\F0EstimatorYin.h" />
-    <ClInclude Include="..\..\include\Backend\GeometricGlottis.h" />
-    <ClInclude Include="..\..\include\Backend\Geometry.h" />
-    <ClInclude Include="..\..\include\Backend\GesturalScore.h" />
-    <ClInclude Include="..\..\include\Backend\Glottis.h" />
-    <ClInclude Include="..\..\include\Backend\IirFilter.h" />
-    <ClInclude Include="..\..\include\Backend\ImpulseExcitation.h" />
-    <ClInclude Include="..\..\include\Backend\LfPulse.h" />
-    <ClInclude Include="..\..\include\Backend\Matrix2x2.h" />
-    <ClInclude Include="..\..\include\Backend\PoleZeroPlan.h" />
-    <ClInclude Include="..\..\include\Backend\Sampa.h" />
-    <ClInclude Include="..\..\include\Backend\SegmentSequence.h" />
-    <ClInclude Include="..\..\include\Backend\Signal.h" />
-    <ClInclude Include="..\..\include\Backend\SoundLib.h" />
-    <ClInclude Include="..\..\include\Backend\Splines.h" />
-    <ClInclude Include="..\..\include\Backend\StaticPhone.h" />
-    <ClInclude Include="..\..\include\Backend\Surface.h" />
-    <ClInclude Include="..\..\include\Backend\Synthesizer.h" />
-    <ClInclude Include="..\..\include\Backend\TdsModel.h" />
-    <ClInclude Include="..\..\include\Backend\TimeFunction.h" />
-    <ClInclude Include="..\..\include\Backend\TlModel.h" />
-    <ClInclude Include="..\..\include\Backend\TriangularGlottis.h" />
-    <ClInclude Include="..\..\include\Backend\Tube.h" />
-    <ClInclude Include="..\..\include\Backend\TubeSequence.h" />
-    <ClInclude Include="..\..\include\Backend\TwoMassModel.h" />
-    <ClInclude Include="..\..\include\Backend\VocalTract.h" />
-    <ClInclude Include="..\..\include\Backend\VoiceQualityEstimator.h" />
-    <ClInclude Include="..\..\include\Backend\VowelLf.h" />
-    <ClInclude Include="..\..\include\Backend\XmlExceptions.h" />
-    <ClInclude Include="..\..\include\Backend\XmlHelper.h" />
-    <ClInclude Include="..\..\include\Backend\XmlNode.h" />
-    <ClInclude Include="..\..\include\VocalTractLabApi\VocalTractLabApi.h" />
+    <None Include="..\..\src\VocalTractLabApi\VocalTractLabApi.def" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A9B93E13-A27D-42B6-BE82-7B564A6071BA}</ProjectGuid>
@@ -170,13 +132,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\include\Backend;..\..\include\VocalTractLabApi;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\include\VocalTractLabBackend;..\..\include\VocalTractLabApi;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ModuleDefinitionFile>../../src/VocalTractLabApi.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>../../src/VocalTractLabApi/VocalTractLabApi.def</ModuleDefinitionFile>
       <AdditionalDependencies>winmm.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Lib>
@@ -211,7 +173,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\include\Backend;..\..\include\VocalTractLabApi;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\include\VocalTractLabBackend;..\..\include\VocalTractLabApi;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
@@ -220,7 +182,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>winmm.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ModuleDefinitionFile>../../src/VocalTractLabApi.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>../../src/VocalTractLabApi/VocalTractLabApi.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -6,78 +6,102 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\AnatomyParams.cpp" />
-    <ClCompile Include="..\..\src\Dsp.cpp" />
-    <ClCompile Include="..\..\src\F0EstimatorYin.cpp" />
-    <ClCompile Include="..\..\src\GeometricGlottis.cpp" />
-    <ClCompile Include="..\..\src\Geometry.cpp" />
-    <ClCompile Include="..\..\src\GesturalScore.cpp" />
-    <ClCompile Include="..\..\src\Glottis.cpp" />
-    <ClCompile Include="..\..\src\IirFilter.cpp" />
-    <ClCompile Include="..\..\src\ImpulseExcitation.cpp" />
-    <ClCompile Include="..\..\src\LfPulse.cpp" />
-    <ClCompile Include="..\..\src\Matrix2x2.cpp" />
-    <ClCompile Include="..\..\src\PoleZeroPlan.cpp" />
-    <ClCompile Include="..\..\src\Sampa.cpp" />
-    <ClCompile Include="..\..\src\SegmentSequence.cpp" />
-    <ClCompile Include="..\..\src\Signal.cpp" />
-    <ClCompile Include="..\..\src\SoundLib.cpp" />
-    <ClCompile Include="..\..\src\Splines.cpp" />
-    <ClCompile Include="..\..\src\StaticPhone.cpp" />
-    <ClCompile Include="..\..\src\Surface.cpp" />
-    <ClCompile Include="..\..\src\Synthesizer.cpp" />
-    <ClCompile Include="..\..\src\TdsModel.cpp" />
-    <ClCompile Include="..\..\src\TimeFunction.cpp" />
-    <ClCompile Include="..\..\src\TlModel.cpp" />
-    <ClCompile Include="..\..\src\TriangularGlottis.cpp" />
-    <ClCompile Include="..\..\src\Tube.cpp" />
-    <ClCompile Include="..\..\src\TwoMassModel.cpp" />
-    <ClCompile Include="..\..\src\VocalTract.cpp" />
-    <ClCompile Include="..\..\src\VocalTractLabApi.cpp" />
-    <ClCompile Include="..\..\src\VoiceQualityEstimator.cpp" />
-    <ClCompile Include="..\..\src\VowelLf.cpp" />
-    <ClCompile Include="..\..\src\XmlHelper.cpp" />
-    <ClCompile Include="..\..\src\XmlNode.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabApi\VocalTractLabApi.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\AnatomyParams.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Dsp.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\F0EstimatorYin.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\GeometricGlottis.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Geometry.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\GesturalScore.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Glottis.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\IirFilter.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\ImpulseExcitation.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\LfPulse.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Matrix2x2.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\PoleZeroPlan.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Sampa.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\SegmentSequence.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Signal.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\SoundLib.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Splines.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\StaticPhone.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Surface.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Synthesizer.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\TdsModel.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\TimeFunction.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\TlModel.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\TriangularGlottis.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\Tube.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\TwoMassModel.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\VocalTract.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\VoiceQualityEstimator.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\VowelLf.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\XmlHelper.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\XmlNode.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\src\VocalTractLabApi.def" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\include\VocalTractLabApi\VocalTractLabApi.h" />
-    <ClInclude Include="..\..\include\Backend\AnatomyParams.h" />
-    <ClInclude Include="..\..\include\Backend\AudioFile.h" />
-    <ClInclude Include="..\..\include\Backend\Constants.h" />
-    <ClInclude Include="..\..\include\Backend\Dsp.h" />
-    <ClInclude Include="..\..\include\Backend\F0EstimatorYin.h" />
-    <ClInclude Include="..\..\include\Backend\GeometricGlottis.h" />
-    <ClInclude Include="..\..\include\Backend\Geometry.h" />
-    <ClInclude Include="..\..\include\Backend\GesturalScore.h" />
-    <ClInclude Include="..\..\include\Backend\Glottis.h" />
-    <ClInclude Include="..\..\include\Backend\IirFilter.h" />
-    <ClInclude Include="..\..\include\Backend\ImpulseExcitation.h" />
-    <ClInclude Include="..\..\include\Backend\LfPulse.h" />
-    <ClInclude Include="..\..\include\Backend\Matrix2x2.h" />
-    <ClInclude Include="..\..\include\Backend\PoleZeroPlan.h" />
-    <ClInclude Include="..\..\include\Backend\Sampa.h" />
-    <ClInclude Include="..\..\include\Backend\SegmentSequence.h" />
-    <ClInclude Include="..\..\include\Backend\Signal.h" />
-    <ClInclude Include="..\..\include\Backend\SoundLib.h" />
-    <ClInclude Include="..\..\include\Backend\Splines.h" />
-    <ClInclude Include="..\..\include\Backend\StaticPhone.h" />
-    <ClInclude Include="..\..\include\Backend\Surface.h" />
-    <ClInclude Include="..\..\include\Backend\Synthesizer.h" />
-    <ClInclude Include="..\..\include\Backend\TdsModel.h" />
-    <ClInclude Include="..\..\include\Backend\TimeFunction.h" />
-    <ClInclude Include="..\..\include\Backend\TlModel.h" />
-    <ClInclude Include="..\..\include\Backend\TriangularGlottis.h" />
-    <ClInclude Include="..\..\include\Backend\Tube.h" />
-    <ClInclude Include="..\..\include\Backend\TubeSequence.h" />
-    <ClInclude Include="..\..\include\Backend\TwoMassModel.h" />
-    <ClInclude Include="..\..\include\Backend\VocalTract.h" />
-    <ClInclude Include="..\..\include\Backend\VoiceQualityEstimator.h" />
-    <ClInclude Include="..\..\include\Backend\VowelLf.h" />
-    <ClInclude Include="..\..\include\Backend\XmlExceptions.h" />
-    <ClInclude Include="..\..\include\Backend\XmlHelper.h" />
-    <ClInclude Include="..\..\include\Backend\XmlNode.h" />
+    <None Include="..\..\src\VocalTractLabApi\VocalTractLabApi.def" />
   </ItemGroup>
 </Project>
