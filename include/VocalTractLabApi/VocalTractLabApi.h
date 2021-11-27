@@ -204,6 +204,7 @@ C_EXPORT int vtlGetTractParams(const char *shapeName, double *tractParams);
 // 2: Writing the SVG file failed.
 // ****************************************************************************
 
+
 C_EXPORT int vtlExportTractSvg(double *inTractParams, double *outTractParams, const char *fileName);
 
 
