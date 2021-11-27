@@ -191,8 +191,12 @@ C_EXPORT int vtlGetTractParams(const char *shapeName, double *tractParams);
 
 
 // ****************************************************************************
-// Exports the vocal tract contours for the given vector of vocal tract
+// Exports the vocal tract contours for the given array of vocal tract
 // parameters as a SVG file (scalable vector graphics).
+//
+// Parameters out:
+// o outTractParams: The bio-mechanically constrained tract parameter array
+// that is actually used to determine the shape.
 //
 // Function return value:
 // 0: success.
@@ -200,24 +204,38 @@ C_EXPORT int vtlGetTractParams(const char *shapeName, double *tractParams);
 // 2: Writing the SVG file failed.
 // ****************************************************************************
 
-C_EXPORT int vtlExportTractSvg(double *tractParams, const char *fileName);
+C_EXPORT int vtlExportTractSvg(double *inTractParams, double *outTractParams, const char *fileName);
 
 
 // ****************************************************************************
-// Provides the tube data (especially the area function) for the given vector
-// of tractParams. The vectors tubeLength_cm, tubeArea_cm2, and tubeArticulator, 
-// must each have as many elements as tube sections.
-// The values incisorPos_cm, tongueTipSideElevation, and velumOpening_cm2 are 
-// one double value each.
+// Provides the tube data (especially the area function) for a given set
+// of supra-glottal parameters.
+// 
+// Parameters in:
+// o inTractParams: Is an array of supra-glottal parameters with 
+//     numVocalTractParams elements.
+// 
+// Parameters out:
+// o outTractParams: Is an array of supra-glottal parameters (biological constraints
+//     applied) with numVocalTractParams elements.
+// o tubeLength_cm: Array containing the lengths of the individual tube sections.
+//     This array must have as many elements as tube sections.
+// o tubeArea_cm2: Array containing the cross-sectional areas of the individual 
+//     tube sections. This array must have as many elements as tube sections.
+// o tubeArticulator: Array containing the lengths of the individual tube sections.
+//     This array must have as many elements as tube sections.
+// o incisorPos_cm: A double value.
+// o tongueTipSideElevation: A double value.
+// o velumOpening_cm2: A double value.
 //
 // Function return value:
 // 0: success.
 // 1: The API has not been initialized.
 // ****************************************************************************
 
-C_EXPORT int vtlTractToTube(double* tractParams,
-  double* tubeLength_cm, double* tubeArea_cm2, int* tubeArticulator,
-  double* incisorPos_cm, double* tongueTipSideElevation, double* velumOpening_cm2);
+C_EXPORT int vtlTractToTube(double *inTractParams, double *outTracParams,
+  double *tubeLength_cm, double *tubeArea_cm2, int *tubeArticulator,
+  double *incisorPos_cm, double *tongueTipSideElevation, double *velumOpening_cm2);
 
 
 // ****************************************************************************
@@ -282,12 +300,12 @@ C_EXPORT int vtlGetDefaultTransferFunctionOptions(TransferFunctionOptions* opts)
 
 
 // ****************************************************************************
-// Calculates the volume velocity transfer function of the vocal tract between 
+// Calculates the transfer function of the vocal tract between 
 // the glottis and the lips for the given vector of vocal tract parameters and
 // returns the spectrum in terms of magnitude and phase.
 //
 // Parameters in:
-// o tractParams: Is a vector of vocal tract parameters with 
+// o inTractParams: Is an array of vocal tract parameters with 
 //     numVocalTractParams elements.
 // o numSpectrumSamples: The number of samples (points) in the requested 
 //     spectrum. This number of samples includes the negative frequencies and
@@ -304,10 +322,12 @@ C_EXPORT int vtlGetDefaultTransferFunctionOptions(TransferFunctionOptions* opts)
 //     vtlGetDefaultTransferFunctionOptions()).
 // 
 // Parameters out:
-// o magnitude: Vector of spectral magnitudes at equally spaced discrete 
-//     frequencies. This vector mus have at least numSpectrumSamples elements.
-// o phase_rad: Vector of the spectral phase in radians at equally 
-//     spaced discrete frequencies. This vector must have at least 
+// o outTractParams: Is an array of supra-glottal parameters (biological constraints
+//     applied) with numVocalTractParams elements.
+// o magnitude: Array of spectral magnitudes at equally spaced discrete 
+//     frequencies. This array mus have at least numSpectrumSamples elements.
+// o phase_rad: Array of the spectral phase in radians at equally 
+//     spaced discrete frequencies. This array must have at least 
 //     numSpectrumSamples elements.
 //
 // Function return value:
@@ -315,8 +335,8 @@ C_EXPORT int vtlGetDefaultTransferFunctionOptions(TransferFunctionOptions* opts)
 // 1: The API has not been initialized.
 // ****************************************************************************
 
-C_EXPORT int vtlGetTransferFunction(double* tractParams, int numSpectrumSamples,
-    TransferFunctionOptions* opts, double* magnitude, double* phase_rad);
+C_EXPORT int vtlGetTransferFunction(double *inTractParams, int numSpectrumSamples,
+    TransferFunctionOptions *opts, double *outTractParams, double *magnitude, double *phase_rad);
 
 
 // ****************************************************************************

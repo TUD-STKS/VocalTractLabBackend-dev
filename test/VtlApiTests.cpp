@@ -115,10 +115,11 @@ TEST(ApiTest, ExportTractSvg)
 	double d_;
 	vtlGetConstants(&_, &_, &numVocalTractParams, &_, &_, &d_);
 	const char* shapeName = "a";
-	std::vector<double> param(numVocalTractParams);
-	vtlGetTractParams(shapeName, &param[0]);
+	std::vector<double> inTractParams(numVocalTractParams);
+	std::vector<double> outTractParams(numVocalTractParams);
+	vtlGetTractParams(shapeName, &inTractParams[0]);
 
-	int ret = vtlExportTractSvg(&param[0], svgFile);
+	int ret = vtlExportTractSvg(&inTractParams[0], &outTractParams[0], svgFile);
 
 	EXPECT_EQ(ret, 0);
 
@@ -133,8 +134,9 @@ TEST(ApiTest, TractToTube)
 	double d_;
 	vtlGetConstants(&_, &numTubeSections, &numVocalTractParams, &_, &_, &d_);
 	const char* shapeName = "a";
-	std::vector<double> param(numVocalTractParams);
-	vtlGetTractParams(shapeName, &param[0]);
+	std::vector<double> inTractParams(numVocalTractParams);
+	std::vector<double> outTractParams(numVocalTractParams);
+	vtlGetTractParams(shapeName, &inTractParams[0]);
 
 	std::vector<double> tubeLength_cm(numTubeSections);
 	std::vector<double> tubeArea_cm2(numTubeSections);
@@ -143,7 +145,7 @@ TEST(ApiTest, TractToTube)
 	std::vector<double> tongueTipSideElevation(numTubeSections);
 	std::vector<double> velumOpening_cm2(numTubeSections);
 
-	int ret = vtlTractToTube(&param[0], &tubeLength_cm[0], &tubeArea_cm2[0], &tubeArticulator[0],
+	int ret = vtlTractToTube(&inTractParams[0], &outTractParams[0], &tubeLength_cm[0], &tubeArea_cm2[0], &tubeArticulator[0],
 		&incisorPos_cm[0], &tongueTipSideElevation[0], &velumOpening_cm2[0]);
 
 	EXPECT_EQ(ret, 0);
@@ -184,14 +186,15 @@ TEST(ApiTest, GetTransferFunction)
 	double d_;
 	vtlGetConstants(&_, &numTubeSections, &numVocalTractParams, &_, &_, &d_);
 	
-	std::vector<double> tractParams(numVocalTractParams);
-	vtlGetTractParams("a", &tractParams[0]);
+	std::vector<double> inTractParams(numVocalTractParams);
+	std::vector<double> outTractParams(numVocalTractParams);
+	vtlGetTractParams("a", &inTractParams[0]);
 	
 	const int numSamples = 4096;
 	std::vector<double> magnitude(numSamples);
 	std::vector<double> phase(numSamples);
-	int ret = vtlGetTransferFunction(&tractParams[0], numSamples,
-		&opts, &magnitude[0], &phase[0]);
+	int ret = vtlGetTransferFunction(&inTractParams[0], numSamples,
+		&opts, &outTractParams[0], &magnitude[0], &phase[0]);
 
 	EXPECT_EQ(ret, 0);
 }
