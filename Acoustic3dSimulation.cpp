@@ -2117,7 +2117,7 @@ complex<double> Acoustic3dSimulation::acousticField(Point_3 queryPt)
   radPts.reserve(1);
   radPts.push_back(Point_3());
 
-  ofstream log("log.txt", ofstream::app);
+  //ofstream log("log.txt", ofstream::app);
   //log << "Start acoustic field inside numSec " << numSec << endl;
 
   // check if the point is in the radiation domain
@@ -2125,7 +2125,7 @@ complex<double> Acoustic3dSimulation::acousticField(Point_3 queryPt)
   angle = fmod(atan2(vec.y(), vec.x()) -
     atan2(endNormal.y(), endNormal.x()) + 2. * M_PI, 2. * M_PI) - M_PI;
 
-  log << "Point " << queryPt << " angle " << angle << endl;
+  //log << "Point " << queryPt << " angle " << angle << endl;
 
   if (angle <= 0.)
   {
@@ -2151,7 +2151,7 @@ complex<double> Acoustic3dSimulation::acousticField(Point_3 queryPt)
     RayleighSommerfeldIntegral(radPts, radPress, m_simuParams.freqField, numSec - 1);
     field = radPress(0);
   }
-  log.close();
+  //log.close();
 
   return(field);
 }

@@ -3149,12 +3149,25 @@ Point CrossSection2dFEM::ctrLinePtOut() const
     }
     else
     {
+      
       theta = m_circleArcAngle / 2.;
-      Transformation rotate(CGAL::ROTATION, sin(theta - M_PI / 2.),
-        cos(theta - M_PI / 2.));
-      Transformation translate(CGAL::TRANSLATION,
-        2. * abs(m_curvatureRadius) * sin(theta) * rotate(N));
-      return(translate(Pt));
+      
+      if (signbit(m_curvatureRadius))
+      {
+        Transformation rotate(CGAL::ROTATION, sin(M_PI / 2. - theta),
+          cos(theta - M_PI / 2.));
+        Transformation translate(CGAL::TRANSLATION,
+          -2. * m_curvatureRadius * sin(theta) * rotate(-N));
+        return(translate(Pt));
+      }
+      else
+      {
+        Transformation rotate(CGAL::ROTATION, sin(theta - M_PI / 2.),
+          cos(theta - M_PI / 2.));
+        Transformation translate(CGAL::TRANSLATION,
+          2. * m_curvatureRadius * sin(theta) * rotate(N));
+        return(translate(Pt));
+      }
     }
   }
   else
