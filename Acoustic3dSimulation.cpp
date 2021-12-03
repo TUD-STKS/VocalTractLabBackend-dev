@@ -119,7 +119,7 @@ bool similarContours(Polygon_2& cont1, Polygon_2& cont2, double minDist)
 Acoustic3dSimulation::Acoustic3dSimulation()
 // initialise the physical constants
   : m_geometryImported(false),
-  m_meshDensity(15.),
+  m_meshDensity(10.),
   m_maxCutOnFreq(20000.),
   m_spectrumLgthExponent(10),
   m_idxSecNoiseSource(46), // for /sh/ 212, for vowels 46
@@ -132,7 +132,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_simuParams.temperature = 21.0735; // for 344 m/s 
   m_simuParams.volumicMass = STATIC_PRESSURE_CGS * MOLECULAR_MASS / (GAS_CONSTANT *
     (m_simuParams.temperature + KELVIN_SHIFT));
-  m_simuParams.numIntegrationStep = 25;
+  m_simuParams.numIntegrationStep = 3;
   m_simuParams.orderMagnusScheme = 2;
   m_simuParams.propMethod = MAGNUS;
   m_simuParams.freqDepLosses = false;
@@ -141,7 +141,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_simuParams.sndSpeed = (sqrt(ADIABATIC_CONSTANT * STATIC_PRESSURE_CGS / m_simuParams.volumicMass));
   m_crossSections.reserve(2 * VocalTract::NUM_CENTERLINE_POINTS);
   m_simuParams.percentageLosses = 1.;
-  m_simuParams.curved = false;
+  m_simuParams.curved = true;
   m_simuParams.varyingArea = true;
 
   // for transfer function computation
@@ -525,7 +525,7 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
   vector<double> areaFaces, areaInt;
   CDT cdt;
   double spacing, scaling[2], areaDiff;
-  Vector u, v;
+  Vector u, v, ctlShift;
   Matrix interpolation1, interpolation2;
   int nModes, nModesNext, nextSec, prevSec;
   double quadPtCoord[3][2]{ {1. / 6., 1. / 6.}, {2. / 3., 1. / 6.}, {1. / 6., 2. / 3.} };
@@ -567,7 +567,18 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
       contour.clear();
       scaling[0] = m_crossSections[i]->scaleOut();
       Transformation scale(CGAL::SCALING, scaling[0]);
-      contour = transform(scale, m_crossSections[i]->contour());
+      // The centerline at the end of the segment can be different from the one 
+      // at the beginning of the next segment
+      nextSec = m_crossSections[i]->nextSec(0);
+      ctlShift = Vector(m_crossSections[nextSec]->ctrLinePtIn(),
+        m_crossSections[i]->ctrLinePtOut());
+      ctlShift = Vector(0., ctlShift * m_crossSections[i]->normalOut());
+      Transformation translate(CGAL::TRANSLATION, ctlShift);
+      //if (i == 238) { 
+      //  log << "Prev ctl " << m_crossSections[i]->ctrLinePtOut() << endl;
+      //  log << "Next ctl " << m_crossSections[nextSec]->ctrLinePtIn() << endl;
+      //  log << "ctlShift " << ctlShift << endl; }
+      contour = transform(translate, transform(scale, m_crossSections[i]->contour()));
       //log << "Contour sec " << i << " scaling out " << scaling[0] 
       //  << " area " << contour.area() << endl;
       //if (m_crossSections[i]->isJunction()) { log << "Junction section" << endl; }
@@ -608,7 +619,7 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
         {
           idxMinArea = 0;
         }
-        //nextContour = m_crossSections[nextSec]->contour();
+        nextContour = m_crossSections[nextSec]->contour();
         //log << "Next contour, sec " << nextSec << " scaling in " << scaling[1] 
         //  << " area " << nextContour.area() << endl;
         //if (m_crossSections[nextSec]->isJunction()) { log << "Junction section" << endl; }
@@ -723,14 +734,37 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
             // Interpolate modes
             //////////////////////////////////////////////////////////////
 
+            //if (i == 238)
+            //{
+            //  ofstream os("cnt.txt");
+            //  for (auto pt : contour)
+            //  {
+            //    os << pt << endl;
+            //  }
+            //  os.close();
+            //  os.open("nCnt.txt");
+            //  for (auto pt : nextContour)
+            //  {
+            //    os << pt << endl;
+            //  }
+            //  os.close();
+            //  os.open("pts.txt");
+            //  for (auto pt : pts)
+            //  {
+            //    os << pt << endl;
+            //  }
+            //  os.close();
+            //}
+
             // interpolate the modes of the first cross-section
             interpolation1 = m_crossSections[i]->interpolateModes(pts
-              ,1. / scaling[0]
+              ,1. / scaling[0], -ctlShift
             );
 
+            
             //log << "interpolation of first section done " 
             //  << interpolation1.rows() << "  " 
-            //  << interpolation1.cols() << endl;
+            //  << interpolation1.cols() << " ctlShift " << ctlShift << endl;
 
             // interpolate the modes of the next cross-section
             interpolation2 = m_crossSections[nextSec]->interpolateModes(pts
@@ -4547,6 +4581,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   vector<Polygon_2> intContours;
   Pwh_list_2 intersections;
   bool sidePrev, side;
+  Vector ctlShift;
 
   //**********************************************************************
   // Add an intermediate centerline point and normal before the last ones
@@ -4626,7 +4661,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   //// shift the contours
   //Transformation translate(CGAL::TRANSLATION, Vector(0., shift));
   //for (auto cont : contours[0]){cont = transform(translate, cont);}
-  // FEXME: one should shift also the ccenterline point probably
+  // FIXME: one should shift also the ccenterline point probably
 
   // initialize the previous section index list
   for (int c(0); c < contours[0].size(); c++){prevSections.push_back(tmpPrevSection);}
@@ -4749,7 +4784,6 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       //log << "angle " << prevAngle << endl;
 
       //log << "Section " << secIdx << " created" << endl;
-      //log << *m_crossSections.back() << endl;
 
       secIdx++;
     }
@@ -4842,7 +4876,17 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       {
         // extract the previous contour and scale it
         Transformation scale(CGAL::SCALING, prevScalingFactors[1]);
-        Polygon_2 prevCont(transform(scale, contours[i - 1][cp]));
+        ctlShift = Vector(Point(centerLine[i].x, centerLine[i].y),
+          m_crossSections.back()->ctrLinePtOut());
+        //if (secIdx == 223) {
+        //  log << "Prev ctl " << m_crossSections.back()->ctrLinePtOut() << endl;
+        //  log << "Next ctl " << Point(centerLine[i].x, centerLine[i].y) << endl;
+        //  log << "ctlShift " <<
+        //    ctlShift * m_crossSections.back()->normalOut() << endl;
+        //}
+        Transformation translate(CGAL::TRANSLATION,
+          Vector(0., ctlShift* m_crossSections.back()->normalOut()));
+        Polygon_2 prevCont(transform(translate, transform(scale, contours[i - 1][cp])));
 
         //log << "Prev Contour extracted and scaled sc = " 
         //  << prevScalingFactors[1] << endl;
@@ -4869,14 +4913,25 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
             {
               //log << "side != sidePrev" << endl;
 
-              //ofstream os("cont.txt");
-              //for (auto pt : cont) { os << pt.x() << "  " << pt.y() << endl; }
-              //os.close();
-              //os.open("pcont.txt");
-              //for (auto pt : prevCont) { os << pt.x() << "  " << pt.y() << endl; }
-              //os.close();
-
-              //log << "Before intersection" << endl;
+              //if (secIdx == 223)
+              //{
+              //  log << "Extract contour " << i << endl;
+              //  log << "Center line point in " << centerLine[i].x << "  "
+              //    << centerLine[i].y << endl;
+              //  log << "Normal in " << normals[i].x << "  "
+              //    << normals[i].y << endl;
+              //  ofstream os("cont.txt");
+              //  for (auto pt : cont) { os << pt.x() << "  " << pt.y() << endl; }
+              //  os.close();
+              //  log << "Extract prev contour " << i - 1 << endl;
+              //  log << "Center line point in" << centerLine[i-1].x << "  "
+              //    << centerLine[i-1].y << endl;
+              //  log << "Center line point out " << m_crossSections.back()->ctrLinePtOut() << endl;
+              //  os.open("pcont.txt");
+              //  log << "Normal out " << m_crossSections.back()->normalOut() << endl;
+              //  for (auto pt : prevCont) { os << pt.x() << "  " << pt.y() << endl; }
+              //  os.close();
+              //}
 
               // compute the intersections of both contours
               intersections.clear();
@@ -5083,7 +5138,7 @@ void Acoustic3dSimulation::exportGeoInCsv(string fileName)
   Vector N;
   double theta, thetaN;
 
-  ofstream log("log.txt", ofstream::app);
+  //ofstream log("log.txt", ofstream::app);
 
   for (int i(0); i < m_crossSections.size(); i++)
   {
@@ -5110,12 +5165,12 @@ void Acoustic3dSimulation::exportGeoInCsv(string fileName)
           cos(M_PI / 2. - theta));
         Transformation translate(CGAL::TRANSLATION,
           2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N));
-        log << "Radius " << abs(m_crossSections[i]->curvRadius()) << endl;
-        log << "theta " << theta << endl;
-        log << "Rotated N " << rotate(N) << endl;
-        log << "Vector translate " <<
-          2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N) << endl;
-        log << "Pt before " << Pt << endl;
+        //log << "Radius " << abs(m_crossSections[i]->curvRadius()) << endl;
+        //log << "theta " << theta << endl;
+        //log << "Rotated N " << rotate(N) << endl;
+        //log << "Vector translate " <<
+        //  2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N) << endl;
+        //log << "Pt before " << Pt << endl;
         Pt = translate(Pt);
         if (signbit(m_crossSections[i]->curvRadius()))
         {
@@ -5126,7 +5181,7 @@ void Acoustic3dSimulation::exportGeoInCsv(string fileName)
           thetaN = -2. * theta;
         }
         Transformation rotateN(CGAL::ROTATION, sin(thetaN), cos(thetaN));
-        log << "Pt after " << Pt << endl;
+        //log << "Pt after " << Pt << endl;
         N = rotateN(N);
       }
 
@@ -5166,14 +5221,14 @@ void Acoustic3dSimulation::exportGeoInCsv(string fileName)
           cos(-M_PI / 2. + theta));
         Transformation translate(CGAL::TRANSLATION,
           2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N));
-        log << "Radius " << abs(m_crossSections[i]->curvRadius()) << endl;
-        log << "theta " << theta << endl;
-        log << "Rotated N " << rotate(N) << endl;
-        log << "Vector translate " <<
-          2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N) << endl;
-        log << "Pt before " << Pt << endl;
-        Pt = translate(Pt);
-        log << "Pt after " << Pt << endl;
+        //log << "Radius " << abs(m_crossSections[i]->curvRadius()) << endl;
+        //log << "theta " << theta << endl;
+        //log << "Rotated N " << rotate(N) << endl;
+        //log << "Vector translate " <<
+        //  2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N) << endl;
+        //log << "Pt before " << Pt << endl;
+        //Pt = translate(Pt);
+        //log << "Pt after " << Pt << endl;
         Transformation rotateN(CGAL::ROTATION, sin(2. * theta), cos(2. * theta));
         N = rotateN(N);
       }
@@ -5235,7 +5290,7 @@ void Acoustic3dSimulation::exportGeoInCsv(string fileName)
     }
   }
   of.close();
-  log.close();
+  //log.close();
 }
 
 //*************************************************************************

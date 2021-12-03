@@ -121,6 +121,7 @@ public:
   virtual void selectModes(vector<int> modesIdx) { ; }
   virtual Matrix interpolateModes(vector<Point> pts) { return Matrix(); }
   Matrix interpolateModes(vector<Point> pts, double scaling);
+  Matrix interpolateModes(vector<Point> pts, double scaling, Vector translation);
 
   // scatering  matrices 
   virtual void setMatrixF(vector<Matrix> & F) { ; }

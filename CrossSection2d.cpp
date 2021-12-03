@@ -1251,6 +1251,7 @@ Matrix CrossSection2dFEM::interpolateModes(vector<Point> pts)
   Coord_type l_value;
   vector< pair< Point, Coord_type > > coords;
   Coord_type norm;
+  bool ptNotFound(false);
 
   //ofstream val;
   //val.open("val.txt", ofstream::app);
@@ -1261,22 +1262,7 @@ Matrix CrossSection2dFEM::interpolateModes(vector<Point> pts)
   //log.close();
 
   
-  //log.open("points.txt");
-  //for (int i(0); i < pts.size(); i++)
-  //{
-    //log << pts[i].x() << "  " << pts[i].y() << endl;
-  //}
-  //log.close();
 
-  //log.open("cont.txt");
-  //auto it = m_contour.begin();
-  //for (; it != m_contour.end(); it++)
-  //{
-    //log << it->x() << "  " << it->y() << endl;
-  //}
-  //it = m_contour.begin();
-  //log << it->x() << "  " << it->y() << endl;
-  //log.close();
 
   // insert triangulation points
   int numTriPts(m_points.size());
@@ -1321,6 +1307,7 @@ Matrix CrossSection2dFEM::interpolateModes(vector<Point> pts)
     {
       log << "Error interpolating: point outside of the contour" << endl;
       interpolation.row(i).setConstant(NAN); 
+      ptNotFound = true;
     }
     else
     {
@@ -1341,6 +1328,26 @@ Matrix CrossSection2dFEM::interpolateModes(vector<Point> pts)
     }
   }
 
+  // if a point have not been found export the points and contour
+  if (ptNotFound)
+  {
+    ofstream os("points.txt");
+    for (int i(0); i < pts.size(); i++)
+    {
+      os << pts[i].x() << "  " << pts[i].y() << endl;
+    }
+    os.close();
+    os.open("cont.txt");
+    auto it = m_contour.begin();
+    for (; it != m_contour.end(); it++)
+    {
+      os << it->x() << "  " << it->y() << endl;
+    }
+    it = m_contour.begin();
+    os << it->x() << "  " << it->y() << endl;
+    os.close();
+  }
+
   //log << "\nInterpolation finished" << endl << endl;
   //val.close();
   log.close();
@@ -1355,6 +1362,19 @@ Matrix CrossSection2d::interpolateModes(vector<Point> pts, double scaling)
   Transformation scale(CGAL::SCALING, scaling);
   for (int i(0); i < pts.size(); i++) {
     pts[i] = scale(pts[i]);
+  }
+  return(interpolateModes(pts));
+}
+
+// **************************************************************************
+// Interpolate the propagation modes with a scaling and a translation of the mesh
+
+Matrix CrossSection2d::interpolateModes(vector<Point> pts, double scaling, Vector translation)
+{
+  Transformation scale(CGAL::SCALING, scaling);
+  Transformation translate(CGAL::TRANSLATION, translation);
+  for (int i(0); i < pts.size(); i++) {
+    pts[i] = scale(translate(pts[i]));
   }
   return(interpolateModes(pts));
 }
