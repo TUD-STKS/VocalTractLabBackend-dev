@@ -128,8 +128,8 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_mouthBoundaryCond(ADMITTANCE_1),
   m_contInterpMeth(AREA)
 {
-  //m_simuParams.temperature = 31.4266; // for 350 m/s
-  m_simuParams.temperature = 21.0735; // for 344 m/s 
+  m_simuParams.temperature = 31.4266; // for 350 m/s
+  //m_simuParams.temperature = 21.0735; // for 344 m/s 
   m_simuParams.volumicMass = STATIC_PRESSURE_CGS * MOLECULAR_MASS / (GAS_CONSTANT *
     (m_simuParams.temperature + KELVIN_SHIFT));
   m_simuParams.numIntegrationStep = 3;
@@ -3604,7 +3604,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
       //m_simuParams.orderMagnusScheme = 4;
     //m_meshDensity = 15.;
     //m_maxCutOnFreq = 20000;
-    m_simuParams.numIntegrationStep = 50;
+    //m_simuParams.numIntegrationStep = 50;
     m_simuParams.maxComputedFreq = 10000;
     m_simuParams.curved = true;
     m_geometryImported = true; // to have the good bounding box for modes plot
@@ -3645,7 +3645,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
     m_crossSections[0]->setAreaVariationProfileType(ELEPHANT);
     m_crossSections[0]->setCurvatureRadius(-inRadius);
     m_crossSections[0]->setCurvatureAngle(inAngle);
-    mn = 6;
+    mn = min(100., m_maxCutOnFreq);
     m_crossSections[0]->setModesNumber(mn);
   
     log << "Cross-section created" << endl;
@@ -3697,7 +3697,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 
     freqMax = m_simuParams.maxComputedFreq;
     ofs.open("press.txt");
-    m_numFreq = 101;
+    m_numFreq = 2001;
     for (int i(0); i < m_numFreq; i++)
     {
       freq = max(0.1, freqMax*(double)i/(double)(m_numFreq - 1));
@@ -3751,18 +3751,18 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
         break;
       }
       
-      // extract acoustic field
-      cnt = 0;
-      if (freq == 2400.)
-      {
-        ofs2.open("field.txt");
-        Eigen::MatrixXcd field;
-        acousticFieldInPlane(field);
-        stringstream txtField;
-        txtField << field.cwiseAbs();
-        ofs2 << regex_replace(txtField.str(), regex("-nan\\(ind\\)"), "nan");
-        ofs2.close();
-      }
+      //// extract acoustic field
+      //cnt = 0;
+      //if (freq == 2400.)
+      //{
+      //  ofs2.open("field.txt");
+      //  Eigen::MatrixXcd field;
+      //  acousticFieldInPlane(field);
+      //  stringstream txtField;
+      //  txtField << field.cwiseAbs();
+      //  ofs2 << regex_replace(txtField.str(), regex("-nan\\(ind\\)"), "nan");
+      //  ofs2.close();
+      //}
     }
     ofs.close();
 
