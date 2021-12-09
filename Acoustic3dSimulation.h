@@ -101,6 +101,7 @@ public:
   //void propagateAcPressure(vector<Eigen::MatrixXcd> inputPressure, double freq);
 
   // For acoustic field and transfer function computation
+  Point_3 movePointFromExitLandmarkToGeoLandmark(Point_3 pt);
   void RayleighSommerfeldIntegral(vector<Point_3> points,
     Eigen::VectorXcd &radPress, double freq, int radSecIdx);
   complex<double> acousticField(Point_3 queryPt);

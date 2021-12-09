@@ -3137,8 +3137,17 @@ Eigen::MatrixXcd  CrossSection2d::Qin() const
 //******************************************************
 Eigen::MatrixXcd CrossSection2d::Qout() const
 {
-  if (Qdir() == 1) { return m_axialVelocity.back(); }
-  else { return m_axialVelocity[0]; }
+  if (m_axialVelocity.size() == 0)
+  {
+    return Yout() * Pout();
+  }
+  else if (Qdir() == 1) 
+  {
+    return m_axialVelocity.back(); 
+  }
+  else 
+  { return m_axialVelocity[0]; 
+  }
 }
 //******************************************************
 Eigen::MatrixXcd CrossSection2d::Pin() const

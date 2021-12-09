@@ -2141,7 +2141,7 @@ complex<double> Acoustic3dSimulation::acousticField(Point_3 queryPt)
   bool ptFound(false);
   int numSec(m_crossSections.size());
   Point_3 outPt;
-  complex<double> field;
+  complex<double> field(NAN, NAN);
 
   Vector vec, endNormal(m_crossSections.back()->normalOut());
   Point endCenterLine(m_crossSections.back()->ctrLinePtOut());
@@ -2185,6 +2185,7 @@ complex<double> Acoustic3dSimulation::acousticField(Point_3 queryPt)
     RayleighSommerfeldIntegral(radPts, radPress, m_simuParams.freqField, numSec - 1);
     field = radPress(0);
   }
+
   //log.close();
 
   return(field);
@@ -2324,39 +2325,6 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   log << "Junction matrices computed " << 
     elapsed_seconds.count() << " s" << endl;
 
-  // check junction matrix first term
-  //prop.open("chkF.txt");
-  //double F00, S, Sn, A, An, sc, scn;
-  //Matrix modes;
-  //for (int i(0); i < numSec - 2; i++)
-  //{
-    //sc = m_crossSections[i]->scaleOut();
-    //scn = m_crossSections[i + 1]->scaleIn();
-    //S = m_crossSections[i]->area();
-    //Sn = m_crossSections[i + 1]->area();
-    
-    //F00 = min(S*pow(sc,2), Sn*pow(scn, 2)) / sqrt(S * Sn)/sc/scn;
-
-    //modes = m_crossSections[i]->getModes();
-    //A = modes(0, 0);
-    //modes = m_crossSections[i + 1]->getModes();
-    //An = modes(0, 0);
-
-    //prop << m_crossSections[i]->getMatrixF()[0](0, 0) << "  "
-      //<< F00 << "  " << S << "  " << Sn << "  "
-      //<< A << "  " << An << "  " << sc << "  " << scn << endl;
-  //}
-  //prop.close();
-  
-  //// export scaling factors
-  //prop.open("sc.txt");
-  //for (int i(0); i < numSec - 2; i++)
-  //{
-  //  prop << m_crossSections[i]->scaleIn() << "  "
-  //    << m_crossSections[i]->scaleOut() << endl;
-  //}
-  //prop.close();
-
   // generate source matrix
   Eigen::MatrixXcd inputVelocity(Eigen::MatrixXcd::Zero(
   m_crossSections[0]->numberOfModes(), 1));
@@ -2382,12 +2350,8 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   log << "source generated" << endl;
 
   // compute the coordinates of the transfer function point
+  tfPoint = movePointFromExitLandmarkToGeoLandmark(m_simuParams.tfPoint);
   m_simuParams.computeRadiatedField = true;
-  tfPoint = Point_3(
-    m_simuParams.tfPoint.x() + m_crossSections[lastSec]->ctrLinePtOut().x(),
-    m_simuParams.tfPoint.y(),
-    m_simuParams.tfPoint.z() + m_crossSections[lastSec]->ctrLinePtOut().y()
-  );
 
   log << "Tf point " << tfPoint << endl;
 
@@ -3684,6 +3648,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
     {
     case RADIATION:
       preComputeRadiationMatrices(16, 0);
+      m_simuParams.computeRadiatedField = true;
       break;
     case ADMITTANCE_1:
       radAdmit.setZero(mn, mn);
@@ -3694,6 +3659,9 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 
     // define the position of the radiation point
     radPts.push_back(Point_3(3., 0., 0.));
+    log << "tfPoint " << m_simuParams.tfPoint << endl;
+    pointComputeField = movePointFromExitLandmarkToGeoLandmark(m_simuParams.tfPoint);
+    log << "pointComputeField " << pointComputeField << endl;
 
     freqMax = m_simuParams.maxComputedFreq;
     ofs.open("press.txt");
@@ -3728,8 +3696,6 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
        //* m_crossSections[0]->area() * pow(m_crossSections[0]->scaling(0.), 2)
         ;
 
-      // export result
-      ofs << freq << "  ";
       switch (m_mouthBoundaryCond)
       {
       case RADIATION:
@@ -3743,10 +3709,13 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
       case ADMITTANCE_1:
         inputPressure = m_crossSections[0]->Yin().inverse() * inputVelocity;
         m_crossSections[0]->propagateMagnus(inputPressure, m_simuParams, freq, 1., PRESSURE);
+        //result = m_crossSections[0]->area() * pow(m_crossSections[0]->scaleIn(), 2) * 1e5 *
+        //  m_crossSections[0]->interiorField(
+        //    Point_3(m_crossSections[0]->length() - 0.03, 0., 0.), m_simuParams, PRESSURE);
         result = m_crossSections[0]->area() * pow(m_crossSections[0]->scaleIn(), 2) * 1e5 *
-          m_crossSections[0]->interiorField(
-            Point_3(m_crossSections[0]->length() - 0.03, 0., 0.), m_simuParams, PRESSURE);
-        ofs << abs(result) << "  "
+          acousticField(pointComputeField);
+        // export result
+        ofs << freq << "  " << abs(result) << "  "
           << arg(result) << "  " << endl;
         break;
       }
@@ -3907,6 +3876,40 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 }
 
 // ****************************************************************************
+// given a point whose coordinate are expressed in the exit landmark
+// return its coordinates in the cartesian landmark of the geometry
+
+Point_3 Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(Point_3 pt)
+{
+  Vector endNormal(m_crossSections.back()->normalOut());
+  Vector vertical(Vector(0., 1.));
+
+  // rotate the point to compensate inclination of the end normal
+  double angle = fmod(atan2(endNormal.y(), endNormal.x()) -
+    atan2(vertical.y(), vertical.x()) + 2. * M_PI, 2. * M_PI);
+  Point ptVertPlane(pt.x(), pt.z());
+
+  ofstream log("log.txt", ofstream::app);
+  log << "endNormal " << endNormal << endl;
+  log << "vertical " << vertical << endl;
+  log << "Angle " << angle << " ptVertPlane " << ptVertPlane << endl;
+
+  Transformation rotate(CGAL::ROTATION, sin(angle), cos(angle));
+  ptVertPlane = rotate(ptVertPlane);
+
+  log << "After rotation " << ptVertPlane << endl;
+  
+  log.close();
+
+  // shift the point to compensate the origin of the end landmark
+  return(Point_3(
+    ptVertPlane.x() + m_crossSections.back()->ctrLinePtOut().x(),
+    pt.y(),
+    ptVertPlane.y() + m_crossSections.back()->ctrLinePtOut().y()
+  ));
+}
+
+// ****************************************************************************
 // Compute the Rayleigh-Sommerfeld integral to compute radiated pressure
 
 void Acoustic3dSimulation::RayleighSommerfeldIntegral(vector<Point_3> points,
@@ -3921,6 +3924,7 @@ void Acoustic3dSimulation::RayleighSommerfeldIntegral(vector<Point_3> points,
 
   //ofstream log;
   //log.open("log.txt", ofstream::app);
+  //log << "Start compute radiation" << endl;
 
   // get scaling
   scaling = m_crossSections[radSecIdx]->scaleOut();
