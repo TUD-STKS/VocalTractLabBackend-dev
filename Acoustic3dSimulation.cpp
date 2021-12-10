@@ -3190,7 +3190,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
   ifstream ifs;
   string line, str;
   char separator(';');
-  stringstream strs;
+  stringstream strs, txtField;
   string::size_type idxStr;
   ofstream log("log.txt", ofstream::app);
   log << "\nStart test" << endl;
@@ -3205,7 +3205,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
   double freq, freqMax, freqField, endAdmit;
   complex<double> result;
   int nbFreqs, mn, idxField, cnt;
-  Eigen::MatrixXcd characImped, radImped, radAdmit, inputVelocity, inputPressure;
+  Eigen::MatrixXcd characImped, radImped, radAdmit, inputVelocity, inputPressure, field;
   vector<Point_3> radPts;
   vector<array<double, 2>> pts;
   vector<array<int, 3>> triangles;
@@ -3652,7 +3652,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
       break;
     case ADMITTANCE_1:
       radAdmit.setZero(mn, mn);
-      radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(1000000000., 0.));
+      radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(1e15, 0.));
       radImped = radAdmit.inverse();
       break;
     }
@@ -3665,7 +3665,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 
     freqMax = m_simuParams.maxComputedFreq;
     ofs.open("press.txt");
-    m_numFreq = 2001;
+    m_numFreq = 101;
     for (int i(0); i < m_numFreq; i++)
     {
       freq = max(0.1, freqMax*(double)i/(double)(m_numFreq - 1));
@@ -3709,9 +3709,6 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
       case ADMITTANCE_1:
         inputPressure = m_crossSections[0]->Yin().inverse() * inputVelocity;
         m_crossSections[0]->propagateMagnus(inputPressure, m_simuParams, freq, 1., PRESSURE);
-        //result = m_crossSections[0]->area() * pow(m_crossSections[0]->scaleIn(), 2) * 1e5 *
-        //  m_crossSections[0]->interiorField(
-        //    Point_3(m_crossSections[0]->length() - 0.03, 0., 0.), m_simuParams, PRESSURE);
         result = m_crossSections[0]->area() * pow(m_crossSections[0]->scaleIn(), 2) * 1e5 *
           acousticField(pointComputeField);
         // export result
@@ -3722,7 +3719,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
       
       //// extract acoustic field
       //cnt = 0;
-      //if (freq == 2400.)
+      //if (freq == m_simuParams.freqField)
       //{
       //  ofs2.open("field.txt");
       //  Eigen::MatrixXcd field;
@@ -3735,6 +3732,48 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
     }
     ofs.close();
 
+    //*************************
+    // Compute acoustic field
+    //*************************
+
+    freq = m_simuParams.freqField;
+
+    if (m_mouthBoundaryCond == RADIATION)
+    {
+      interpolateRadiationImpedance(radImped, freq, 0);
+    }
+
+    switch (m_mouthBoundaryCond)
+    {
+    case RADIATION:
+      m_crossSections[0]->propagateMagnus(radImped, m_simuParams, freq, -1., IMPEDANCE);
+      break;
+    case ADMITTANCE_1:
+      m_crossSections[0]->propagateMagnus(radAdmit, m_simuParams, freq, -1., ADMITTANCE);
+      break;
+    }
+
+    inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass;
+
+    switch (m_mouthBoundaryCond)
+    {
+    case RADIATION:
+      m_crossSections[0]->propagateMagnus(inputVelocity, m_simuParams, freq, 1., VELOCITY);
+      // compute radiated pressure
+      break;
+    case ADMITTANCE_1:
+      inputPressure = m_crossSections[0]->Yin().inverse() * inputVelocity;
+      m_crossSections[0]->propagateMagnus(inputPressure, m_simuParams, freq, 1., PRESSURE);
+      break;
+    }
+
+    ofs2.open("field.txt");
+    acousticFieldInPlane(field);
+    txtField << field.cwiseAbs();
+    ofs2 << regex_replace(txtField.str(), regex("-nan\\(ind\\)"), "nan");
+    ofs2.close();
+
+    //***********************************
     // get total time of the simulation
     stop = std::chrono::system_clock::now();
     elapsedTime = stop - start;
