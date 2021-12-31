@@ -81,7 +81,6 @@ public:
     vector<Point2D>& centerLine, vector<Point2D>& normals, 
     vector<pair<double, double>>& scalingFactors, bool simplifyContours);
   bool createCrossSections(VocalTract* tract, bool createRadSection);
-  void exportGeoInCsv(string fileName);
 
   // For solving the wave problem 
   void computeMeshAndModes();
@@ -102,14 +101,23 @@ public:
 
   // For acoustic field and transfer function computation
   Point_3 movePointFromExitLandmarkToGeoLandmark(Point_3 pt);
+  vector<Point_3> movePointFromExitLandmarkToGeoLandmark(vector<Point_3> pt);
+  bool setTFPointsFromCsvFile(string fileName);
   void RayleighSommerfeldIntegral(vector<Point_3> points,
     Eigen::VectorXcd &radPress, double freq, int radSecIdx);
   complex<double> acousticField(Point_3 queryPt);
+  Eigen::VectorXcd acousticField(vector<Point_3> queryPt);
   void acousticFieldInPlane(Eigen::MatrixXcd& field);
   void staticSimulation(VocalTract* tract);
   void computeAcousticField(VocalTract* tract);
   void coneConcatenationSimulation(string fileName);
   void runTest(enum testType tType, string fileName);
+
+  // for data exportation
+  complex<double> interpolateTransferFunction(double freq, int idxPt);
+  void exportGeoInCsv(string fileName);
+  bool exportTransferFucntions(string fileName);
+
 
 // **************************************************************************
 // accessors
@@ -167,6 +175,8 @@ private:
   openEndBoundaryCond m_mouthBoundaryCond;
   vector<vector<vector<vector<double>>>> m_radiationMatrixInterp;
   vector<double> m_radiationFreqs;
+  vector<double> m_tfFreqs;
+  Eigen::MatrixXcd m_transferFunctions;
 
   // maximal bounding box of the cross-sections (for displaying mesh and modes)
   pair<Point2D,Point2D> m_maxCSBoundingBox;

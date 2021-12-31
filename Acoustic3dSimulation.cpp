@@ -146,7 +146,8 @@ Acoustic3dSimulation::Acoustic3dSimulation()
 
   // for transfer function computation
   m_simuParams.maxComputedFreq = 10000.; // (double)SAMPLING_RATE / 2.;
-  m_simuParams.tfPoint = Point_3(3., 0., 0.);
+  //m_simuParams.tfPoint = Point_3(3., 0., 0.);
+  m_simuParams.tfPoint.push_back(Point_3(3., 0., 0.));
 
   // for acoustic field computation
   m_simuParams.freqField = 5000.;
@@ -394,8 +395,16 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   log << "Index of constriction section: " << m_idxConstriction << endl;
   log << "Maximal computed frequency: " << m_simuParams.maxComputedFreq
     << " Hz" << endl;
+  log << "Spectrum exponent " << m_spectrumLgthExponent << endl;
+  log << "Frequency steps: " 
+    << (double)SAMPLING_RATE / 2. / (double)(1 << (m_spectrumLgthExponent - 1)) 
+    << " Hz" << endl;
   log << "Number of simulated frequencies: " << numFreqComputed << endl;
-  log << "Transfer function point (cm): " << m_simuParams.tfPoint << endl;
+  log << "Transfer function point (cm): " <<  endl;
+  for (auto pt : m_simuParams.tfPoint)
+  {
+    log << pt << endl;
+  }
   log << endl;
 
   log << "ACOUSTIC FIELD COMPUTATION PARAMETERS:" << endl;
@@ -2136,6 +2145,19 @@ void Acoustic3dSimulation::propagatePressure(Eigen::MatrixXcd startPress, double
 // Extract the internal acoustic field at a point 
 // (given in cartesian coordinates)
 
+
+Eigen::VectorXcd Acoustic3dSimulation::acousticField(vector<Point_3> queryPt)
+{
+  Eigen::VectorXcd field(queryPt.size()); 
+  
+  for (int i(0); i < queryPt.size(); i++)
+  {
+    field(i) = acousticField(queryPt[i]);
+  }  
+
+  return(field);
+}
+
 complex<double> Acoustic3dSimulation::acousticField(Point_3 queryPt)
 {
   bool ptFound(false);
@@ -2244,12 +2266,12 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   double freq, freqSteps((double)SAMPLING_RATE/2./(double)m_numFreq);
   int numFreqComputed((int)ceil(m_simuParams.maxComputedFreq / freqSteps));
   int mn; // mode number in the last section
-  complex<double> pressure, velocity;
-  Eigen::MatrixXcd endPressAmpl, endVelAmpl, startPressure,
-    radAdmit, radImped, upStreamImpAdm, totalImped, prevVelo, prevPress
-    ,pp ,pm;
+  complex<double> velocity;
+  Eigen::VectorXcd pressure;
+  Eigen::MatrixXcd startPressure, radAdmit, radImped, upStreamImpAdm, 
+    prevVelo, prevPress;
   Matrix F;
-  Point_3 tfPoint;
+  vector<Point_3> tfPoint;
   ofstream prop;
 
   generateLogFileHeader(true);
@@ -2353,13 +2375,18 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   tfPoint = movePointFromExitLandmarkToGeoLandmark(m_simuParams.tfPoint);
   m_simuParams.computeRadiatedField = true;
 
-  log << "Tf point " << tfPoint << endl;
+  log << "Tf point " << tfPoint[0] << endl;
 
   if (m_mouthBoundaryCond == RADIATION)
   {
     // Precompute the radiation impedance and admittance at a few frequencies
     preComputeRadiationMatrices(16, lastSec);
   }
+
+  // resize the transfer function matrix
+  m_transferFunctions.resize(numFreqComputed, m_simuParams.tfPoint.size());
+  m_tfFreqs.clear();
+  m_tfFreqs.reserve(numFreqComputed);
 
   end = std::chrono::system_clock::now();
   elapsed_seconds = end - startTot;
@@ -2379,6 +2406,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   for (int i(0); i < numFreqComputed; i++)
   {
     freq = max(0.1, (double)i * freqSteps);
+    m_tfFreqs.push_back(freq);
     log << "################################" << endl;
     log << "frequency " << i+1 << "/" << numFreqComputed << " f = " << freq
       << " Hz" << endl;
@@ -2491,8 +2519,9 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     //*****************************************************************************
 
     pressure = acousticField(tfPoint);
+    m_transferFunctions.row(i) = pressure;
 
-    spectrum.setValue(i, pressure);
+    spectrum.setValue(i, pressure(0));
 
     log << "Acoustic pressure computed" << endl;
 
@@ -2581,7 +2610,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
 
       end = std::chrono::system_clock::now();
 
-      spectrumNoise.setValue(i, pressure);
+      spectrumNoise.setValue(i, pressure(0));
     }
     elapsed_seconds = end - start;
     log << "Remaining time " << elapsed_seconds.count() << " s" << endl;
@@ -2610,22 +2639,33 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   }
 
   // create the file containing the transfer function
-  prop.open("press.txt");
+  //prop.open("press.txt");
   //prop << "num_points: " << spectrum.N << endl;
   //prop << "frequency_Hz  magnitude  phase_rad" << endl;
-  for (int i(0); i < spectrum.N; i++)
-  {
-    freq = max(0.1, (double)i * freqSteps);
-    prop << freq << "  " 
-      << spectrum.getMagnitude(i) << "  " 
-      << spectrum.getPhase(i) << "  "
-      << spectrumNoise.getMagnitude(i) << "  "
-      << spectrumNoise.getPhase(i) << "  "
-      << spectrumConst.getMagnitude(i) << "  "
-      << spectrumConst.getPhase(i)
-      << endl;
-  }
-  prop.close();
+  //for (int i(0); i < spectrum.N; i++)
+  //{
+    //freq = max(0.1, (double)i * freqSteps);
+    //prop << freq << "  " 
+      //<< spectrum.getMagnitude(i) << "  " 
+      //<< spectrum.getPhase(i) << "  "
+      //<< spectrumNoise.getMagnitude(i) << "  "
+      //<< spectrumNoise.getPhase(i) << "  "
+      //<< spectrumConst.getMagnitude(i) << "  "
+      //<< spectrumConst.getPhase(i)
+      //<< endl;
+  //}
+
+  //for (int i(0); i < numFreqComputed; i++)
+  //{
+    //prop << m_tfFreqs[i] << "  ";
+    //for (int p(0); p < tfPoint.size(); p++)
+    //{
+      //prop << abs(m_transferFunctions(i,p)) << "  "
+        //<< arg(m_transferFunctions(i,p)) << "  ";
+    //}
+    //prop << endl;
+  //}
+  //prop.close();
 
   end = std::chrono::system_clock::now();
   elapsed_seconds = end - startTot;
@@ -3659,8 +3699,8 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 
     // define the position of the radiation point
     radPts.push_back(Point_3(3., 0., 0.));
-    log << "tfPoint " << m_simuParams.tfPoint << endl;
-    pointComputeField = movePointFromExitLandmarkToGeoLandmark(m_simuParams.tfPoint);
+    log << "tfPoint " << m_simuParams.tfPoint[0] << endl;
+    pointComputeField = movePointFromExitLandmarkToGeoLandmark(m_simuParams.tfPoint[0]);
     log << "pointComputeField " << pointComputeField << endl;
 
     freqMax = m_simuParams.maxComputedFreq;
@@ -3918,6 +3958,23 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 // given a point whose coordinate are expressed in the exit landmark
 // return its coordinates in the cartesian landmark of the geometry
 
+vector<Point_3> Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(vector<Point_3> pt)
+{
+  vector<Point_3> movedPoints;
+  movedPoints.reserve(pt.size());
+
+  for (auto it : pt)
+  {
+    movedPoints.push_back(
+    movePointFromExitLandmarkToGeoLandmark(it)
+    );
+  }
+  
+  return(movedPoints);
+}
+
+// ****************************************************************************
+
 Point_3 Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(Point_3 pt)
 {
   Vector endNormal(m_crossSections.back()->normalOut());
@@ -3946,6 +4003,38 @@ Point_3 Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(Point_3 pt)
     pt.y(),
     ptVertPlane.y() + m_crossSections.back()->ctrLinePtOut().y()
   ));
+}
+
+// ****************************************************************************
+// Load the coordinates of the points at which the transfer functions are 
+// computed
+
+bool Acoustic3dSimulation::setTFPointsFromCsvFile(string fileName)
+{
+  ofstream log("log.txt", ofstream::app);
+  log << "Start transfer function points extraction" << endl;
+
+  ifstream inputFile(fileName);
+  double x, y, z;
+  char separator;
+
+  if (!inputFile.is_open())
+  {
+    log << "Cannot open " << fileName << endl;
+  }
+  else
+  {
+    m_simuParams.tfPoint.clear();
+    while (inputFile >> x >> separator >> y >> separator >> z >> separator)
+    {
+      log << x << "  " << y << "  " << z << endl;
+      m_simuParams.tfPoint.push_back(Point_3(x, y, z));
+    }
+  }
+
+  log.close();
+
+  return(true);
 }
 
 // ****************************************************************************
@@ -5170,6 +5259,50 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 }
 
 //*************************************************************************
+// Interpolate linearly the transfer function
+
+complex<double> Acoustic3dSimulation::interpolateTransferFunction(double freq, int idxPt)
+{
+  complex<double> interpolatedTF;
+  double freqSteps((double)SAMPLING_RATE/2./(double)m_numFreq);
+  double tf[2];
+  int idxFreqs[2];
+  int maxIdxFreq(m_tfFreqs.size() - 1);
+  
+  // Check if a transfer function have been computed
+  if (m_transferFunctions.rows() > 0)
+  {
+    // Assert that the index of the point corresponds to an actual point
+    idxPt = min((int)m_transferFunctions.cols(), idxPt);
+    // Check if the frequency is in the interval of frequencies computed
+    if (freq >= m_tfFreqs[0] && freq <= m_tfFreqs.back())
+    {
+      // find the indexes before and after the frequency at which the interpolation is done
+      idxFreqs[0] = (int)(freq / freqSteps);
+      idxFreqs[1] = min(maxIdxFreq, idxFreqs[0] + 1);
+
+      tf[0] = log10(abs(m_transferFunctions(idxFreqs[0], idxPt)));
+      tf[1] = log10(abs(m_transferFunctions(idxFreqs[1], idxPt)));
+
+      // interpolate the transfer function
+      interpolatedTF = pow(10., tf[0] + ((tf[1] - tf[0]) * 
+         (freq - idxFreqs[0] * freqSteps)) / freqSteps);
+    }
+    else
+    {
+      interpolatedTF = complex<double>(NAN, NAN);
+    }
+
+  }
+  else
+  {
+    interpolatedTF = complex<double>(NAN, NAN);
+  }
+
+  return(interpolatedTF);
+}
+
+//*************************************************************************
 // Export the geometry extracted as CSV file
 
 void Acoustic3dSimulation::exportGeoInCsv(string fileName)
@@ -5334,6 +5467,36 @@ void Acoustic3dSimulation::exportGeoInCsv(string fileName)
   }
   of.close();
   //log.close();
+}
+
+//*************************************************************************
+// EXport the transfer functions in a text file
+
+bool Acoustic3dSimulation::exportTransferFucntions(string fileName)
+{
+  ofstream log("log.txt", ofstream::app);
+  log << "Export transfer function to file:" << endl;
+  log << fileName << endl;
+
+  ofstream ofs;
+  ofs.open(fileName, ofstream::out | ofstream::trunc);
+
+  for (int i(0); i < m_tfFreqs.size(); i++)
+  {
+    ofs << m_tfFreqs[i] << "  ";
+    for (int p(0); p < m_simuParams.tfPoint.size(); p++)
+    {
+      ofs << abs(m_transferFunctions(i,p)) << "  "
+        << arg(m_transferFunctions(i,p)) << "  ";
+    }
+    ofs << endl;
+  }
+  ofs.close();
+
+  log.close();
+
+  // FIXME: Check if the file have been successfully opened
+  return true;
 }
 
 //*************************************************************************
