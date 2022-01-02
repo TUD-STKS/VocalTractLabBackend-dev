@@ -2383,10 +2383,15 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     preComputeRadiationMatrices(16, lastSec);
   }
 
-  // resize the transfer function matrix
-  m_transferFunctions.resize(numFreqComputed, m_simuParams.tfPoint.size());
+  // resize the frequency vector
   m_tfFreqs.clear();
   m_tfFreqs.reserve(numFreqComputed);
+
+  // resize the transfer function matrix
+  m_transferFunctions.resize(numFreqComputed, m_simuParams.tfPoint.size());
+
+  // resize the plane mode input impedance vector
+  m_planeModeInputImpedance.resize(numFreqComputed);
 
   end = std::chrono::system_clock::now();
   elapsed_seconds = end - startTot;
@@ -2440,6 +2445,9 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     start = std::chrono::system_clock::now();
     //propagateAdmit(radAdmit, freq, m_method);
     propagateImpedAdmit(radImped, radAdmit, freq, lastSec, 0);
+
+    // Extract plane mode input impedance
+    m_planeModeInputImpedance(i) = m_crossSections[0]->Zin()(0,0);
     
     end = std::chrono::system_clock::now();
     elapsed_seconds = end - start;
@@ -2666,6 +2674,16 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     //prop << endl;
   //}
   //prop.close();
+
+  // Export plane mode input impedance
+  prop.open("zin.txt");
+  for (int i(0); i < numFreqComputed; i++)
+  {
+    prop << m_tfFreqs[i] << "  " 
+      << abs(m_planeModeInputImpedance(i)) << "  "
+      << arg(m_planeModeInputImpedance(i)) << endl;
+  }
+  prop.close();
 
   end = std::chrono::system_clock::now();
   elapsed_seconds = end - startTot;

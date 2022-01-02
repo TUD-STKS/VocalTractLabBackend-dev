@@ -177,6 +177,7 @@ private:
   vector<double> m_radiationFreqs;
   vector<double> m_tfFreqs;
   Eigen::MatrixXcd m_transferFunctions;
+  Eigen::VectorXcd m_planeModeInputImpedance;
 
   // maximal bounding box of the cross-sections (for displaying mesh and modes)
   pair<Point2D,Point2D> m_maxCSBoundingBox;
