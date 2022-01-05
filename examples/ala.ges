@@ -1,0 +1,28 @@
+<gestural_score>
+  <gesture_sequence type="vowel-gestures" unit="">
+    <gesture value="a" slope="0.000000" duration_s="0.600000" time_constant_s="0.012000" neutral="0" />
+  </gesture_sequence>
+  <gesture_sequence type="lip-gestures" unit="">
+  </gesture_sequence>
+  <gesture_sequence type="tongue-tip-gestures" unit="">
+    <gesture value="" slope="0.000000" duration_s="0.161677" time_constant_s="0.012000" neutral="1" />
+    <gesture value="tt-alveolar-lateral" slope="0.000000" duration_s="0.143713" time_constant_s="0.012000" neutral="0" />
+  </gesture_sequence>
+  <gesture_sequence type="tongue-body-gestures" unit="">
+  </gesture_sequence>
+  <gesture_sequence type="velic-gestures" unit="">
+  </gesture_sequence>
+  <gesture_sequence type="glottal-shape-gestures" unit="">
+    <gesture value="modal" slope="0.000000" duration_s="0.600000" time_constant_s="0.012000" neutral="0" />
+  </gesture_sequence>
+  <gesture_sequence type="f0-gestures" unit="st">
+    <gesture value="80.000000" slope="0.000000" duration_s="0.010000" time_constant_s="0.030000" neutral="0" />
+    <gesture value="83.000000" slope="0.000000" duration_s="0.300000" time_constant_s="0.030000" neutral="0" />
+    <gesture value="78.000000" slope="0.000000" duration_s="0.300000" time_constant_s="0.030000" neutral="0" />
+  </gesture_sequence>
+  <gesture_sequence type="lung-pressure-gestures" unit="dPa">
+    <gesture value="0.000000" slope="0.000000" duration_s="0.010000" time_constant_s="0.005000" neutral="0" />
+    <gesture value="8000.000000" slope="0.000000" duration_s="0.500000" time_constant_s="0.005000" neutral="0" />
+    <gesture value="0.000000" slope="0.000000" duration_s="0.231916" time_constant_s="0.005000" neutral="0" />
+  </gesture_sequence>
+</gestural_score>
