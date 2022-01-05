@@ -39,6 +39,10 @@
 
 #include <iostream>
 #include <fstream>
+#include <iomanip>  // for `setprecision`
+#include <filesystem>
+namespace fs = std::filesystem;
+
 
 enum GlottisModel
 {
@@ -238,15 +242,15 @@ int vtlCalcTongueRootAutomatically(bool automaticCalculation)
 }
 
 
-
 // ****************************************************************************
 // Returns the version of this API as a string that contains the compile data.
-// Reserve at least 32 chars for the string.
+// Reserve at least 64 chars for the string.
 // ****************************************************************************
 
 void vtlGetVersion(char *version)
 {
-  strcpy(version, __DATE__);
+  strcpy(version, "2.4.1quantling ");
+  strcat(version, __DATE__);
 }
 
 
@@ -1578,6 +1582,558 @@ int vtlTractSequenceToAudio(const char* tractSequenceFileName, const char* wavFi
 
   return 0;
 }
+
+
+// ****************************************************************************
+// This function calculates  and exports Ema Points.
+// Parameters:
+// o gestureFileName: Name of the gestural score file to synthesize.
+// o emaFileName: Name of a text file to which the sequence of Ema Point Coordinates
+//      and other feedback data will be written.
+//
+// The return value is 0 if successful, and otherwise an error code >= 1.
+// Error codes:
+// 0: success.
+// 1: The API was not initialized.
+// 2: Loading the gestural score file failed.
+// 3: Values in the gestural score files are out of range.
+// ****************************************************************************
+
+C_EXPORT int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaFileName)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  int i, k;
+
+  int numEmaPoints = (int)vocalTract->emaPoints.size();
+
+  double t_s; // time in sec
+  double tractParams[VocalTract::NUM_PARAMS];
+  double glottisParams[256];
+
+  Point3D P;
+  VocalTract::EmaPoint *e;
+
+  // ****************************************************************
+  // Init and load the gestural score.
+  // ****************************************************************
+
+  bool allValuesInRange = true;
+
+  // Create the gestural score not before we know what selectedGlottis
+  // is, which is determined in loadSpeakerFile().
+  GesturalScore *gesturalScore = new GesturalScore(vocalTract, glottis[selectedGlottis]);
+
+  if (gesturalScore->loadGesturesXml(string(gestureFileName), allValuesInRange) == false)
+  {
+    printf("Error in vtlGesturalScoreToEma(): Loading the gestural score file failed!\n");
+    return 2;
+  }
+
+  if (allValuesInRange == false)
+  {
+    printf("Error in vtlGesturalScoreToEma(): Some values in the gestural score are out of range!\n");
+    return 3;
+  }
+
+  // Important !!!
+  gesturalScore->calcCurves();
+
+  // ****************************************************************
+  // Open the text file for the ema points.
+  // ****************************************************************
+
+  ofstream emaFile;
+  if (emaFileName != NULL)
+  {
+    emaFile.open(emaFileName);
+    if (emaFile.is_open() == false)
+    {
+      printf("Warning in vtlGesturalScoreToEma(): The ema file could not be opened!\n");
+    }
+    else
+    {
+      // Write some header data into the file.
+
+      emaFile << "#comment" << endl;
+
+    }
+
+
+    // From Frontend -> Data.cpp:
+
+    // ****************************************************************
+    // Write the Header.
+    // ****************************************************************
+
+    emaFile << "time[s] ";
+    for (i=0; i < numEmaPoints; i++)
+    {
+      e = &vocalTract->emaPoints[i];
+      emaFile << e->name << "-x[cm] " << e->name << "-y[cm] " << e->name << "-z[cm]";
+
+      if (i != numEmaPoints-1)  // No space behind last value
+      {
+        emaFile << " ";
+      }
+
+    }
+    emaFile << endl;
+
+    // ****************************************************************
+    // Keep in mind the current vocal tract state.
+    // ****************************************************************
+
+    double oldTractParams[VocalTract::NUM_PARAMS];
+    for (i=0; i < VocalTract::NUM_PARAMS; i++)
+    {
+      oldTractParams[i] = vocalTract->param[i].x;
+    }
+
+    // ****************************************************************
+    // Write the ema points in the file (every 0.005 sec).
+    // ****************************************************************
+
+    const double EMA_SAMPLING_RATE_HZ = 200.0;
+    int numFrames = (int)(gesturalScore->getScoreDuration_s() * EMA_SAMPLING_RATE_HZ);
+
+    emaFile << std::setprecision(8);
+
+    for (k=0; k < numFrames; k++)
+    {
+      t_s = (double)k / (double)EMA_SAMPLING_RATE_HZ;
+      gesturalScore->getParams(t_s, tractParams, glottisParams);
+
+      for (i=0; i < VocalTract::NUM_PARAMS; i++)
+      {
+        vocalTract->param[i].x = tractParams[i];
+      }
+      vocalTract->calculateAll();
+
+      // Write data to file.
+
+      emaFile << t_s << " ";
+      for (i=0; i < numEmaPoints; i++)
+      {
+        P = vocalTract->getEmaPointCoord(i);
+        emaFile << P.x << " " << P.y << " " << P.z;
+
+        if (i != numEmaPoints-1)  // No space behind last value
+               {
+                 emaFile << " ";
+               }
+
+      }
+      emaFile << endl;
+    }
+
+    // ****************************************************************
+    // Set back the old vocal tract state.
+    // ****************************************************************
+
+    for (i=0; i < VocalTract::NUM_PARAMS; i++)
+    {
+      vocalTract->param[i].x = oldTractParams[i];
+    }
+    vocalTract->calculateAll();
+
+    // ****************************************************************
+    // Close the file with the ema points.
+    // ****************************************************************
+
+    if (emaFile.is_open())
+    {
+      emaFile.close();
+    }
+  }
+
+  // ****************************************************************
+  // Free the memory.
+  // ****************************************************************
+
+  delete gesturalScore;
+
+  return 0;
+}
+
+
+// ****************************************************************************
+// This function calculates a sequence of vocal tract model states and
+// glottis model states from a gestural score and hands them over to vtlTractandGlottisToEma().
+// Parameters (in):
+// o gestureFileName: Name of the gestural score file to synthesize.
+// o filePath: path leading to the directory where ema and mesh files shall be stored.
+// o fileName: name of all exported datasets
+//
+// The return value is 0 if successful, and otherwise an error code >= 1.
+// Error codes:
+// 0: success.
+// 1: The API was not initialized.
+// 2: Loading the gestural score file failed.
+// 3: Values in the gestural score files are out of range.
+// ****************************************************************************
+
+C_EXPORT int vtlGesturalScoreToEmaAndMesh(const char *gestureFileName, const char *filePath, const char *fileName)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  int i, f;
+  double t_s; // time in sec
+
+  // ****************************************************************
+  // Init and load the gestural score.
+  // ****************************************************************
+
+  bool allValuesInRange = true;
+
+  // Create the gestural score not before we know what selectedGlottis
+  // is, which is determined in loadSpeakerFile() (this can be overwritten later).
+  GesturalScore *gesturalScore = new GesturalScore(vocalTract, glottis[selectedGlottis]);
+
+  if (gesturalScore->loadGesturesXml(string(gestureFileName), allValuesInRange) == false)
+  {
+    printf("Error in vtlGesToTractAndGlottisModel(): Loading the gestural score file failed!\n");
+    return 2;
+  }
+
+  if (allValuesInRange == false)
+  {
+    printf("Error in vtlGesToTractAndGlottisModel(): Some values in the gestural score are out of range!\n");
+    return 3;
+  }
+
+  // Important !!!
+  gesturalScore->calcCurves();
+
+  // *****************************************************************************************
+  // Store Tract and Glottis Parameter in tractParams[] and glottisParams[]
+  // *****************************************************************************************
+
+  const double EMA_SAMPLING_RATE_HZ = 200.0;
+  int numFrames = (int)(gesturalScore->getScoreDuration_s() * EMA_SAMPLING_RATE_HZ);
+
+  int numTractParams = VocalTract::NUM_PARAMS;
+  int numGlottisParams = (int)glottis[selectedGlottis]->controlParam.size();
+
+  double storeTractParams[numTractParams];
+  double storeGlottisParams[numGlottisParams];
+
+
+  double tractParams[numFrames * numTractParams];
+  double glottisParams[numFrames * numGlottisParams];
+
+  // ************************************************************************
+  // Extract glottis and tract params here
+  // ************************************************************************
+
+  for (f=0; f < numFrames; f++)
+  {
+    t_s = (double)f / (double)EMA_SAMPLING_RATE_HZ;
+    gesturalScore->getParams(t_s, storeTractParams, storeGlottisParams);
+
+    for (i = 0; i < numTractParams; i++)
+    {
+      tractParams[i + (f*numTractParams)] = storeTractParams[i];
+    }
+
+    for (i = 0; i < numGlottisParams; i++)
+    {
+      glottisParams[i + (f*numGlottisParams)] = storeGlottisParams[i];
+    }
+  }
+
+  // *****************************************************************************************
+  // Free the memory.
+  // *****************************************************************************************
+
+  delete gesturalScore;
+
+  int surf[] = {16,16,16};   // Surface of selected Ema Point
+  int vertex[] = {115,225,335};  // Vertex Index of selected Ema Point
+
+  // Call of vtlModelToOptionalEmaAndMesh could also be done from outside!
+  return vtlTractSequenceToEmaAndMesh(tractParams, glottisParams, numTractParams, numGlottisParams, numFrames, 3, surf, vertex, filePath, fileName);
+}
+
+
+// ****************************************************************************
+// Calculate and export selected Ema points and mesh data with a given sequence
+// of vocal tract model states and glottis model states. For each frame in
+// the incoming model, a 3D-mesh of the vocal tract is calculated and exported
+// in an obj.-file and a corresponding .mtl file. The files' names consist of
+// the name handed in in "fileName" and the number of the current frame. These
+// files are stored in a subfolder "fileName-meshes" of the given directory
+// "filePath". The Ema points are exported into a .txt file named
+// "fileName-ema" in the directory "filePath". It contains the time of the
+// frame and the 3D-coordinates of all selected Ema points per frame in a row.
+//
+// Parameters (in):
+// o tractParams: Is a concatenation of vocal tract parameter vectors
+//     with the total length of (numVocalTractParams*numFrames) elements.
+// o glottisParams: Is a concatenation of glottis parameter vectors
+//     with the total length of (numGlottisParams*numFrames) elements.
+// o numTractParams: length of tractParams
+// o numGlottisParams: length of glottisParams
+// o numFrames: Amount of frames the model data contain
+// o numEmaPoints: number of selected Ema Points
+// o surf: Array with indices of surfaces of selected Ema Points
+//            (UPPER_TEETH = 0, LOWER_TEETH = 1, UPPER_COVER = 2,
+//             LOWER_COVER = 3, UPPER_LIP = 4, LOWER_LIP = 5,
+//             PALATE = 6, MANDIBLE = 7, LOWER_TEETH_ORIGINAL = 8,
+//             LOW_VELUM = 9, MID_VELUM = 10, HIGH_VELUM = 11,
+//             NARROW_LARYNX_FRONT = 12, NARROW_LARYNX_BACK = 13,
+//             WIDE_LARYNX_FRONT = 14, WIDE_LARYNX_BACK = 15,
+//             TONGUE = 16, UPPER_COVER_TWOSIDE = 17,
+//             LOWER_COVER_TWOSIDE = 18, UPPER_TEETH_TWOSIDE = 19,
+//             LOWER_TEETH_TWOSIDE = 20, UPPER_LIP_TWOSIDE = 21,
+//             LOWER_LIP_TWOSIDE = 22, LEFT_COVER = 23,
+//             RIGHT_COVER = 24, UVULA_ORIGINAL = 25, UVULA = 26,
+//             UVULA_TWOSIDE = 27, EPIGLOTTIS_ORIGINAL = 28,
+//             EPIGLOTTIS = 29, EPIGLOTTIS_TWOSIDE = 30)
+// o vert: Array with index of vertices of selected Ema Points
+//            (Predefined Ema Point Vertex Indices:
+//             Tongue Back (TB) = 115
+//             Tongue Middle (TM) = 225
+//             Tongue Tip (TT) = 335
+//             Upper Lip (UL) = 89
+//             Lower Lip (LL) = 89
+//             Lower Cover (JAW) = 148)
+// o filePath: path leading to the directory where ema and mesh files shall be stored.
+// o fileName: name of all exported datasets
+//
+// The return value is 0 if successful, and otherwise an error code >= 1.
+// Error codes:
+// 0: success.
+// 1: numEmaPoints <= 0
+// 2: surf == NULL
+// 3: vert == NULL
+// 4: surface index of a selected EmaPoints exceeds 30
+// 5: vertex index of a selected EmaPoint exceeds possible range
+// 6: filePath is not valid
+// 7: mesh folder already exist: prevents overwriting
+// 8: ema file already exists: prevents overwriting
+// 9: ema file could not be opened
+// 10: API already initialized
+// ****************************************************************************
+
+C_EXPORT int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int numTractParams, int numGlottisParams, int numFrames, int numEmaPoints, int *surf, int *vert, const char *filePath, const char *fileName)
+{
+  // Return if no Ema Point are selected
+  if (numEmaPoints <= 0)
+  {
+    printf("Error in vtlModelToOptionalEmaAndMesh(): numEmaPoints <= 0");
+    return 1;
+  }
+
+  if (surf == NULL)
+  {
+    printf("Error in vtlModelToOptionalEmaAndMesh(): surf == NULL");
+    return 2;
+  }
+
+  if (vert == NULL)
+  {
+    printf("Error in vtlModelToOptionalEmaAndMesh(): vert == NULL");
+    return 3;
+  }
+
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 10;
+  }
+
+  // ****************************************************************
+  // Create mesh and ema file paths
+  // ****************************************************************
+
+  fs::path path = filePath;
+
+  if (!fs::exists(path))
+  {
+    printf("Error in vtlModelToOptionalEmaAndMesh(): filePath doesn't exist");
+    return 6;
+  }
+
+  std::string fileNameString;
+  fileNameString += fileName;
+
+  std::string emaFileName;
+  emaFileName += fileName;
+  emaFileName += "-ema.txt";
+  fs::path emaFilePath = path;
+  emaFilePath /= emaFileName;  // append file name (with ending) to path
+
+  fs::path objFilePath = path;
+  std::string meshFolderName;
+  meshFolderName += fileNameString;
+  meshFolderName += "-meshes";
+  objFilePath /= meshFolderName;
+
+  if (fs::exists(objFilePath))
+  {
+    printf("Error in vtlModelToOptionalEmaAndMesh(): Mesh-Folder already exists");
+    return 7;
+  }
+  // create mesh-directory
+  fs::create_directory(objFilePath);
+
+  // append file name (without ending) to path
+  objFilePath /= fileName;
+
+  // stores current mesh path with complete file ending
+  std::string objFileName;
+
+  string surfaceNames[] = {"UPPER_TEETH", "LOWER_TEETH",
+        "UPPER_COVER", "LOWER COVER",
+        "UPPER LIP", "LOWER LIP",
+        "PALATE", "MANDIBLE", "LOWER_TEETH_ORIGINAL",
+        "LOW_VELUM", "MID_VELUM", "HIGH_VELUM",
+        "NARROW_LARYNX_FRONT", "NARROW_LARYNX_BACK",
+        "WIDE_LARYNX_FRONT", "WIDE_LARYNX_BACK",
+        "TONGUE",
+        "UPPER_COVER_TWOSIDE",
+        "LOWER_COVER_TWOSIDE",
+        "UPPER_TEETH_TWOSIDE",
+        "LOWER_TEETH_TWOSIDE",
+        "UPPER_LIP_TWOSIDE",
+        "LOWER_LIP_TWOSIDE",
+        "LEFT_COVER",
+        "RIGHT_COVER",
+        "UVULA_ORIGINAL",
+        "UVULA",
+        "UVULA_TWOSIDE",
+        "EPIGLOTTIS_ORIGINAL",
+        "EPIGLOTTIS",
+        "EPIGLOTTIS_TWOSIDE"};
+
+  double glotParams[numGlottisParams];
+
+  Point3D P(0.0, 0.0, 0.0);
+
+  Surface *s = NULL;
+
+  // Store maximal index of Vertices for each surface in surf[]
+  int maxVertex[numEmaPoints];
+  int  i,e;
+
+  //Calculate max Vertex for each surface in surf (Compare with VocalTract::getEmaSurfaceVertexRange())
+  for (e = 0; e < numEmaPoints; e++)
+  {
+    s = &vocalTract->surface[surf[e]];
+    maxVertex[e] = s->numVertices - 1;
+  }
+
+  s = NULL;
+
+  // Check if all Vertices are in range for corresponding surface
+  for (e = 0; e < numEmaPoints; e++)
+  {
+    if (surf[e] > 30)
+    {
+      printf("Error in vtlModelToOptionalEmaAndMesh(): Surface at surf[%d] out of range, maximal Surface is %d\n", e, 30);
+      return 4;
+    }
+    if (vert[e] > maxVertex[e])
+    {
+      printf("Error in vtlModelToOptionalEmaAndMesh(): Vertex at vert[%d] out of range, maximal Vertex of chosen Surface %d is %d\n", e, surf[e],maxVertex[e]);
+      return 5;
+    }
+  }
+
+  ofstream emaFile;
+  if (fs::exists(emaFilePath))
+  {
+    printf("Error in vtlModelToOptionalEmaAndMesh(): EMA file already exists");
+    return 8;
+  }
+
+  else
+  {
+    emaFile.open(emaFilePath.string());
+    if (emaFile.is_open() == false)
+    {
+      printf("Warning in vtlModelToOptionalEmaAndMesh(): The Ema file could not be opened!\n");
+      return 9;
+
+    }
+    else
+    {
+      // ****************************************************************
+      // Write the Header in Ema file
+      // ****************************************************************
+      emaFile << "time(s) ";
+
+      for (e = 0; e < numEmaPoints; e++)
+      {
+        // Take names from string surfaceNames[], append index of vertex
+        emaFile << surfaceNames[surf[e]] << "_" << vert[e] << "-x[cm] " << surfaceNames[surf[e]] << "_" << vert[e] << "-y[cm] " << surfaceNames[surf[e]] << "_" << vert[e] << "-z[cm]";
+
+        if (e != numEmaPoints-1)  // No space behind last value
+        {
+          emaFile << " ";
+        }
+      }
+      emaFile << endl;
+    }
+    emaFile << std::setprecision(8);
+
+    for (int f = 0; f < numFrames; f++)
+    {
+      fs::path objFileName = objFilePath.string() + to_string(f) + ".obj" ;  // name of current .obj file
+      emaFile << f*0.005 << " "; // Write current time (frame*0.005 currently) into file
+
+      // Set the properties of the target tube.
+      for (i = 0; i < numTractParams; i++)
+      {
+        vocalTract->param[i].x = tractParams[i + (numTractParams*f)];
+      }
+
+      // Extract Glottis Parameters in each Frame
+      for (i = 0; i < numGlottisParams; i++)
+      {
+        glotParams[i] = glottisParams[i + (numGlottisParams*f)];
+      }
+      vocalTract->calculateAll();
+
+      // Calculate coordinates for each selected Ema Points
+      for (e = 0; e < numEmaPoints; e++)
+      {
+        s = &vocalTract->surface[surf[e]];
+
+        P = s->vertex[vert[e]].coord;
+        emaFile << P.x << " " << P.y << " " << P.z;
+
+        if (e != numEmaPoints-1)  // No space behind last value
+        {
+          emaFile << " ";
+        }
+      }
+
+      vocalTract->saveAsObjFile(objFileName, true); // write .obj files of current vocal tract
+      emaFile << endl;
+
+    }
+
+    // ****************************************************************
+    // Close the file with the ema points.
+    // ****************************************************************
+    if (emaFile.is_open())
+    {
+      emaFile.close();
+    }
+  }
+  return 0;
+}
+
 
 // ****************************************************************************
 int vtlSaveSpeaker(const char* speakerFileName)
