@@ -6844,7 +6844,6 @@ bool VocalTract::exportTractContourSvg(const string &fileName, bool addCenterLin
   indent += 2;
 
   os << string(indent, ' ') << "<rect x=\"-160\" y=\"-90\" width=\"100%\" height=\"100%\" fill=\"white\" />" << endl;
-  indent += 2;
 
   os << string(indent, ' ') << "<g>" << endl;
   indent += 2;
