@@ -40,6 +40,8 @@ or
 ```
 cmake --build . --config Release --target VocalTractLabBackend
 ```
+The final dll/so-files and executables are copied to ``../lib/`` so you don't
+find them within the ``out`` folder.
 
 ### Run tests using shell/command prompt
 - Open a shell/command prompt
