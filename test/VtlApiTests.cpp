@@ -22,10 +22,10 @@ const char* wavFile = "test/resources/example01.wav";
 TEST(ApiTest, Version) 
 {
     std::cout << std::filesystem::current_path() << std::endl;
-	char version[32];
+	char version[64];
 	vtlGetVersion(version);
 	std::string s(version);
-	EXPECT_EQ(s, std::string(__DATE__));
+	EXPECT_EQ(s, std::string("API 2.4.1 ") + std::string(__DATE__));
 }
 
 TEST(ApiTest, Constants)

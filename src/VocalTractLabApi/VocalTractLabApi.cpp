@@ -249,7 +249,7 @@ int vtlCalcTongueRootAutomatically(bool automaticCalculation)
 
 void vtlGetVersion(char *version)
 {
-  strcpy(version, "2.4.1quantling ");
+  strcpy(version, "API 2.4.1 ");
   strcat(version, __DATE__);
 }
 
@@ -1599,7 +1599,7 @@ int vtlTractSequenceToAudio(const char* tractSequenceFileName, const char* wavFi
 // 3: Values in the gestural score files are out of range.
 // ****************************************************************************
 
-C_EXPORT int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaFileName)
+int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaFileName)
 {
   if (!vtlApiInitialized)
   {
@@ -1762,109 +1762,6 @@ C_EXPORT int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaF
 
 
 // ****************************************************************************
-// This function calculates a sequence of vocal tract model states and
-// glottis model states from a gestural score and hands them over to vtlTractandGlottisToEma().
-// Parameters (in):
-// o gestureFileName: Name of the gestural score file to synthesize.
-// o filePath: path leading to the directory where ema and mesh files shall be stored.
-// o fileName: name of all exported datasets
-//
-// The return value is 0 if successful, and otherwise an error code >= 1.
-// Error codes:
-// 0: success.
-// 1: The API was not initialized.
-// 2: Loading the gestural score file failed.
-// 3: Values in the gestural score files are out of range.
-// ****************************************************************************
-
-C_EXPORT int vtlGesturalScoreToEmaAndMesh(const char *gestureFileName, const char *filePath, const char *fileName)
-{
-  if (!vtlApiInitialized)
-  {
-    printf("Error: The API has not been initialized.\n");
-    return 1;
-  }
-
-  int i, f;
-  double t_s; // time in sec
-
-  // ****************************************************************
-  // Init and load the gestural score.
-  // ****************************************************************
-
-  bool allValuesInRange = true;
-
-  // Create the gestural score not before we know what selectedGlottis
-  // is, which is determined in loadSpeakerFile() (this can be overwritten later).
-  GesturalScore *gesturalScore = new GesturalScore(vocalTract, glottis[selectedGlottis]);
-
-  if (gesturalScore->loadGesturesXml(string(gestureFileName), allValuesInRange) == false)
-  {
-    printf("Error in vtlGesToTractAndGlottisModel(): Loading the gestural score file failed!\n");
-    return 2;
-  }
-
-  if (allValuesInRange == false)
-  {
-    printf("Error in vtlGesToTractAndGlottisModel(): Some values in the gestural score are out of range!\n");
-    return 3;
-  }
-
-  // Important !!!
-  gesturalScore->calcCurves();
-
-  // *****************************************************************************************
-  // Store Tract and Glottis Parameter in tractParams[] and glottisParams[]
-  // *****************************************************************************************
-
-  const double EMA_SAMPLING_RATE_HZ = 200.0;
-  int numFrames = (int)(gesturalScore->getScoreDuration_s() * EMA_SAMPLING_RATE_HZ);
-
-  int numTractParams = VocalTract::NUM_PARAMS;
-  int numGlottisParams = (int)glottis[selectedGlottis]->controlParam.size();
-
-  double storeTractParams[numTractParams];
-  double storeGlottisParams[numGlottisParams];
-
-
-  double tractParams[numFrames * numTractParams];
-  double glottisParams[numFrames * numGlottisParams];
-
-  // ************************************************************************
-  // Extract glottis and tract params here
-  // ************************************************************************
-
-  for (f=0; f < numFrames; f++)
-  {
-    t_s = (double)f / (double)EMA_SAMPLING_RATE_HZ;
-    gesturalScore->getParams(t_s, storeTractParams, storeGlottisParams);
-
-    for (i = 0; i < numTractParams; i++)
-    {
-      tractParams[i + (f*numTractParams)] = storeTractParams[i];
-    }
-
-    for (i = 0; i < numGlottisParams; i++)
-    {
-      glottisParams[i + (f*numGlottisParams)] = storeGlottisParams[i];
-    }
-  }
-
-  // *****************************************************************************************
-  // Free the memory.
-  // *****************************************************************************************
-
-  delete gesturalScore;
-
-  int surf[] = {16,16,16};   // Surface of selected Ema Point
-  int vertex[] = {115,225,335};  // Vertex Index of selected Ema Point
-
-  // Call of vtlModelToOptionalEmaAndMesh could also be done from outside!
-  return vtlTractSequenceToEmaAndMesh(tractParams, glottisParams, numTractParams, numGlottisParams, numFrames, 3, surf, vertex, filePath, fileName);
-}
-
-
-// ****************************************************************************
 // Calculate and export selected Ema points and mesh data with a given sequence
 // of vocal tract model states and glottis model states. For each frame in
 // the incoming model, a 3D-mesh of the vocal tract is calculated and exported
@@ -1924,7 +1821,7 @@ C_EXPORT int vtlGesturalScoreToEmaAndMesh(const char *gestureFileName, const cha
 // 10: API already initialized
 // ****************************************************************************
 
-C_EXPORT int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int numTractParams, int numGlottisParams, int numFrames, int numEmaPoints, int *surf, int *vert, const char *filePath, const char *fileName)
+int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int numTractParams, int numGlottisParams, int numFrames, int numEmaPoints, int *surf, int *vert, const char *filePath, const char *fileName)
 {
   // Return if no Ema Point are selected
   if (numEmaPoints <= 0)
@@ -2132,6 +2029,109 @@ C_EXPORT int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisPa
     }
   }
   return 0;
+}
+
+
+// ****************************************************************************
+// This function calculates a sequence of vocal tract model states and
+// glottis model states from a gestural score and hands them over to vtlTractandGlottisToEma().
+// Parameters (in):
+// o gestureFileName: Name of the gestural score file to synthesize.
+// o filePath: path leading to the directory where ema and mesh files shall be stored.
+// o fileName: name of all exported datasets
+//
+// The return value is 0 if successful, and otherwise an error code >= 1.
+// Error codes:
+// 0: success.
+// 1: The API was not initialized.
+// 2: Loading the gestural score file failed.
+// 3: Values in the gestural score files are out of range.
+// ****************************************************************************
+
+int vtlGesturalScoreToEmaAndMesh(const char *gestureFileName, const char *filePath, const char *fileName)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  int i, f;
+  double t_s; // time in sec
+
+  // ****************************************************************
+  // Init and load the gestural score.
+  // ****************************************************************
+
+  bool allValuesInRange = true;
+
+  // Create the gestural score not before we know what selectedGlottis
+  // is, which is determined in loadSpeakerFile() (this can be overwritten later).
+  GesturalScore *gesturalScore = new GesturalScore(vocalTract, glottis[selectedGlottis]);
+
+  if (gesturalScore->loadGesturesXml(string(gestureFileName), allValuesInRange) == false)
+  {
+    printf("Error in vtlGesToTractAndGlottisModel(): Loading the gestural score file failed!\n");
+    return 2;
+  }
+
+  if (allValuesInRange == false)
+  {
+    printf("Error in vtlGesToTractAndGlottisModel(): Some values in the gestural score are out of range!\n");
+    return 3;
+  }
+
+  // Important !!!
+  gesturalScore->calcCurves();
+
+  // *****************************************************************************************
+  // Store Tract and Glottis Parameter in tractParams[] and glottisParams[]
+  // *****************************************************************************************
+
+  const double EMA_SAMPLING_RATE_HZ = 200.0;
+  int numFrames = (int)(gesturalScore->getScoreDuration_s() * EMA_SAMPLING_RATE_HZ);
+
+  int numTractParams = VocalTract::NUM_PARAMS;
+  int numGlottisParams = (int)glottis[selectedGlottis]->controlParam.size();
+
+  double storeTractParams[numTractParams];
+  double storeGlottisParams[numGlottisParams];
+
+
+  double tractParams[numFrames * numTractParams];
+  double glottisParams[numFrames * numGlottisParams];
+
+  // ************************************************************************
+  // Extract glottis and tract params here
+  // ************************************************************************
+
+  for (f=0; f < numFrames; f++)
+  {
+    t_s = (double)f / (double)EMA_SAMPLING_RATE_HZ;
+    gesturalScore->getParams(t_s, storeTractParams, storeGlottisParams);
+
+    for (i = 0; i < numTractParams; i++)
+    {
+      tractParams[i + (f*numTractParams)] = storeTractParams[i];
+    }
+
+    for (i = 0; i < numGlottisParams; i++)
+    {
+      glottisParams[i + (f*numGlottisParams)] = storeGlottisParams[i];
+    }
+  }
+
+  // *****************************************************************************************
+  // Free the memory.
+  // *****************************************************************************************
+
+  delete gesturalScore;
+
+  int surf[] = {16,16,16};   // Surface of selected Ema Point
+  int vertex[] = {115,225,335};  // Vertex Index of selected Ema Point
+
+  // Call of vtlModelToOptionalEmaAndMesh could also be done from outside!
+  return vtlTractSequenceToEmaAndMesh(tractParams, glottisParams, numTractParams, numGlottisParams, numFrames, 3, surf, vertex, filePath, fileName);
 }
 
 
