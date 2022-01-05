@@ -283,6 +283,8 @@ void vtlGetVersion(char *version)
 // o The number of supraglottal tube sections.
 // o The number of vocal tract model parameters.
 // o The number of glottis model parameters.
+// o The number of audio samples per tract state.
+// o The internal sampling rate.
 //
 // Function return value:
 // 0: success.
