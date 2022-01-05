@@ -22,7 +22,7 @@
 // ****************************************************************************
 // This file defines the entry point for the DLL application, and the functions
 // defined here are C-compatible so that they can be used with the 
-// MATLAB shared library interface.
+// MATLAB and Python shared library interface.
 // ****************************************************************************
 
 // Make an extern "C" section so that the functions can be accessed from Matlab
@@ -563,6 +563,105 @@ C_EXPORT int vtlGetGesturalScoreDuration(const char* gesFileName, int* numAudioS
 C_EXPORT int vtlTractSequenceToAudio(const char* tractSequenceFileName,
   const char* wavFileName, double* audio, int* numSamples);
 
+
+// ****************************************************************************
+// This function calculates  and exports Ema Points.
+// Parameters:
+// o gestureFileName: Name of the gestural score file to synthesize.
+// o emaFileName: Name of a text file to which the sequence of Ema Point Coordinates
+//      and other feedback data will be written.
+//
+// The return value is 0 if successful, and otherwise an error code >= 1.
+// Error codes:
+// 0: success.
+// 1: The API was not initialized.
+// 2: Loading the gestural score file failed.
+// 3: Values in the gestural score files are out of range.
+// ****************************************************************************
+
+C_EXPORT int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaFileName);
+
+
+// ****************************************************************************
+// Calculate and export selected Ema points and mesh data with a given sequence
+// of vocal tract model states and glottis model states. For each frame in
+// the incoming model, a 3D-mesh of the vocal tract is calculated and exported
+// in an obj.-file and a corresponding .mtl file. The files' names consist of
+// the name handed in in "fileName" and the number of the current frame. These
+// files are stored in a subfolder "fileName-meshes" of the given directory
+// "filePath". The Ema points are exported into a .txt file named
+// "fileName-ema" in the directory "filePath". It contains the time of the
+// frame and the 3D-coordinates of all selected Ema points per frame in a row.
+//
+// Parameters (in):
+// o tractParams: Is a concatenation of vocal tract parameter vectors
+//     with the total length of (numVocalTractParams*numFrames) elements.
+// o glottisParams: Is a concatenation of glottis parameter vectors
+//     with the total length of (numGlottisParams*numFrames) elements.
+// o numTractParams: length of tractParams
+// o numGlottisParams: length of glottisParams
+// o numFrames: Amount of frames the model data contain
+// o numEmaPoints: number of selected Ema Points
+// o surf: Array with indices of surfaces of selected Ema Points
+//            (UPPER_TEETH = 0, LOWER_TEETH = 1, UPPER_COVER = 2,
+//             LOWER_COVER = 3, UPPER_LIP = 4, LOWER_LIP = 5,
+//             PALATE = 6, MANDIBLE = 7, LOWER_TEETH_ORIGINAL = 8,
+//             LOW_VELUM = 9, MID_VELUM = 10, HIGH_VELUM = 11,
+//             NARROW_LARYNX_FRONT = 12, NARROW_LARYNX_BACK = 13,
+//             WIDE_LARYNX_FRONT = 14, WIDE_LARYNX_BACK = 15,
+//             TONGUE = 16, UPPER_COVER_TWOSIDE = 17,
+//             LOWER_COVER_TWOSIDE = 18, UPPER_TEETH_TWOSIDE = 19,
+//             LOWER_TEETH_TWOSIDE = 20, UPPER_LIP_TWOSIDE = 21,
+//             LOWER_LIP_TWOSIDE = 22, LEFT_COVER = 23,
+//             RIGHT_COVER = 24, UVULA_ORIGINAL = 25, UVULA = 26,
+//             UVULA_TWOSIDE = 27, EPIGLOTTIS_ORIGINAL = 28,
+//             EPIGLOTTIS = 29, EPIGLOTTIS_TWOSIDE = 30)
+// o vert: Array with index of vertices of selected Ema Points
+//            (Predefined Ema Point Vertex Indices:
+//             Tongue Back (TB) = 115
+//             Tongue Middle (TM) = 225
+//             Tongue Tip (TT) = 335
+//             Upper Lip (UL) = 89
+//             Lower Lip (LL) = 89
+//             Lower Cover (JAW) = 148)
+// o filePath: path leading to the directory where ema and mesh files shall be stored.
+// o fileName: name of all exported datasets
+//
+// The return value is 0 if successful, and otherwise an error code >= 1.
+// Error codes:
+// 0: success.
+// 1: numEmaPoints <= 0
+// 2: surf == NULL
+// 3: vert == NULL
+// 4: surface index of a selected EmaPoints exceeds 30
+// 5: vertex index of a selected EmaPoint exceeds possible range
+// 6: filePath is not valid
+// 7: mesh folder already exist: prevents overwriting
+// 8: ema file already exists: prevents overwriting
+// 9: ema file could not be opened
+// 10: API already initialized
+// ****************************************************************************
+
+C_EXPORT int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int numTractParams, int numGlottisParams, int numFrames, int numEmaPoints, int *surf, int *vert, const char *filePath, const char *fileName);
+
+
+// ****************************************************************************
+// This function calculates a sequence of vocal tract model states and
+// glottis model states from a gestural score and hands them over to vtlTractandGlottisToEma().
+// Parameters (in):
+// o gestureFileName: Name of the gestural score file to synthesize.
+// o filePath: path leading to the directory where ema and mesh files shall be stored.
+// o fileName: name of all exported datasets
+//
+// The return value is 0 if successful, and otherwise an error code >= 1.
+// Error codes:
+// 0: success.
+// 1: The API was not initialized.
+// 2: Loading the gestural score file failed.
+// 3: Values in the gestural score files are out of range.
+// ****************************************************************************
+
+C_EXPORT int vtlGesturalScoreToEmaAndMesh(const char *gestureFileName, const char *filePath, const char *fileName);
 
 // ****************************************************************************
 

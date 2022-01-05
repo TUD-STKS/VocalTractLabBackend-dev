@@ -187,6 +187,29 @@ int vtlInitialize(const char *speakerFileName)
 
 
 // ****************************************************************************
+// Save the current speaker information (vocal tract and glottis shape) in
+// a speaker file (e.g., "JD3.speaker")
+// Return values:
+// 0: success.
+// 1: Saving the speaker file failed.
+// ****************************************************************************
+
+int vtlSaveSpeaker(const char* speakerFileName)
+{
+    Speaker speaker(vocalTract, { std::begin(glottis), std::end(glottis) }, selectedGlottis);
+    try
+    {
+        speaker.save(speakerFileName);
+        return 0;
+    }
+    catch (std::exception&)
+    {
+        return 1;
+    }
+}
+
+
+// ****************************************************************************
 // Clean up the memory and shut down the synthesizer.
 // Return values:
 // 0: success.
@@ -2132,22 +2155,6 @@ int vtlGesturalScoreToEmaAndMesh(const char *gestureFileName, const char *filePa
 
   // Call of vtlModelToOptionalEmaAndMesh could also be done from outside!
   return vtlTractSequenceToEmaAndMesh(tractParams, glottisParams, numTractParams, numGlottisParams, numFrames, 3, surf, vertex, filePath, fileName);
-}
-
-
-// ****************************************************************************
-int vtlSaveSpeaker(const char* speakerFileName)
-{
-    Speaker speaker(vocalTract, { std::begin(glottis), std::end(glottis) }, selectedGlottis);
-    try
-    {
-        speaker.save(speakerFileName);
-        return 0;
-    }
-    catch (std::exception&)
-    {
-        return 1;
-    }    
 }
 
 // ****************************************************************************
