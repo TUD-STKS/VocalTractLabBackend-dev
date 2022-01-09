@@ -30,9 +30,7 @@ jobs:
       uses: matlab-actions/setup-matlab@v1.0.1
     
     - name: Hide runtime DLL shipped with MATLAB because it is out of date
-      uses: matlab-actions/run-command@v1
-      with:
-        command: matlabroot
+      run: sudo mv /usr/local/MATLAB/R2021b/sys/os/glnxa64/libstdc++.so.6 /usr/local/MATLAB/R2021b/sys/os/glnxa64/libstdc++.so.6.old
     
     - name: Run MATLAB examples
       uses: matlab-actions/run-command@v1
