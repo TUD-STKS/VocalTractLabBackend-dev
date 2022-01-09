@@ -8,6 +8,9 @@ addpath('../include/VocalTractLabApi');
 addpath('../lib/Release');
 
 libName = 'VocalTractLabApi';
+if isunix
+    libName = ['lib' libName];
+end
 headerName = 'VocalTractLabApi.h';
     
 if ~libisloaded(libName)
