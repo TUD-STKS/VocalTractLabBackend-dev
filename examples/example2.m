@@ -1,0 +1,88 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This example generates the speech waveform directly from a gestural
+% score.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+addpath('../include/VocalTractLabApi');
+addpath('../lib/Release');
+
+libName = 'VocalTractLabApi';
+headerName = 'VocalTractLabApi.h';
+    
+if ~libisloaded(libName)
+    % To load the library, specify the name of the DLL and the name of the
+    % header file. If no file extensions are provided (as below)
+    % LOADLIBRARY assumes that the DLL ends with .dll or .so
+    loadlibrary(libName, headerName);
+    disp(['Loaded library: ' libName]);
+    pause(1);
+end
+
+if ~libisloaded(libName)
+    error(['Failed to load external library: ' libName]);
+    success = 0;
+    return;
+end
+
+% *****************************************************************************
+% list the methods
+% *****************************************************************************
+
+libfunctions(libName);   
+
+% *****************************************************************************
+% Print the version (compile date) of the library.
+%
+% void vtlGetVersion(char *version);
+% *****************************************************************************
+
+% Init the variable version with enough characters for the version string
+% to fit in.
+version = '                                ';
+version = calllib(libName, 'vtlGetVersion', version);
+
+disp(['Compile date of the library: ' version]);
+
+% *****************************************************************************
+% Synthesize from a gestural score.
+%
+% int vtlGesturalScoreToWav(const char *gesFileName, const char *wavFileName,
+%  int enableConsoleOutput);
+% *****************************************************************************
+
+speakerFileName = '../resources/JD3.speaker';
+gestureFileName = 'ala.ges';
+wavFileName = 'ala.wav';
+
+failure = calllib(libName, 'vtlInitialize', speakerFileName);
+
+if (failure ~= 0)
+    disp('Error in vtlInitialize()! Error code:');
+    failure
+    return;
+end
+
+numSamples = 0;
+audio = zeros(44100, 0);   % Enough for 1 s of audio.
+
+failure = calllib(libName, 'vtlGesturalScoreToAudio', gestureFileName, ...
+    wavFileName, audio, numSamples, 1);
+
+if (failure ~= 0)
+    disp('Error in vtlGesturalScoreToAudio()! Error code:');
+    failure
+    return;
+end
+
+failure = calllib(libName, 'vtlClose');
+
+disp('Finished.');
+
+% Play the synthesized wav file.
+s = audioread(wavFileName);
+
+plot(1:length(s), s);
+
+sound(s, 44100);
+
+
