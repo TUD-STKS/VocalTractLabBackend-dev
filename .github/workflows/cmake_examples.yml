@@ -30,7 +30,6 @@ jobs:
       uses: matlab-actions/setup-matlab@v1.0.1
     
     - name: Run MATLAB examples
-      working-directory: ${{github.workspace}}/examples
       uses: matlab-actions/run-command@v1
       with:
-        command: example1; exit;
+        command: addpath('examples'), example1, exit;
