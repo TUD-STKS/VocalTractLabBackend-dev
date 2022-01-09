@@ -19,6 +19,7 @@ This repo contains sources of the backend of the articulatory synthesizer [Vocal
 ```
 git clone https://github.com/TUD-STKS/VocalTractLabBackend-dev
 ```
+
 ### Build using CMake (Windows, Linux, macOS)
 - Get the latet release of [CMake for your platform](https://cmake.org/)
 - Create a folder ``out`` inside the cloned repository folder
@@ -39,6 +40,15 @@ or
 ```
 cmake --build . --config Release --target VocalTractLabBackend
 ```
+The final binary files are placed into the subdirectory ``lib`` (of the repository root). Do not look for them in the ``out`` directory, which is only used as a temporary folder for the build process and can be safely deleted once the binaries are built.
+
+### Run tests using shell/command prompt
+- Open a shell/command prompt
+- Navigate to cloned repository folder (not the ``out`` folder from the build process)
+- run the tests by executing ``VtlApiTests`` in the ``lib`` folder created by the build process:
+```
+./lib/VtlApiTests
+```
 
 ### Build using Visual Studio 2019 (Windows)
 - Open ``VocalTractLabApi.sln`` in the folder `build/msw`
@@ -48,13 +58,11 @@ cmake --build . --config Release --target VocalTractLabBackend
 To include the VocalTractLab backend into your own projects, add the folder `include` from this repository to your project's include directories and link against the API or static backend library in the folder `lib`. 
 
 You can then include the API functions like so:
-
 ```cpp
 #include "VocalTractLabApi/VocalTractLabApi.h"
 ```
 
 C++-Objects can be included from the static backend library through their respective header:
-
 ```cpp
 #include "VocalTractLabBackend/Speaker.h"  // or substitute your desired header here
 ```
