@@ -29,11 +29,8 @@ jobs:
     - name: Setup MATLAB
       uses: matlab-actions/setup-matlab@v1.0.1
     
-    - name: Installd dependencies
-      run: |
-        sudo apt update
-        sudo apt install gcc-9
-        sudo apt install libstdc++6
+    - name: Hide runtime DLL shipped with MATLAB because it is out of date
+      run: mv /usr/local/MATLAB/R2021b/sys/os/glnxa64/libstdc++.so.6 /usr/local/MATLAB/R2021b/sys/os/glnxa64/libstdc++.so.6_broken
     
     - name: Run MATLAB examples
       uses: matlab-actions/run-command@v1
