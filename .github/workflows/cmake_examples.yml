@@ -32,4 +32,4 @@ jobs:
     - name: Run MATLAB examples
       uses: matlab-actions/run-command@v1
       with:
-        command: addpath('examples'), example1, exit;
+        command: addpath('include/VocalTractLabApi'), addpath('lib/Release'), addpath('examples'), example1, exit;
