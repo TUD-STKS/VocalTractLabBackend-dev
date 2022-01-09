@@ -33,7 +33,7 @@ jobs:
       uses: matlab-actions/run-command@v1
       with:
         #command: movefile([matlabroot '/sys/os/glnxa64/libstdc++.so.6'], [matlabroot '/sys/os/glnxa64/libstdc++.so.6.old'])
-        command: ls [matlabroot '/sys/os/glnxa64']
+        command: ls [matlabroot '/sys/os']
     
     - name: Run MATLAB examples
       uses: matlab-actions/run-command@v1
