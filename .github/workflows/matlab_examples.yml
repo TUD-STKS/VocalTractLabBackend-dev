@@ -29,10 +29,7 @@ jobs:
     - name: Setup MATLAB
       uses: matlab-actions/setup-matlab@v1.0.1
     
-    - name: Make sure MATLAB uses the OS version of the C++ runtime environment
-      run: export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6
-    
     - name: Run MATLAB examples
       uses: matlab-actions/run-command@v1
       with:
-        command: addpath('include/VocalTractLabApi'), addpath('lib'), addpath('examples'), example1, exit;
+        command: setenv('LD_LIBRARY_PATH', '/usr/lib/x86_64-linux-gnu/libstdc++.so.6'), addpath('include/VocalTractLabApi'), addpath('lib'), addpath('examples'), example1, exit;
