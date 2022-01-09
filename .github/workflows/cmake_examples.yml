@@ -29,7 +29,7 @@ jobs:
     - name: Run MATLAB examples
       working-directory: ${{github.workspace}}/examples
       run: |
-      matlab -nodesktop -nosplash -r "example1 ; exit"
-      matlab -nodesktop -nosplash -r "example2 ; exit"
-      matlab -nodesktop -nosplash -r "example3 ; exit"
-      matlab -nodesktop -nosplash -r "example5 ; exit"
+       matlab -nodesktop -nosplash -r "example1 ; exit"
+       matlab -nodesktop -nosplash -r "example2 ; exit"
+       matlab -nodesktop -nosplash -r "example3 ; exit"
+       matlab -nodesktop -nosplash -r "example5 ; exit"
