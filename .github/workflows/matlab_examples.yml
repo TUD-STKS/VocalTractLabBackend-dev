@@ -36,7 +36,7 @@ jobs:
       uses: matlab-actions/setup-matlab@v1.0.1
 
     - name: Find out supported GLIBC
-      run: strings /usr/local/MATLAB/R2021a/sys/os/glnxa64/libstdc++.so.6 | grep GLIBC
+      run: strings /usr/local/MATLAB/R2021b/sys/os/glnxa64/libstdc++.so.6 | grep GLIBC
       
     - name: Run MATLAB examples
       uses: matlab-actions/run-command@v1
