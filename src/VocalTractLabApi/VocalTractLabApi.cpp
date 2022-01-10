@@ -39,7 +39,7 @@
 
 #include <iostream>
 #include <fstream>
-#include <iomanip>  // for `setprecision`
+#include <iomanip>  // for 'setprecision'
 #include <filesystem>
 namespace fs = std::filesystem;
 
@@ -1258,6 +1258,7 @@ int vtlSegmentSequenceToGesturalScore(const char *segFileName, const char *gesFi
 
 // ****************************************************************************
 // This function directly converts a gestural score to an audio signal or file.
+//
 // Parameters:
 // o gesFileName (in): Name of the gestural score file to synthesize.
 // o wavFileName (in): Name of the audio file with the resulting speech signal.
@@ -1380,7 +1381,7 @@ int vtlGesturalScoreToAudio(const char *gesFileName, const char *wavFileName,
 // This function directly converts a gestural score to a tract sequence file.
 // The latter is a text file containing the parameters of the vocal fold and 
 // vocal tract models in steps of about 2.5 ms.
-
+//
 // Parameters:
 // o gesFileName (in): Name of the gestural score file to convert.
 // o tractSequenceFileName (in): Name of the tract sequence file.
@@ -1450,6 +1451,7 @@ int vtlGesturalScoreToTractSequence(const char* gesFileName, const char* tractSe
 
 // ****************************************************************************
 // This function gets the duration from a gestural score.
+//
 // Parameters:
 // o gesFileName (in): Name of the gestural score file.
 // o audioFileDuration (out): The number of audio samples, the audio file would
@@ -1518,6 +1520,7 @@ int vtlGetGesturalScoreDuration(const char* gesFileName, int* numAudioSamples, i
 
 // ****************************************************************************
 // This function converts a tract sequence file into an audio signal or file.
+//
 // Parameters:
 // o tractSequenceFileName (in): Name of the tract sequence file to synthesize.
 // o wavFileName (in): Name of the audio file with the resulting speech signal.
@@ -1610,10 +1613,11 @@ int vtlTractSequenceToAudio(const char* tractSequenceFileName, const char* wavFi
 
 
 // ****************************************************************************
-// This function calculates  and exports Ema Points.
+// This function calculates and exports EMA points.
+//
 // Parameters:
 // o gestureFileName: Name of the gestural score file to synthesize.
-// o emaFileName: Name of a text file to which the sequence of Ema Point Coordinates
+// o emaFileName: Name of a text file to which the sequence of EMA point coordinates
 //      and other feedback data will be written.
 //
 // The return value is 0 if successful, and otherwise an error code >= 1.
@@ -1669,7 +1673,7 @@ int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaFileName)
   gesturalScore->calcCurves();
 
   // ****************************************************************
-  // Open the text file for the ema points.
+  // Open the text file for the EMA points.
   // ****************************************************************
 
   ofstream emaFile;
@@ -1678,7 +1682,7 @@ int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaFileName)
     emaFile.open(emaFileName);
     if (emaFile.is_open() == false)
     {
-      printf("Warning in vtlGesturalScoreToEma(): The ema file could not be opened!\n");
+      printf("Warning in vtlGesturalScoreToEma(): The EMA file could not be opened!\n");
     }
     else
     {
@@ -1720,7 +1724,7 @@ int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaFileName)
     }
 
     // ****************************************************************
-    // Write the ema points in the file (every 0.005 sec).
+    // Write the EMA points in the file (every 0.005 sec).
     // ****************************************************************
 
     const double EMA_SAMPLING_RATE_HZ = 200.0;
@@ -1767,7 +1771,7 @@ int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaFileName)
     vocalTract->calculateAll();
 
     // ****************************************************************
-    // Close the file with the ema points.
+    // Close the file with the EMA points.
     // ****************************************************************
 
     if (emaFile.is_open())
@@ -1787,26 +1791,26 @@ int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaFileName)
 
 
 // ****************************************************************************
-// Calculate and export selected Ema points and mesh data with a given sequence
+// Calculate and export selected EMA points and mesh data with a given sequence
 // of vocal tract model states and glottis model states. For each frame in
 // the incoming model, a 3D-mesh of the vocal tract is calculated and exported
 // in an obj.-file and a corresponding .mtl file. The files' names consist of
-// the name handed in in "fileName" and the number of the current frame. These
+// the name handed in "fileName" and the number of the current frame. These
 // files are stored in a subfolder "fileName-meshes" of the given directory
-// "filePath". The Ema points are exported into a .txt file named
+// "filePath". The EMA points are exported into a .txt file named
 // "fileName-ema" in the directory "filePath". It contains the time of the
-// frame and the 3D-coordinates of all selected Ema points per frame in a row.
+// frame and the 3D-coordinates of all selected EMA points per frame in a row.
 //
-// Parameters (in):
+// Parameters in:
 // o tractParams: Is a concatenation of vocal tract parameter vectors
 //     with the total length of (numVocalTractParams*numFrames) elements.
 // o glottisParams: Is a concatenation of glottis parameter vectors
 //     with the total length of (numGlottisParams*numFrames) elements.
 // o numTractParams: length of tractParams
 // o numGlottisParams: length of glottisParams
-// o numFrames: Amount of frames the model data contain
-// o numEmaPoints: number of selected Ema Points
-// o surf: Array with indices of surfaces of selected Ema Points
+// o numFrames: number of frames the model data contain
+// o numEmaPoints: number of selected EMA points
+// o surf: Array with indices of surfaces of selected EMA points
 //            (UPPER_TEETH = 0, LOWER_TEETH = 1, UPPER_COVER = 2,
 //             LOWER_COVER = 3, UPPER_LIP = 4, LOWER_LIP = 5,
 //             PALATE = 6, MANDIBLE = 7, LOWER_TEETH_ORIGINAL = 8,
@@ -1820,15 +1824,15 @@ int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaFileName)
 //             RIGHT_COVER = 24, UVULA_ORIGINAL = 25, UVULA = 26,
 //             UVULA_TWOSIDE = 27, EPIGLOTTIS_ORIGINAL = 28,
 //             EPIGLOTTIS = 29, EPIGLOTTIS_TWOSIDE = 30)
-// o vert: Array with index of vertices of selected Ema Points
-//            (Predefined Ema Point Vertex Indices:
+// o vert: Array with index of vertices of selected EMA points
+//            (Predefined EMA point vertex indices:
 //             Tongue Back (TB) = 115
 //             Tongue Middle (TM) = 225
 //             Tongue Tip (TT) = 335
 //             Upper Lip (UL) = 89
 //             Lower Lip (LL) = 89
 //             Lower Cover (JAW) = 148)
-// o filePath: path leading to the directory where ema and mesh files shall be stored.
+// o filePath: path leading to the directory where EMA and mesh files shall be stored.
 // o fileName: name of all exported datasets
 //
 // The return value is 0 if successful, and otherwise an error code >= 1.
@@ -1841,29 +1845,29 @@ int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaFileName)
 // 5: vertex index of a selected EmaPoint exceeds possible range
 // 6: filePath is not valid
 // 7: mesh folder already exist: prevents overwriting
-// 8: ema file already exists: prevents overwriting
-// 9: ema file could not be opened
-// 10: API already initialized
+// 8: EMA file already exists: prevents overwriting
+// 9: EMA file could not be opened
+// 10: API has not been initialized
 // ****************************************************************************
 
 int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int numTractParams, int numGlottisParams, int numFrames, int numEmaPoints, int *surf, int *vert, const char *filePath, const char *fileName)
 {
-  // Return if no Ema Point are selected
+  // Return if no EMA point is selected
   if (numEmaPoints <= 0)
   {
-    printf("Error in vtlModelToOptionalEmaAndMesh(): numEmaPoints <= 0");
+    printf("Error in vtlTractSequenceToEmaAndMesh(): numEmaPoints <= 0");
     return 1;
   }
 
   if (surf == NULL)
   {
-    printf("Error in vtlModelToOptionalEmaAndMesh(): surf == NULL");
+    printf("Error in vtlTractSequenceToEmaAndMesh(): surf == NULL");
     return 2;
   }
 
   if (vert == NULL)
   {
-    printf("Error in vtlModelToOptionalEmaAndMesh(): vert == NULL");
+    printf("Error in vtlTractSequenceToEmaAndMesh(): vert == NULL");
     return 3;
   }
 
@@ -1874,14 +1878,14 @@ int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int
   }
 
   // ****************************************************************
-  // Create mesh and ema file paths
+  // Create mesh and EMA file paths
   // ****************************************************************
 
   fs::path path = filePath;
 
   if (!fs::exists(path))
   {
-    printf("Error in vtlModelToOptionalEmaAndMesh(): filePath doesn't exist");
+    printf("Error in vtlTractSequenceToEmaAndMesh(): filePath doesn't exist");
     return 6;
   }
 
@@ -1902,7 +1906,7 @@ int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int
 
   if (fs::exists(objFilePath))
   {
-    printf("Error in vtlModelToOptionalEmaAndMesh(): Mesh-Folder already exists");
+    printf("Error in vtlTractSequenceToEmaAndMesh(): Mesh-Folder already exists");
     return 7;
   }
   // create mesh-directory
@@ -1961,12 +1965,12 @@ int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int
   {
     if (surf[e] > 30)
     {
-      printf("Error in vtlModelToOptionalEmaAndMesh(): Surface at surf[%d] out of range, maximal Surface is %d\n", e, 30);
+      printf("Error in vtlTractSequenceToEmaAndMesh(): Surface at surf[%d] out of range, maximal Surface is %d\n", e, 30);
       return 4;
     }
     if (vert[e] > maxVertex[e])
     {
-      printf("Error in vtlModelToOptionalEmaAndMesh(): Vertex at vert[%d] out of range, maximal Vertex of chosen Surface %d is %d\n", e, surf[e],maxVertex[e]);
+      printf("Error in vtlTractSequenceToEmaAndMesh(): Vertex at vert[%d] out of range, maximal Vertex of chosen Surface %d is %d\n", e, surf[e],maxVertex[e]);
       return 5;
     }
   }
@@ -1974,7 +1978,7 @@ int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int
   ofstream emaFile;
   if (fs::exists(emaFilePath))
   {
-    printf("Error in vtlModelToOptionalEmaAndMesh(): EMA file already exists");
+    printf("Error in vtlTractSequenceToEmaAndMesh(): EMA file already exists");
     return 8;
   }
 
@@ -1983,14 +1987,14 @@ int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int
     emaFile.open(emaFilePath.string());
     if (emaFile.is_open() == false)
     {
-      printf("Warning in vtlModelToOptionalEmaAndMesh(): The Ema file could not be opened!\n");
+      printf("Warning in vtlTractSequenceToEmaAndMesh(): The Ema file could not be opened!\n");
       return 9;
 
     }
     else
     {
       // ****************************************************************
-      // Write the Header in Ema file
+      // Write the Header in EMA file
       // ****************************************************************
       emaFile << "time(s) ";
 
@@ -2026,7 +2030,7 @@ int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int
       }
       vocalTract->calculateAll();
 
-      // Calculate coordinates for each selected Ema Points
+      // Calculate coordinates for each selected EMA points
       for (e = 0; e < numEmaPoints; e++)
       {
         s = &vocalTract->surface[surf[e]];
@@ -2046,7 +2050,7 @@ int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int
     }
 
     // ****************************************************************
-    // Close the file with the ema points.
+    // Close the file with the EMA points.
     // ****************************************************************
     if (emaFile.is_open())
     {
@@ -2060,9 +2064,10 @@ int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int
 // ****************************************************************************
 // This function calculates a sequence of vocal tract model states and
 // glottis model states from a gestural score and hands them over to vtlTractandGlottisToEma().
-// Parameters (in):
+//
+// Parameters in:
 // o gestureFileName: Name of the gestural score file to synthesize.
-// o filePath: path leading to the directory where ema and mesh files shall be stored.
+// o filePath: path leading to the directory where EMA and mesh files shall be stored.
 // o fileName: name of all exported datasets
 //
 // The return value is 0 if successful, and otherwise an error code >= 1.
@@ -2152,10 +2157,10 @@ int vtlGesturalScoreToEmaAndMesh(const char *gestureFileName, const char *filePa
 
   delete gesturalScore;
 
-  int surf[] = {16,16,16};   // Surface of selected Ema Point
-  int vertex[] = {115,225,335};  // Vertex Index of selected Ema Point
+  int surf[] = {16,16,16};   // Surface of selected EMA point
+  int vertex[] = {115,225,335};  // Vertex Index of selected EMA point
 
-  // Call of vtlModelToOptionalEmaAndMesh could also be done from outside!
+  // Call of vtlTractSequenceToEmaAndMesh could also be done from outside!
   return vtlTractSequenceToEmaAndMesh(tractParams.data(), glottisParams.data(), numTractParams, numGlottisParams, numFrames, 3, surf, vertex, filePath, fileName);
 }
 
