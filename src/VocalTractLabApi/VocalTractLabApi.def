@@ -1,7 +1,6 @@
 LIBRARY
 EXPORTS
 vtlInitialize
-vtlSaveSpeaker
 vtlClose
 vtlCalcTongueRootAutomatically
 vtlGetVersion
@@ -25,3 +24,7 @@ vtlGesturalScoreToAudio
 vtlGesturalScoreToTractSequence
 vtlGetGesturalScoreDuration
 vtlTractSequenceToAudio
+vtlGesturalScoreToEma
+vtlGesturalScoreToEmaAndMesh
+vtlTractSequenceToEmaAndMesh
+vtlSaveSpeaker
