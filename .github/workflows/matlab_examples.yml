@@ -36,7 +36,7 @@ jobs:
       uses: matlab-actions/setup-matlab@v1.0.1
 
     - name: Find out linked GLIBC
-      run: ldd lib/VocalTractLabApi.so | grep libstdc+
+      run: ldd lib/libVocalTractLabApi.so | grep libstdc+
       
     - name: Run MATLAB examples
       uses: matlab-actions/run-command@v1
