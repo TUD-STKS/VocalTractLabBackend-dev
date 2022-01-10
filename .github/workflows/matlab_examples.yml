@@ -1,4 +1,4 @@
-name: examples
+name: MATLAB examples
 
 on: [push, pull_request]
 
