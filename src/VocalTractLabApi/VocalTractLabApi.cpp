@@ -1794,7 +1794,7 @@ int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaFileName)
 // Calculate and export selected EMA points and mesh data with a given sequence
 // of vocal tract model states and glottis model states. For each frame in
 // the incoming model, a 3D-mesh of the vocal tract is calculated and exported
-// in an obj.-file and a corresponding .mtl file. The files' names consist of
+// in an .obj-file and a corresponding .mtl file. The files' names consist of
 // the name handed in "fileName" and the number of the current frame. These
 // files are stored in a subfolder "fileName-meshes" of the given directory
 // "filePath". The EMA points are exported into a .txt file named
