@@ -4,8 +4,14 @@
 % vtlSynthesisAddTract(...).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% Add paths containing header file and binary of library
 addpath('../include/VocalTractLabApi');
 addpath('../lib/Release');
+%% Copy speaker file to examples folder
+% This is necessary because folders named 'resources' cannot be added to
+% the MATLAB path since R2019
+status = copyfile('../resources/JD3.speaker', 'JD3.speaker');
+%%
 
 libName = 'VocalTractLabApi';
 if isunix
@@ -56,9 +62,9 @@ disp(['Compile date of the library: ' version]);
 % void vtlInitialize(const char *speakerFileName)
 % *****************************************************************************
 
-speakerFileName = '../resources/JD3.speaker';
+speakerFileName = 'JD3.speaker';
 
-failure = calllib(libName, 'vtlInitialize', speakerFileName);
+failure = calllib(libName, 'vtlInitialize', which(speakerFileName));
 if (failure ~= 0)
     disp('Error in vtlInitialize()!');   
     return;
