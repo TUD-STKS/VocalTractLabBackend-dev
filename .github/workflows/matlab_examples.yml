@@ -35,8 +35,8 @@ jobs:
     - name: Setup MATLAB
       uses: matlab-actions/setup-matlab@v1.0.1
 
-    - name: Find out supported GLIBC
-      run: strings /usr/local/MATLAB/R2021b/sys/os/glnxa64/libstdc++.so.6 | grep GLIBC
+    - name: Find out linked GLIBC
+      run: ldd lib/VocalTractLabApi.so | grep libstdc+
       
     - name: Run MATLAB examples
       uses: matlab-actions/run-command@v1
