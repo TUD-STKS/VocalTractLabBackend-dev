@@ -1937,14 +1937,14 @@ int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int
         "EPIGLOTTIS",
         "EPIGLOTTIS_TWOSIDE"};
 
-  double glotParams[numGlottisParams];
+  std::vector<double> glotParams(numGlottisParams, 0.0);
 
   Point3D P(0.0, 0.0, 0.0);
 
   Surface *s = NULL;
 
   // Store maximal index of Vertices for each surface in surf[]
-  int maxVertex[numEmaPoints];
+  std::vector<int> maxVertex(numEmaPoints, 0);
   int  i,e;
 
   //Calculate max Vertex for each surface in surf (Compare with VocalTract::getEmaSurfaceVertexRange())
@@ -2040,7 +2040,7 @@ int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int
         }
       }
 
-      vocalTract->saveAsObjFile(objFileName, true); // write .obj files of current vocal tract
+      vocalTract->saveAsObjFile(objFileName.string(), true); // write .obj files of current vocal tract
       emaFile << endl;
 
     }
@@ -2119,12 +2119,12 @@ int vtlGesturalScoreToEmaAndMesh(const char *gestureFileName, const char *filePa
   int numTractParams = VocalTract::NUM_PARAMS;
   int numGlottisParams = (int)glottis[selectedGlottis]->controlParam.size();
 
-  double storeTractParams[numTractParams];
-  double storeGlottisParams[numGlottisParams];
+  std::vector<double> storeTractParams(numTractParams, 0.0);
+  std::vector<double> storeGlottisParams(numGlottisParams, 0.0);
 
 
-  double tractParams[numFrames * numTractParams];
-  double glottisParams[numFrames * numGlottisParams];
+  std::vector<double> tractParams(numFrames * numTractParams, 0.0);
+  std::vector<double> glottisParams(numFrames * numGlottisParams, 0.0);
 
   // ************************************************************************
   // Extract glottis and tract params here
@@ -2133,7 +2133,7 @@ int vtlGesturalScoreToEmaAndMesh(const char *gestureFileName, const char *filePa
   for (f=0; f < numFrames; f++)
   {
     t_s = (double)f / (double)EMA_SAMPLING_RATE_HZ;
-    gesturalScore->getParams(t_s, storeTractParams, storeGlottisParams);
+    gesturalScore->getParams(t_s, storeTractParams.data(), storeGlottisParams.data());
 
     for (i = 0; i < numTractParams; i++)
     {
@@ -2156,7 +2156,7 @@ int vtlGesturalScoreToEmaAndMesh(const char *gestureFileName, const char *filePa
   int vertex[] = {115,225,335};  // Vertex Index of selected Ema Point
 
   // Call of vtlModelToOptionalEmaAndMesh could also be done from outside!
-  return vtlTractSequenceToEmaAndMesh(tractParams, glottisParams, numTractParams, numGlottisParams, numFrames, 3, surf, vertex, filePath, fileName);
+  return vtlTractSequenceToEmaAndMesh(tractParams.data(), glottisParams.data(), numTractParams, numGlottisParams, numFrames, 3, surf, vertex, filePath, fileName);
 }
 
 // ****************************************************************************
