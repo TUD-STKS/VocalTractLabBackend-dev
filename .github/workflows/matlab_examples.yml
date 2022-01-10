@@ -16,7 +16,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-
+    
+    - name: Install a GCC version compatible with MATLAB
+      run: |
+        sudo apt -y install gcc-9 g++-9
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 9
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 9
+      
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
@@ -28,9 +34,8 @@ jobs:
 
     - name: Setup MATLAB
       uses: matlab-actions/setup-matlab@v1.0.1
-    - name: Make sure the correct runtime lib is used
-      run: export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6
+
     - name: Run MATLAB examples
       uses: matlab-actions/run-command@v1
       with:
-        command: getenv('LD_PRELOAD'), addpath('include/VocalTractLabApi'), addpath('lib'), addpath('examples'), example1, exit;
+        command: addpath('include/VocalTractLabApi'), addpath('lib'), addpath('examples'), example1, exit;
