@@ -33,7 +33,9 @@ jobs:
       uses: matlab-actions/setup-matlab@v1.0.1
 
     - name: Convert line endings of text files
-      run: dos2unix ala.ges
+      run: |
+        sudo apt-get install -y dos2unix
+        dos2unix ala.ges
       
     - name: Run MATLAB examples
       uses: matlab-actions/run-command@v1
