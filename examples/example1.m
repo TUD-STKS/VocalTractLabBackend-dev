@@ -189,74 +189,71 @@ end
 %   double *tractParams, double *glottisParams);
 % *****************************************************************************
 
-% audio1 = zeros(1, 10000);
-% audio2 = zeros(1, 10000);
-% audio3 = zeros(1, 10000);
-% audio4 = zeros(1, 10000);
-% 
-% glottisParams = glottisParamNeutral;
-% 
-% % Initialize the tube synthesis.
-% calllib(libName, 'vtlSynthesisReset');
-% 
-% % Submit the initial vocal tract shape (numSamples=0) with P_sub = 0
-% glottisParams(2) = 0;       % P_sub = 0 dPa
-% [failure, audio1, ~, glottisParams] = ...
-%   calllib(libName, 'vtlSynthesisAddTract', 0, audio1, ...
-%     paramsI, glottisParams);
-% 
-% if (failure ~= 0)
-%     error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
-% end
-% 
-% % Ramp up the subglottal pressure within 1000 samples
-% glottisParams(2) = 8000;   % P_sub = 8000 dPa
-% [failure, audio1, ~, glottisParams] = ...
-%   calllib(libName, 'vtlSynthesisAddTract', 1000, audio1, ...
-%     paramsI, glottisParams);
-% 
-% if (failure ~= 0)
-%     error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
-% end
-% 
-% % Make transitions between /a/ and /i/
-% [failure, audio2, ~, glottisParams] = ...
-%   calllib(libName, 'vtlSynthesisAddTract', 10000, audio2, ...
-%     paramsA, glottisParams);
-% 
-% if (failure ~= 0)
-%     error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
-% end
-% 
-% [failure, audio3, ~, glottisParams] = ...
-%   calllib(libName, 'vtlSynthesisAddTract', 10000, audio3, ...
-%     paramsI, glottisParams);
-% 
-% if (failure ~= 0)
-%     error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
-% end
-% 
-% [failure, audio4, tractParams, glottisParams] = ...
-%   calllib(libName, 'vtlSynthesisAddTract', 10000, audio4, ...
-%     paramsA, glottisParams);
-% 
-% if (failure ~= 0)
-%     error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
-% end
-% 
-% audio = [audio1(1:1000) audio2 audio3 audio4];
-% 
-% % Plot and play the audio signal
-% 
-% plot(audio);
-% audiodevinfo(0)
-% info = audiodevinfo()
-% info.output
-% if audiodevinfo(0) > 0
-%     %soundsc(audio, double(audioSamplingRate));
-%     disp("This appears to be true!")
-% end
-% audiowrite('test.wav', audio, audioSamplingRate);
+audio1 = zeros(1, 10000);
+audio2 = zeros(1, 10000);
+audio3 = zeros(1, 10000);
+audio4 = zeros(1, 10000);
+
+glottisParams = glottisParamNeutral;
+
+% Initialize the tube synthesis.
+calllib(libName, 'vtlSynthesisReset');
+
+% Submit the initial vocal tract shape (numSamples=0) with P_sub = 0
+glottisParams(2) = 0;       % P_sub = 0 dPa
+[failure, audio1, ~, glottisParams] = ...
+  calllib(libName, 'vtlSynthesisAddTract', 0, audio1, ...
+    paramsI, glottisParams);
+
+if (failure ~= 0)
+    error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
+end
+
+% Ramp up the subglottal pressure within 1000 samples
+glottisParams(2) = 8000;   % P_sub = 8000 dPa
+[failure, audio1, ~, glottisParams] = ...
+  calllib(libName, 'vtlSynthesisAddTract', 1000, audio1, ...
+    paramsI, glottisParams);
+
+if (failure ~= 0)
+    error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
+end
+
+% Make transitions between /a/ and /i/
+[failure, audio2, ~, glottisParams] = ...
+  calllib(libName, 'vtlSynthesisAddTract', 10000, audio2, ...
+    paramsA, glottisParams);
+
+if (failure ~= 0)
+    error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
+end
+
+[failure, audio3, ~, glottisParams] = ...
+  calllib(libName, 'vtlSynthesisAddTract', 10000, audio3, ...
+    paramsI, glottisParams);
+
+if (failure ~= 0)
+    error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
+end
+
+[failure, audio4, tractParams, glottisParams] = ...
+  calllib(libName, 'vtlSynthesisAddTract', 10000, audio4, ...
+    paramsA, glottisParams);
+
+if (failure ~= 0)
+    error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
+end
+
+audio = [audio1(1:1000) audio2 audio3 audio4];
+
+% Plot and play the audio signal
+
+plot(audio);
+if audiodevinfo(0) > 0
+    soundsc(audio, double(audioSamplingRate));
+    audiowrite('test.wav', audio, audioSamplingRate);
+end
+
 
 % *****************************************************************************
 % Close the VTL synthesis.
