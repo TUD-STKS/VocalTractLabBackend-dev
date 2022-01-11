@@ -249,7 +249,8 @@ audiodevinfo(0)
 info = audiodevinfo()
 info.output
 if audiodevinfo(0) > 0
-    soundsc(audio, double(audioSamplingRate));
+    %soundsc(audio, double(audioSamplingRate));
+    disp("This appears to be true!")
 end
 audiowrite('test.wav', audio, audioSamplingRate);
 
