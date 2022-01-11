@@ -93,10 +93,7 @@ disp('Finished.');
 s = audioread(wavFileName);
 
 plot(1:length(s), s);
-
-if audiodevinfo(0) > 0
-    sound(s, 44100);
-end
+sound(s, 44100);
 
 disp('***************** Finished example2.m *****************')
 
