@@ -40,8 +40,7 @@ or
 ```
 cmake --build . --config Release --target VocalTractLabBackend
 ```
-The final dll/so-files and executables are copied to ``../lib/`` so you don't
-find them within the ``out`` folder.
+The final binary files are placed into the subdirectory ``lib`` (of the repository root). Do not look for them in the ``out`` directory, which is only used as a temporary folder for the build process and can be safely deleted once the binaries are built.
 
 ### Run tests using shell/command prompt
 - Open a shell/command prompt
