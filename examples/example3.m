@@ -4,8 +4,12 @@
 % phone in the speaker file.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-addpath('../include/VocalTractLabApi');
-addpath('../lib/Release');
+if isfolder('../include/VocalTractLabApi')
+    addpath('../include/VocalTractLabApi');
+end
+if isfolder('../lib/Release')
+    addpath('../lib/Release');
+end
 %% Copy speaker file to examples folder
 % This is necessary because folders named 'resources' cannot be added to
 % the MATLAB path since R2019
