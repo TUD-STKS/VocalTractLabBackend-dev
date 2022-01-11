@@ -245,7 +245,9 @@ audio = [audio1(1:1000) audio2 audio3 audio4];
 % Plot and play the audio signal
 
 plot(audio);
-soundsc(audio, double(audioSamplingRate));
+if audiodevinfo(0) > 0
+    soundsc(audio, double(audioSamplingRate));
+end
 audiowrite('test.wav', audio, audioSamplingRate);
 
 % *****************************************************************************

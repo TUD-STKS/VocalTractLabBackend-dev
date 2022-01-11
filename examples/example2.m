@@ -88,6 +88,8 @@ s = audioread(wavFileName);
 
 plot(1:length(s), s);
 
-sound(s, 44100);
+if audiodevinfo(0) > 0
+    sound(s, 44100);
+end
 
 
