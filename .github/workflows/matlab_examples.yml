@@ -31,13 +31,8 @@ jobs:
 
     - name: Setup MATLAB
       uses: matlab-actions/setup-matlab@v1.0.1
-
-    - name: Convert line endings of text files
-      run: |
-        sudo apt-get install -y dos2unix
-        dos2unix examples/ala.ges
       
     - name: Run MATLAB examples
       uses: matlab-actions/run-command@v1
       with:
-        command: addpath('include/VocalTractLabApi'), addpath('lib'), copyfile('resources/JD3.speaker', 'JD3.speaker'), addpath('examples'), example1, example2, example3, example5, exit;
+        command: addpath('include/VocalTractLabApi'), addpath('lib'), copyfile('examples/ala.ges', 'ala.ges'), copyfile('examples/apfelsine.seg', 'apfelsine.seg'), copyfile('resources/JD3.speaker', 'JD3.speaker'), addpath('examples'), example1, example2, example3, example5, exit;
