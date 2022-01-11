@@ -3,6 +3,8 @@
 % score.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+disp('***************** Running example2.m *****************')
+
 if isfolder('../include/VocalTractLabApi')
     addpath('../include/VocalTractLabApi');
 end
@@ -96,4 +98,5 @@ if audiodevinfo(0) > 0
     sound(s, 44100);
 end
 
+disp('***************** Finished example2.m *****************')
 

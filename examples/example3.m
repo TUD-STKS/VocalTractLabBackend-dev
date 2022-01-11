@@ -4,6 +4,8 @@
 % phone in the speaker file.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+disp('***************** Running example3.m *****************')
+
 if isfolder('../include/VocalTractLabApi')
     addpath('../include/VocalTractLabApi');
 end
@@ -170,3 +172,4 @@ end
 
 unloadlibrary(libName);
 
+disp('***************** Finished example3.m *****************')

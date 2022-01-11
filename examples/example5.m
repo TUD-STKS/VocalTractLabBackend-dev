@@ -4,6 +4,7 @@
 % o transform the gestural score file into a tract parameter sequence file,
 % o generate audio from the tract parameter sequence file.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp('***************** Running example5.m *****************')
 
 if isfolder('../include/VocalTractLabApi')
     addpath('../include/VocalTractLabApi');
@@ -173,3 +174,4 @@ end
 
 unloadlibrary(libName);
 
+disp('***************** Finished example5.m *****************')
