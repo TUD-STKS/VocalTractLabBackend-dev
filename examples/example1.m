@@ -198,11 +198,9 @@ audio4 = zeros(1, 10000);
 
 glottisParams = glottisParamNeutral;
 
-disp('Calling vtlSynthesisReset...');
 % Initialize the tube synthesis.
 calllib(libName, 'vtlSynthesisReset');
 
-disp('Calling vtlSynthesisAddTract...');
 % Submit the initial vocal tract shape (numSamples=0) with P_sub = 0
 glottisParams(2) = 0;       % P_sub = 0 dPa
 [failure, audio1, ~, glottisParams] = ...
@@ -213,7 +211,6 @@ if (failure ~= 0)
     error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
 end
 
-disp('Calling vtlSynthesisAddTract...');
 % Ramp up the subglottal pressure within 1000 samples
 glottisParams(2) = 8000;   % P_sub = 8000 dPa
 [failure, audio1, ~, glottisParams] = ...
@@ -224,7 +221,6 @@ if (failure ~= 0)
     error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
 end
 
-disp('Calling vtlSynthesisAddTract...');
 % Make transitions between /a/ and /i/
 [failure, audio2, ~, glottisParams] = ...
   calllib(libName, 'vtlSynthesisAddTract', 10000, audio2, ...
@@ -234,7 +230,6 @@ if (failure ~= 0)
     error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
 end
 
-disp('Calling vtlSynthesisAddTract...');
 [failure, audio3, ~, glottisParams] = ...
   calllib(libName, 'vtlSynthesisAddTract', 10000, audio3, ...
     paramsI, glottisParams);
@@ -243,7 +238,6 @@ if (failure ~= 0)
     error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
 end
 
-disp('Calling vtlSynthesisAddTract...');
 [failure, audio4, tractParams, glottisParams] = ...
   calllib(libName, 'vtlSynthesisAddTract', 10000, audio4, ...
     paramsA, glottisParams);
@@ -254,17 +248,10 @@ end
 
 audio = [audio1(1:1000) audio2 audio3 audio4];
 
-disp('Calling plot...');
 % Plot and play the audio signal
 plot(audio);
-% Only attempt to play if playback devices are available
-deviceWriter = audioDeviceWriter;
-devices = getAudioDevices(deviceWriter);
-if ~isempty(devices)
-    disp('Calling soundsc...');
-    soundsc(audio, double(audioSamplingRate));
-end
-disp('Calling audiowrite...');
+warning('on','verbose');
+soundsc(audio, double(audioSamplingRate));
 audiowrite('test.wav', audio, audioSamplingRate);
 
 
