@@ -254,8 +254,8 @@ end
 
 audio = [audio1(1:1000) audio2 audio3 audio4];
 
+disp('Calling plot...');
 % Plot and play the audio signal
-
 plot(audio);
 if audiodevinfo(0) > 0
     disp('Calling soundsc...');
