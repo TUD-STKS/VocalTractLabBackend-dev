@@ -257,8 +257,10 @@ audio = [audio1(1:1000) audio2 audio3 audio4];
 disp('Calling plot...');
 % Plot and play the audio signal
 plot(audio);
-info = audiodevinfo;
-if ~isempty(info.output)
+% Only attempt to play if playback devices are available
+deviceWriter = audioDeviceWriter;
+devices = getAudioDevices(deviceWriter);
+if ~isempty(devices)
     disp('Calling soundsc...');
     soundsc(audio, double(audioSamplingRate));
 end
