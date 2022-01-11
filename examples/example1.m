@@ -258,8 +258,10 @@ audio = [audio1(1:1000) audio2 audio3 audio4];
 
 plot(audio);
 if audiodevinfo(0) > 0
+    disp('Calling soundsc...');
     soundsc(audio, double(audioSamplingRate));
 end
+disp('Calling audiowrite...');
 audiowrite('test.wav', audio, audioSamplingRate);
 
 
@@ -268,7 +270,7 @@ audiowrite('test.wav', audio, audioSamplingRate);
 %
 % void vtlClose();
 % *****************************************************************************
-
+disp('Calling vtlClose...');
 calllib(libName, 'vtlClose');
 if (failure ~= 0)
     error('Error in vtlClose()! Error code: %d', failure);
