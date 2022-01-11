@@ -250,7 +250,6 @@ audio = [audio1(1:1000) audio2 audio3 audio4];
 
 % Plot and play the audio signal
 plot(audio);
-warning('on','verbose');
 soundsc(audio, double(audioSamplingRate));
 audiowrite('test.wav', audio, audioSamplingRate);
 

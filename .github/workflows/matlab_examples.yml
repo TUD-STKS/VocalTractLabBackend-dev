@@ -35,4 +35,4 @@ jobs:
     - name: Run MATLAB examples
       uses: matlab-actions/run-command@v1
       with:
-        command: addpath('include/VocalTractLabApi'), addpath('lib'), copyfile('examples/ala.ges', 'ala.ges'), copyfile('examples/apfelsine.seg', 'apfelsine.seg'), copyfile('resources/JD3.speaker', 'JD3.speaker'), addpath('examples'), example1, example2, example3, example5, exit;
+        command: addpath('include/VocalTractLabApi'), addpath('lib'), copyfile('examples/ala.ges', 'ala.ges'), copyfile('examples/apfelsine.seg', 'apfelsine.seg'), copyfile('resources/JD3.speaker', 'JD3.speaker'), addpath('examples'), warning('off','MATLAB:audiovideo:audioplayer:noAudioOutputDevice'), example1, example2, example3, example5, exit;
