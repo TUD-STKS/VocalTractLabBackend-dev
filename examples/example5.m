@@ -29,9 +29,7 @@ if ~libisloaded(libName)
 end
 
 if ~libisloaded(libName)
-    error(['Failed to load external library: ' libName]);
-    success = 0;
-    return;
+    error('Failed to load external library: %s', libName);
 end
 
 %%
@@ -64,8 +62,7 @@ speakerFileName = 'JD3.speaker';
 
 failure = calllib(libName, 'vtlInitialize', speakerFileName);
 if (failure ~= 0)
-    disp('Error in vtlInitialize()!');   
-    return;
+    error('Error in vtlInitialize()! Error code: %d', failure);   
 end
 
 % *****************************************************************************
@@ -86,6 +83,10 @@ internalSamplingRate = 0;
     audioSamplingRate, numTubeSections, numVocalTractParams, ...
     numGlottisParams, numAudioSamplesPerTractState, internalSamplingRate);
 
+if (failure ~= 0)
+    error('Error in vtlGetConstants()! Error code: %d', failure);   
+end
+
 % *****************************************************************************
 % int vtlSegmentSequenceToGesturalScore(const char *segFileName, ...
 %   const char *gesFileName, bool enableConsoleOutput);
@@ -97,9 +98,13 @@ enableConsoleOutput = true;
 tractSequenceFileName = 'apfelsine.txt';
 wavFileName = 'apfelsine.wav';
 
-failed = ...
+failure = ...
   calllib(libName, 'vtlSegmentSequenceToGesturalScore', ...
   segFileName, gesFileName, enableConsoleOutput);
+
+if (failure ~= 0)
+    error('Error in vtlSegmentSequenceToGesturalScore()! Error code: %d', failure);   
+end
 
 audio = zeros(10*44100, 1);     % Reserve memory for 10 s
 numSamples = 0;
@@ -111,8 +116,11 @@ numSamples = 0;
 
 % Possibly synthesize the audio directly from the gestural score...
 
-%[failed, gesFileName, wavFileName, audio, numSamples] = ...
+%[failure, gesFileName, wavFileName, audio, numSamples] = ...
 %  calllib(libName, 'vtlGesturalScoreToAudio', gesFileName, wavFileName, audio, numSamples, 1);
+%if (failure ~= 0)
+%    error('Error in vtlGesturalScoreToAudio()! Error code: %d', failure);   
+%end
 %plot(1:numSamples, audio(1:numSamples));
 
 % *****************************************************************************
@@ -120,8 +128,12 @@ numSamples = 0;
 %  const char* tractSequenceFileName);
 % *****************************************************************************
 
-failed = ...
+failure = ...
   calllib(libName, 'vtlGesturalScoreToTractSequence', gesFileName, tractSequenceFileName);
+
+if (failure ~= 0)
+    error('Error in vtlGesturalScoreToTractSequence()! Error code: %d', failure);   
+end
 
 % *****************************************************************************
 % *****************************************************************************
@@ -134,8 +146,12 @@ failed = ...
 %  const char* wavFileName, double* audio, int* numSamples);
 % *****************************************************************************
 
-[failed, tractSequenceFileName, wavFileName, audio, numSamples] = ...
+[failure, tractSequenceFileName, wavFileName, audio, numSamples] = ...
   calllib(libName, 'vtlTractSequenceToAudio', tractSequenceFileName, wavFileName, audio, numSamples);
+
+if (failure ~= 0)
+    error('Error in vtlTractSequenceToAudio()! Error code: %d', failure);   
+end
 
 plot(1:numSamples, audio(1:numSamples));
 
@@ -147,6 +163,9 @@ plot(1:numSamples, audio(1:numSamples));
 % *****************************************************************************
 
 calllib(libName, 'vtlClose');
+if (failure ~= 0)
+    error('Error in vtlClose()! Error code: %d', failure);
+end
 
 unloadlibrary(libName);
 

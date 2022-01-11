@@ -28,9 +28,7 @@ if ~libisloaded(libName)
 end
 
 if ~libisloaded(libName)
-    error(['Failed to load external library: ' libName]);
-    success = 0;
-    return;
+    error('Failed to load external library: %s', libName);
 end
 
 % *****************************************************************************
@@ -62,8 +60,7 @@ speakerFileName = 'JD3.speaker';
 
 failure = calllib(libName, 'vtlInitialize', speakerFileName);
 if (failure ~= 0)
-    disp('Error in vtlInitialize()!');   
-    return;
+    error('Error in vtlInitialize()! Error code: %d', failure);   
 end
 
 % *****************************************************************************
@@ -84,6 +81,10 @@ internalSamplingRate = 0;
     audioSamplingRate, numTubeSections, numVocalTractParams, ...
     numGlottisParams, numAudioSamplesPerTractState, internalSamplingRate);
 
+if (failure ~= 0)
+    error('Error in vtlGetConstants()! Error code: %d', failure);   
+end
+
 % *****************************************************************************
 % Get the vocal tract parameters for the phone /i/.
 %
@@ -93,8 +94,13 @@ internalSamplingRate = 0;
 vocalTractParams = zeros(1, numVocalTractParams);
 shapeName = 'i';
 
-[failed, shapeName, vocalTractParams] = ...
+[failure, shapeName, vocalTractParams] = ...
   calllib(libName, 'vtlGetTractParams', shapeName, vocalTractParams);
+
+if (failure ~= 0)
+    error('Error in vtlGetTractParams()! Error code: %d', failure);   
+end
+
 
 %%
 opts.spectrumType = 'SPECTRUM_UU';
@@ -109,10 +115,15 @@ opts.paranasalSinuses = false;
 opts.piriformFossa = false;
 opts.staticPressureDrops = false;
 
-[failed, opts] = ...
+[failure, opts] = ...
     calllib(libName, 'vtlGetDefaultTransferFunctionOptions', ...
     opts);
-    
+
+if (failure ~= 0)
+    error('Error in vtlGetDefaultTransferFunctionOptions()! Error code: %d', failure);   
+end
+
+
 %%
 % *****************************************************************************
 % int vtlGetTransferFunction(double* tractParams, int numSpectrumSamples,
@@ -122,9 +133,13 @@ NUM_SPECTRUM_SAMPLES = 2048;
 magSpectrum = zeros(1, NUM_SPECTRUM_SAMPLES);
 phaseSpectrum = zeros(1, NUM_SPECTRUM_SAMPLES);
 
-[failed, vocalTractParams, opts, magSpectrum, phaseSpectrum] = ...
+[failure, vocalTractParams, opts, magSpectrum, phaseSpectrum] = ...
   calllib(libName, 'vtlGetTransferFunction', vocalTractParams, ...
     NUM_SPECTRUM_SAMPLES, opts, magSpectrum, phaseSpectrum);
+
+if (failure ~= 0)
+    error('Error in vtlGetTransferFunction()! Error code: %d', failure);   
+end
 
 % Plot the transfer function up to 10000 Hz.
 
@@ -145,6 +160,9 @@ ylabel('Log. magnitude in dB, phase in rad');
 % *****************************************************************************
 
 calllib(libName, 'vtlClose');
+if (failure ~= 0)
+    error('Error in vtlClose()! Error code: %d', failure);
+end
 
 unloadlibrary(libName);
 

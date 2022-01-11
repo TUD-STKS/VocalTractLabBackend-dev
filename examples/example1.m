@@ -29,9 +29,7 @@ if ~libisloaded(libName)
 end
 
 if ~libisloaded(libName)
-    error(['Failed to load external library: ' libName]);
-    success = 0;
-    return;
+    error('Failed to load external library: %s', libName);
 end
 
 %%
@@ -66,8 +64,7 @@ speakerFileName = 'JD3.speaker';
 
 failure = calllib(libName, 'vtlInitialize', which(speakerFileName));
 if (failure ~= 0)
-    disp('Error in vtlInitialize()!');   
-    return;
+    error('Error in vtlInitialize()! Error code: %d', failure);   
 end
 
 %%
@@ -88,6 +85,10 @@ internalSamplingRate = 0;
     calllib(libName, 'vtlGetConstants', ...
     audioSamplingRate, numTubeSections, numVocalTractParams, ...
     numGlottisParams, numAudioSamplesPerTractState, internalSamplingRate);
+
+if (failure ~= 0)
+    error('Error in vtlGetConstants()! Error code: %d', failure);   
+end
 
 disp(['Audio sampling rate = ' num2str(audioSamplingRate)]);
 disp(['Num. of tube sections = ' num2str(numTubeSections)]);
@@ -122,6 +123,10 @@ tractParamNeutral = zeros(1, numVocalTractParams);
   tractParamNames, tractParamDescriptions, tractParamUnits, ...
   tractParamMin, tractParamMax, tractParamNeutral);
 
+if (failure ~= 0)
+    error('Error in vtlGetTractParamInfo()! Error code: %d', failure);   
+end
+
 disp(['Vocal tract parameter names: ' tractParamNames]);
 disp(['Vocal tract parameter descriptions: ' tractParamDescriptions]);
 
@@ -139,6 +144,9 @@ glottisParamNeutral = zeros(1, numGlottisParams);
   glottisParamNames, glottisParamDescriptions, glottisParamUnits, ...
   glottisParamMin, glottisParamMax, glottisParamNeutral);
 
+if (failure ~= 0)
+    error('Error in vtlGetGlottisParamInfo()! Error code: %d', failure);   
+end
 
 disp(['Glottis parameter names: ' glottisParamNames]);
 disp(['Glottis parameter descriptions: ' glottisParamDescriptions]);
@@ -152,12 +160,11 @@ disp(['Glottis parameter descriptions: ' glottisParamDescriptions]);
 
 shapeName = 'a';
 paramsA = zeros(1, numVocalTractParams);
-[failed, shapeName, paramsA] = ...
+[failed, ~, paramsA] = ...
   calllib(libName, 'vtlGetTractParams', shapeName, paramsA);
 
 if (failed ~= 0)
-    disp('Error: Vocal tract shape "a" not in the speaker file!');   
-    return;
+    error('Error: Vocal tract shape "%s" not in the speaker file!', shapeName);   
 end
 
 shapeName = 'i';
@@ -166,8 +173,7 @@ paramsI = zeros(1, numVocalTractParams);
   calllib(libName, 'vtlGetTractParams', shapeName, paramsI);
 
 if (failed ~= 0)
-    disp('Error: Vocal tract shape "i" not in the speaker file!');   
-    return;
+    error('Error: Vocal tract shape "%s" not in the speaker file!', shapeName);   
 end
 %%
 % *****************************************************************************
@@ -191,28 +197,48 @@ calllib(libName, 'vtlSynthesisReset');
 
 % Submit the initial vocal tract shape (numSamples=0) with P_sub = 0
 glottisParams(2) = 0;       % P_sub = 0 dPa
-[failure, audio1, tractParams, glottisParams] = ...
+[failure, audio1, ~, glottisParams] = ...
   calllib(libName, 'vtlSynthesisAddTract', 0, audio1, ...
     paramsI, glottisParams);
 
+if (failure ~= 0)
+    error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
+end
+
 % Ramp up the subglottal pressure within 1000 samples
 glottisParams(2) = 8000;   % P_sub = 8000 dPa
-[failure, audio1, tractParams, glottisParams] = ...
+[failure, audio1, ~, glottisParams] = ...
   calllib(libName, 'vtlSynthesisAddTract', 1000, audio1, ...
     paramsI, glottisParams);
 
+if (failure ~= 0)
+    error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
+end
+
 % Make transitions between /a/ and /i/
-[failure, audio2, tractParams, glottisParams] = ...
+[failure, audio2, ~, glottisParams] = ...
   calllib(libName, 'vtlSynthesisAddTract', 10000, audio2, ...
     paramsA, glottisParams);
 
-[failure, audio3, tractParams, glottisParams] = ...
+if (failure ~= 0)
+    error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
+end
+
+[failure, audio3, ~, glottisParams] = ...
   calllib(libName, 'vtlSynthesisAddTract', 10000, audio3, ...
     paramsI, glottisParams);
 
-[audio4, tractParams, glottisParams] = ...
+if (failure ~= 0)
+    error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
+end
+
+[failure, audio4, tractParams, glottisParams] = ...
   calllib(libName, 'vtlSynthesisAddTract', 10000, audio4, ...
     paramsA, glottisParams);
+
+if (failure ~= 0)
+    error('Error in vtlSynthesisAddTract()! Error code: %d', failure);   
+end
 
 audio = [audio1(1:1000) audio2 audio3 audio4];
 
@@ -229,5 +255,8 @@ audiowrite('test.wav', audio, audioSamplingRate);
 % *****************************************************************************
 
 calllib(libName, 'vtlClose');
+if (failure ~= 0)
+    error('Error in vtlClose()! Error code: %d', failure);
+end
 
 unloadlibrary(libName);

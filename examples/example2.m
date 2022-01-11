@@ -27,9 +27,7 @@ if ~libisloaded(libName)
 end
 
 if ~libisloaded(libName)
-    error(['Failed to load external library: ' libName]);
-    success = 0;
-    return;
+    error('Failed to load external library: %s', libName);
 end
 
 % *****************************************************************************
@@ -65,9 +63,7 @@ wavFileName = 'ala.wav';
 failure = calllib(libName, 'vtlInitialize', speakerFileName);
 
 if (failure ~= 0)
-    disp('Error in vtlInitialize()! Error code:');
-    failure
-    return;
+    error('Error in vtlInitialize()! Error code: %d', failure);
 end
 
 numSamples = 0;
@@ -77,13 +73,14 @@ failure = calllib(libName, 'vtlGesturalScoreToAudio', gestureFileName, ...
     wavFileName, audio, numSamples, 1);
 
 if (failure ~= 0)
-    disp('Error in vtlGesturalScoreToAudio()! Error code:');
-    failure
-    return;
+    error('Error in vtlGesturalScoreToAudio()! Error code: %d', failure);
 end
 
 failure = calllib(libName, 'vtlClose');
-
+if (failure ~= 0)
+    error('Error in vtlClose()! Error code: %d', failure);
+end
+unloadlibrary(libName);
 disp('Finished.');
 
 % Play the synthesized wav file.
