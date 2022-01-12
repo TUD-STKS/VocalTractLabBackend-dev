@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 '''
-This example simply shows how to 
+This example simply shows how to
 
  - transform a segment sequence file into a gestural score file,
  - transform the gestural score file into a tract parameter sequence file,

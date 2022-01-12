@@ -8,13 +8,11 @@ model and the function vtlSynthesisAddTract(...).
 
     This example uses ``ctypes`` and is very close to the vocaltractlab API.
     This comes with breaking with some standard assumptions one have in python.
-    If one wants a more pythonic experience use the ``pyvtl`` wrapper in order
-    to use vocaltractlab from python. (pyvtl does not exist yet)
 
 If you are not aware of ``ctypes`` read the following introduction
 https://docs.python.org/3/library/ctypes.html
 
-For an in-depth API description look at the `VocalTractLabApi64.h`.
+For an in-depth API description look at the `../include/VocalTractLabApi/VocalTractLabApi.h`.
 
 For plotting and saving results you need to install ``matplotlib``, ``numpy``,
 and ``scipy``.

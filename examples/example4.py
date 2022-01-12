@@ -4,7 +4,7 @@ import sys
 import ctypes
 
 import numpy as np
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 from scipy.io import wavfile
 
 
@@ -47,9 +47,9 @@ VTL.vtlGetConstants(ctypes.byref(audio_sampling_rate),
                     ctypes.byref(number_glottis_parameters))
 
 print('Audio sampling rate = %i' % audio_sampling_rate.value)
-print('Num. of tube sections = %i' % number_tube_sections.value) 
-print('Num. of vocal tract parameters = %i' % number_vocal_tract_parameters.value) 
-print('Num. of glottis parameters = %i' % number_glottis_parameters.value) 
+print('Num. of tube sections = %i' % number_tube_sections.value)
+print('Num. of vocal tract parameters = %i' % number_vocal_tract_parameters.value)
+print('Num. of glottis parameters = %i' % number_glottis_parameters.value)
 
 
 # get information about the parameters of the vocal tract model
@@ -157,7 +157,7 @@ for ii in range(number_frames):
         glottis_params[offset_glottis + jj] = glottis_param_neutral[jj]
 
 
-# Call the synthesis function. 
+# Call the synthesis function.
 failure = VTL.vtlSynthBlock(ctypes.byref(tract_params),  # input
                             ctypes.byref(glottis_params),  # input
                             number_frames,  # input

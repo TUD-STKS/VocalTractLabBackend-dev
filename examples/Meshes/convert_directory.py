@@ -16,7 +16,7 @@ except:
 
 path = './Meshes/apfelsine/apfelsine-meshes/'
 
-	
+
 # Create subfolder for export
 export_path = path + 'blender_export/'
 try:
@@ -35,5 +35,4 @@ for file in tqdm([f for f in os.listdir(path) if f.endswith('.obj')]):
 
         bpy.ops.import_scene.obj(filepath=obj_in, axis_forward='-Z', axis_up='Y')
         bpy.ops.export_scene.obj(filepath=obj_out, axis_forward='-Z', axis_up='Y')
-
 

@@ -4,12 +4,12 @@
 # https://www.opengl.org/archives/resources/features/KilgardTechniques/oglpitfall/
 
 # run with: python Meshes/animation.py
- 
+
 
 """
 Programm animates 3D vocal tract shapes and EMA points.
 
-Help Menu: 
+Help Menu:
 h: print help menue to console
 left mouse: rotate
 right mouse: move around
@@ -71,7 +71,7 @@ with open(ema_path, 'r') as ema_file:
     next(ema_file)
     for line in ema_file:
         single_elems = line.split()
-        num_ema_coord = len(single_elems)-1  # amount of elems in one line 
+        num_ema_coord = len(single_elems)-1  # amount of elems in one line
                                              # (first element is time and therefore not counted)
         for elem in single_elems[1:]:  # ignore first elem which tracks time
             number = float(elem)
@@ -79,7 +79,7 @@ with open(ema_path, 'r') as ema_file:
 
 num_emas = num_ema_coord // 3
 
-    
+
 # store mesh names
 for i in range(num_img - 1):
     mesh_names.append(mesh_path + mesh_file_name_without_numeration_and_ending + str(i) + '.obj')
@@ -118,7 +118,7 @@ def on_draw():
 # Direction of axes:
 #    +x: center to right
 #    +y: center to top
-#    +z: center to front 
+#    +z: center to front
 
 # Hint: If the scene is lit to bright, scale down GL_DIFFUSE of every light
 
@@ -246,5 +246,5 @@ def update(dt):
 
 
 pyglet.clock.schedule(update)
-if __name__ == '__main__': 
+if __name__ == '__main__':
     pyglet.app.run()
