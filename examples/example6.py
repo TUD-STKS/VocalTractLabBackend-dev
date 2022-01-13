@@ -36,11 +36,15 @@ if failure != 0:
 
 print("Part 1: Synthesize gestural score as reference")
 speaker_file_name = ctypes.c_char_p('../resources/JD3.speaker'.encode())
+segment_file_name = ctypes.c_char_p(b'apfelsine.seg')
 gesture_file_name = ctypes.c_char_p('apfelsine.ges'.encode())
 wav_file_name = ctypes.c_char_p('apfelsine.wav'.encode())
 feedback_file_name = ctypes.c_char_p('apfelsine.txt'.encode())
 
 VTL.vtlInitialize(speaker_file_name)
+failure = VTL.vtlSegmentSequenceToGesturalScore(segment_file_name, gesture_file_name)
+if failure != 0:
+    raise ValueError('Error in vtlSegmentSequenceToGesturalScore! Errorcode: %i' % failure)
 failure = VTL.vtlGesturalScoreToAudio(gesture_file_name,  # input
                           wav_file_name,  # output can be empty string "", if
                                           # you don't want to save audio to file
