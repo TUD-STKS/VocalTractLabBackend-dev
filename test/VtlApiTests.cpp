@@ -242,7 +242,9 @@ TEST(ApiTest, GesToEmaAndMesh)
 {
 	vtlInitialize(speakerFile);
 
-	std::filesystem::create_directory(exportedMeshPath);  // Silently fails if the directory already exists
+	// Make sure the export path is exists but is empty
+	std::filesystem::remove_all(exportedMeshPath);
+	std::filesystem::create_directory(exportedMeshPath);
 
 	int ret = vtlGesturalScoreToEmaAndMesh(gesFile, exportedMeshPath, exportMeshBaseName);
 
@@ -291,7 +293,9 @@ TEST(ApiTest, TractToEmaAndMesh)
 {
 	vtlInitialize(speakerFile);
 
-	std::filesystem::create_directory(exportedMeshPath);  // Silently fails if the directory already exists
+	// Make sure the export path is exists but is empty
+	std::filesystem::remove_all(exportedMeshPath);
+	std::filesystem::create_directory(exportedMeshPath);
 
 	int numFrames = 10;
 	int audioSamplingRate, numTubeSections, numVocalTractParams, numGlottisParams, numAudioSamplesPerTractState;
