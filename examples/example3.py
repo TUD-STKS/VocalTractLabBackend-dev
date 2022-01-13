@@ -59,12 +59,16 @@ number_glottis_parameters = ctypes.c_int(0)
 number_audio_samples_per_tract_state = ctypes.c_int(0)
 internal_sampling_rate = ctypes.c_double(0)
 
-VTL.vtlGetConstants(ctypes.byref(audio_sampling_rate),
-                    ctypes.byref(number_tube_sections),
-                    ctypes.byref(number_vocal_tract_parameters),
-                    ctypes.byref(number_glottis_parameters),
-                    ctypes.byref(number_audio_samples_per_tract_state),
-                    ctypes.byref(internal_sampling_rate))
+failure = VTL.vtlGetConstants(
+        ctypes.byref(audio_sampling_rate),
+        ctypes.byref(number_tube_sections),
+        ctypes.byref(number_vocal_tract_parameters),
+        ctypes.byref(number_glottis_parameters),
+        ctypes.byref(number_audio_samples_per_tract_state),
+        ctypes.byref(internal_sampling_rate))
+
+if failure != 0:
+    raise ValueError('Error in vtlGetConstants! Errorcode: %i' % failure)
 
 print('Audio sampling rate = %i' % audio_sampling_rate.value)
 print('Num. of tube sections = %i' % number_tube_sections.value)

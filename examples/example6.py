@@ -49,7 +49,6 @@ failure = VTL.vtlGesturalScoreToAudio(gesture_file_name,  # input
                           1)  # enableConsoleOutput
 if failure != 0:
     raise ValueError('Error in vtlGesturalScoreToAudio! Errorcode: %i' % failure)
-    #print('Error in vtlGesturalScoreToAudio! Errorcode: %i' % failure)
 VTL.vtlClose()
 
 
@@ -62,7 +61,6 @@ failure = VTL.vtlGesturalScoreToEma(gesture_file_name,  # input
                           ema_file_name)  # output
 if failure != 0:
     raise ValueError('Error in vtlGesturalScoreToEma! Errorcode: %i' % failure)
-    #print('Error in vtlGesturalScoreToEma! Errorcode: %i' % failure)
 VTL.vtlClose()
 
 
@@ -81,22 +79,26 @@ VTL.vtlClose()
 
 if failure != 0:
     raise ValueError('Error in vtlGesturalScoreToEmaAndMesh! Errorcode: %i' % failure)
-    #print('Error in vtlGesturalScoreToEmaAndMesh! Errorcode: %i' % failure)
 
 
 print("Part 4: Visualize mesh and ema points interactively")
-
-# NOTE: for this part you need `blender` and the python packages `pyglet` and
-# `pywavefront`.
+print("NOTE: for this part you need `blender` and the python packages "
+      "`pyglet` and `pywavefront`.")
 
 # You need to have generated the meshes and ema export with Part 3!
 
 # change the `convert_directory.py` to your liking and then execute it on the
 # Terminal with blender
-os.system('blender --background --python Meshes/convert_directory.py 1> /dev/null')
+if sys.platform.startswith('win32'):
+    os.system(r'C:\Program Files\Blender Foundation\Blender 3.0\blender.exe --background --python Meshes/convert_directory.py')
+else:
+    os.system('blender --background --python Meshes/convert_directory.py 1> /dev/null')
 
 # now you can visualize the meshes interactively by executing the animation.py
-os.system('python Meshes/animation.py')
+if sys.platform.startswith('win32'):
+    os.system('python.exe Meshes/animation.py')
+else:
+    os.system('python Meshes/animation.py')
 
 # this pops up a new window with the animation and gives some output in the Terminal
 
