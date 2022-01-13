@@ -362,8 +362,11 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /tmp
+
 /examples/ala.wav
 /examples/apfelsine.ges
 /examples/apfelsine.wav
 /examples/test.wav
 /examples/JD3.speaker
+/test/resources/exportedMesh
+
