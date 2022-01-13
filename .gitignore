@@ -371,3 +371,5 @@ examples/apfelsine-ema.txt
 examples/apfelsine.ges
 examples/apfelsine.txt
 examples/apfelsine.wav
+/test/resources/exportedMesh
+
