@@ -170,12 +170,10 @@ del shape_name
 #
 # *****************************************************************************
 
-audio1 = (ctypes.c_double * int(1000))()
-audio2 = (ctypes.c_double * int(10000))()
-audio3 = (ctypes.c_double * int(10000))()
-audio4 = (ctypes.c_double * int(10000))()
-
-audio = [(ctypes.c_double * int(1000))(),(ctypes.c_double * int(10000))(),(ctypes.c_double * int(10000))(),(ctypes.c_double * int(10000))()]
+audios = [(ctypes.c_double * int(1000))(),
+          (ctypes.c_double * int(10000))(),
+          (ctypes.c_double * int(10000))(),
+          (ctypes.c_double * int(10000))()]
 
 
 glottis_params = glottis_param_neutral
@@ -193,17 +191,17 @@ VTL.vtlSynthesisAddTract( 0, ctypes.byref(audio[0]), ctypes.byref(params_i), cty
 
 # Ramp up the subglottal pressure within 1000 samples
 glottis_params[1] = 8000  # P_sub = 8000 dPa
-VTL.vtlSynthesisAddTract( 1000, ctypes.byref(audio[0]), ctypes.byref(params_i), ctypes.byref(glottis_params) )
+VTL.vtlSynthesisAddTract( 1000, ctypes.byref(audios[0]), ctypes.byref(params_i), ctypes.byref(glottis_params) )
 
 # Make transitions between /a/ and /i/
-VTL.vtlSynthesisAddTract( 10000, ctypes.byref(audio[1]), ctypes.byref(params_a), ctypes.byref(glottis_params) )
+VTL.vtlSynthesisAddTract( 10000, ctypes.byref(audios[1]), ctypes.byref(params_a), ctypes.byref(glottis_params) )
 
-VTL.vtlSynthesisAddTract( 10000, ctypes.byref(audio[2]), ctypes.byref(params_i), ctypes.byref(glottis_params) )
+VTL.vtlSynthesisAddTract( 10000, ctypes.byref(audios[2]), ctypes.byref(params_i), ctypes.byref(glottis_params) )
 
-VTL.vtlSynthesisAddTract( 10000, ctypes.byref(audio[3]), ctypes.byref(params_a), ctypes.byref(glottis_params) )
+VTL.vtlSynthesisAddTract( 10000, ctypes.byref(audios[3]), ctypes.byref(params_a), ctypes.byref(glottis_params) )
 
 _wav = []
-for wave in audio:
+for wave in audios:
     _wav.extend(list(wave))
 
 
