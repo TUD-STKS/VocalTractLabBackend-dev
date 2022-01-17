@@ -38,16 +38,18 @@ except ImportError:
 
 
 # load vocaltractlab binary
-_FILE_ENDING = ''
+PREFIX = 'lib'
+SUFFIX = ''
 if sys.platform.startswith('linux'):
-    _FILE_ENDING = '.so'
+    SUFFIX = '.so'
 elif sys.platform.startswith('win32'):
-    _FILE_ENDING = '.dll'
+    PREFIX = ''
+    SUFFIX = '.dll'
 elif sys.platform.startswith('darwin'):
-    _FILE_ENDING = '.dylib'
+    SUFFIX = '.dylib'
 
-VTL = ctypes.cdll.LoadLibrary('../lib/libVocalTractLabApi' + _FILE_ENDING)
-del _FILE_ENDING
+VTL = ctypes.cdll.LoadLibrary(f'../lib/Release/{PREFIX}VocalTractLabApi{SUFFIX}')
+del PREFIX, SUFFIX
 
 
 # get version / compile date
@@ -186,19 +188,19 @@ VTL.vtlSynthesisReset()
 # Submit the initial vocal tract shape (numSamples=0) with P_sub = 0
 glottis_params[1] = 0  # P_sub = 0 dPa
 
-VTL.vtlSynthesisAddTract( 0, ctypes.byref(audio[0]), ctypes.byref(params_i), ctypes.byref(glottis_params) )
+VTL.vtlSynthesisAddTract(0, ctypes.byref(audios[0]), ctypes.byref(params_i), ctypes.byref(glottis_params))
 
 
 # Ramp up the subglottal pressure within 1000 samples
 glottis_params[1] = 8000  # P_sub = 8000 dPa
-VTL.vtlSynthesisAddTract( 1000, ctypes.byref(audios[0]), ctypes.byref(params_i), ctypes.byref(glottis_params) )
+VTL.vtlSynthesisAddTract(1000, ctypes.byref(audios[0]), ctypes.byref(params_i), ctypes.byref(glottis_params))
 
 # Make transitions between /a/ and /i/
-VTL.vtlSynthesisAddTract( 10000, ctypes.byref(audios[1]), ctypes.byref(params_a), ctypes.byref(glottis_params) )
+VTL.vtlSynthesisAddTract(10000, ctypes.byref(audios[1]), ctypes.byref(params_a), ctypes.byref(glottis_params))
 
-VTL.vtlSynthesisAddTract( 10000, ctypes.byref(audios[2]), ctypes.byref(params_i), ctypes.byref(glottis_params) )
+VTL.vtlSynthesisAddTract(10000, ctypes.byref(audios[2]), ctypes.byref(params_i), ctypes.byref(glottis_params))
 
-VTL.vtlSynthesisAddTract( 10000, ctypes.byref(audios[3]), ctypes.byref(params_a), ctypes.byref(glottis_params) )
+VTL.vtlSynthesisAddTract(10000, ctypes.byref(audios[3]), ctypes.byref(params_a), ctypes.byref(glottis_params))
 
 _wav = []
 for wave in audios:

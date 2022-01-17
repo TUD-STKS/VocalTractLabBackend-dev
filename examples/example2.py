@@ -14,16 +14,18 @@ import sys
 # Use 'VocalTractLabApi32.dll' if you use a 32-bit python version.
 
 # load vocaltractlab binary
-_FILE_ENDING = ''
+PREFIX = 'lib'
+SUFFIX = ''
 if sys.platform.startswith('linux'):
-    _FILE_ENDING = '.so'
+    SUFFIX = '.so'
 elif sys.platform.startswith('win32'):
-    _FILE_ENDING = '.dll'
+    PREFIX = ''
+    SUFFIX = '.dll'
 elif sys.platform.startswith('darwin'):
-    _FILE_ENDING = '.dylib'
+    SUFFIX = '.dylib'
 
-VTL = ctypes.cdll.LoadLibrary('../lib/libVocalTractLabApi' + _FILE_ENDING)
-del _FILE_ENDING
+VTL = ctypes.cdll.LoadLibrary(f'../lib/Release/{PREFIX}VocalTractLabApi{SUFFIX}')
+del PREFIX, SUFFIX
 
 
 # get version / compile date
