@@ -8,16 +8,17 @@ env:
 
 jobs:
   build:
-    # The CMake configure and build commands are platform agnostic and should work equally
-    # well on Windows or Mac.  You can convert this to a matrix build if you need
-    # cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v2
     
-    - name: Set path to correct runtime lib so MATLAB does not use an outdated one
+    - if: matrix.os == 'ubuntu-latest'
+      name: Set path to correct runtime lib so MATLAB does not use an outdated one
       run: echo 'LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6' >> $GITHUB_ENV
               
     - name: Configure CMake
