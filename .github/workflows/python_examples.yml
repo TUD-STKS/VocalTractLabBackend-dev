@@ -21,6 +21,12 @@ jobs:
 #        python -m pip install --upgrade pip
 #        pip install YOUR_DEPENDENCIES_HERE
 #        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Build VocalTractLab API
+      run: |
+        mkdir tmp
+        cd tmp
+        cmake .. -DCMAKE_BUILD_TYPE=Release
+        cmake --build . --config Release --target VocalTractLabApi
     - name: Example 1: Generates the transition from /a/ to /i/ using the vocal tract model and the function vtlSynthesisAddTract(...)
       run: |
         python examples/example1.py
