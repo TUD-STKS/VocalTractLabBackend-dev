@@ -18,6 +18,8 @@ jobs:
         python-version: "3.10"
     - name: Install dependencies
       run: |
+        # We need blender to run example 6
+        sudo snap install blender --classic
         python -m pip install --upgrade pip
         pip install -r examples/requirements.txt
     - name: Build VocalTractLab API
@@ -30,3 +32,25 @@ jobs:
       run: |
         cd examples
         python example1.py
+    - name: Example 2 - Generates the speech waveform directly from a gestural score
+      run: |
+        cd examples
+        python example2.py
+    - name: Example 3 - Obtain the volume velocity transfer function
+      run: |
+        cd examples
+        python example3.py
+    - name: Example 4 - Test synthBlock(...) function
+      run: |
+        cd examples
+        python example4.py
+    - name: Example 5 - Convert segment sequence file into a gestural score (and more)
+      run: |
+        cd examples
+        python examples5.py
+    - name: Example 6 - Export vocal tract model meshes and simulated EMA points
+      run: |
+        cd examples
+        # The script opens an animation at the end that loops infinitely until the user makes it stop.
+        # It should be run with a timeout of 30 seconds
+        timeout 30 python examples6.py
