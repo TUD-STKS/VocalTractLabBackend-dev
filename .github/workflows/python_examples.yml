@@ -51,6 +51,4 @@ jobs:
     - name: Example 6 - Export vocal tract model meshes and simulated EMA points
       run: |
         cd examples
-        # The script opens an animation at the end that loops infinitely until the user makes it stop.
-        # It should be run with a timeout of 30 seconds
-        timeout 30 python example6.py
+        python example6.py
