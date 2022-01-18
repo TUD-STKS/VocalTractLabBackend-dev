@@ -29,4 +29,5 @@ jobs:
         cmake --build . --config Release --target VocalTractLabApi
     - name: Example 1 - Generates the transition from /a/ to /i/ using the vocal tract model and the function vtlSynthesisAddTract(...)
       run: |
-        python examples/example1.py
+        cd examples
+        python example1.py
