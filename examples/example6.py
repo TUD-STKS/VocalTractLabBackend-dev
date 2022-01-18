@@ -104,7 +104,7 @@ else:
 if sys.platform.startswith('win32'):
     os.system('python.exe Meshes/animation.py')
 else:
-    os.system('timeout 30 python Meshes/animation.py')
+    os.system('python Meshes/animation.py')
 
-# this pops up a new window with the animation and gives some output in the Terminal
+# this pops up a new window with the animation and gives some output in the Terminal.
 
