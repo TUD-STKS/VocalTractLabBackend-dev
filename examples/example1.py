@@ -30,7 +30,7 @@ except ImportError:
 try:
     from scipy.io import wavfile
 except ImportError:
-    wavefile = None
+    wavfile = None
 try:
     import matplotlib.pyplot as plt
 except ImportError:
