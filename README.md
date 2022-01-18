@@ -26,7 +26,7 @@ git clone https://github.com/TUD-STKS/VocalTractLabBackend-dev
 - Open a shell/command prompt and navigate to ``out``
 - Configure the project and generate a build system:
 ```
-cmake ..
+cmake .. -DCMAKE_BUILD_TYPE=Release
 ```
 - Build the library (still from within the folder ``out``)
 ```

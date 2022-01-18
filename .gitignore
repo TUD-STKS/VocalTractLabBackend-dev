@@ -362,4 +362,14 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /tmp
+
+# Exclude files created by example code
+examples/Meshes/apfelsine/
+examples/ai_test.wav
+examples/ala.wav
+examples/apfelsine-ema.txt
+examples/apfelsine.ges
+examples/apfelsine.txt
+examples/apfelsine.wav
 /test/resources/exportedMesh
+
