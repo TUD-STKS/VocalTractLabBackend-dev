@@ -47,10 +47,10 @@ jobs:
     - name: Example 5 - Convert segment sequence file into a gestural score (and more)
       run: |
         cd examples
-        python examples5.py
+        python example5.py
     - name: Example 6 - Export vocal tract model meshes and simulated EMA points
       run: |
         cd examples
         # The script opens an animation at the end that loops infinitely until the user makes it stop.
         # It should be run with a timeout of 30 seconds
-        timeout 30 python examples6.py
+        timeout 30 python example6.py
