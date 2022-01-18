@@ -28,7 +28,7 @@ jobs:
         Invoke-WebRequest -Uri "https://ftp.halifax.rwth-aachen.de/blender/release/Blender3.0/blender-3.0.0-windows-x64.zip" -OutFile blender_setup.zip
         Expand-Archive -Path blender_setup.zip
         mkdir "C:\Program Files\Blender Foundation\Blender 3.0"
-        Move-Item -Path .\blender-3.0.0-windows-x64\blender-3.0.0-windows-x64\* -DestinationPath "C:\Program Files\Blender Foundation\Blender 3.0"
+        Move-Item -Path .\blender-3.0.0-windows-x64\blender-3.0.0-windows-x64\* -Destination "C:\Program Files\Blender Foundation\Blender 3.0"
     - name: Install Python dependencies
       run: |        
         python -m pip install --upgrade pip
