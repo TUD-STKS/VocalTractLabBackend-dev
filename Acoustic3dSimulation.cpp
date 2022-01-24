@@ -1919,7 +1919,7 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
             //log << "area(i) > area(ns) compute pressure" << endl;
                 prevPress += F[0] *
                     m_crossSections[i]->Pin()
-                  / m_crossSections[i]->scaleIn()
+                  * m_crossSections[i]->scaleIn()
                   / m_crossSections[nextSec]->scaleOut();
                 prevVelo +=
                   m_crossSections[nextSec]->Yout() * prevPress;
@@ -1934,15 +1934,15 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
                 (Matrix::Identity(nNs, nNs) + wallInterfaceAdmit *
                   G * m_crossSections[nextSec]->Zin()).inverse() *
                 F[0] * m_crossSections[i]->Qin()
-                * m_crossSections[i]->scaleIn()
-                * m_crossSections[nextSec]->scaleOut();
+                * m_crossSections[nextSec]->scaleOut()
+                / m_crossSections[i]->scaleIn();
             }
             else
             {
               prevVelo +=
                 F[0] * m_crossSections[i]->Qin()
-                * m_crossSections[i]->scaleIn()
-                * m_crossSections[nextSec]->scaleOut();
+                * m_crossSections[nextSec]->scaleOut()
+                / m_crossSections[i]->scaleIn();
             }
               prevPress +=
               m_crossSections[nextSec]->Zout() * prevVelo;
