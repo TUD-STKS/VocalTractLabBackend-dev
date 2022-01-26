@@ -47,6 +47,8 @@ typedef CGAL::Delaunay_mesher_no_edge_refinement_2<CDT, Criteria> MesherNoRefine
 typedef CGAL::Polyline_simplification_2::Stop_below_count_ratio_threshold Stop;
 typedef CGAL::Polyline_simplification_2::Squared_distance_cost Cost;
 
+typedef CGAL::Exact_predicates_exact_constructions_kernel Ke;
+
 //const double MINIMAL_DISTANCE = 1e-14;
 
 // ****************************************************************************
@@ -3723,7 +3725,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 
     freqMax = m_simuParams.maxComputedFreq;
     ofs.open("press.txt");
-    m_numFreq = 101;
+    m_numFreq = 2001;
     for (int i(0); i < m_numFreq; i++)
     {
       freq = max(0.1, freqMax*(double)i/(double)(m_numFreq - 1));
@@ -4563,8 +4565,10 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
 
       // extract the line corresponding to the x components
       stringstream lineX(line);
+      log << line << endl;
       // extract the line corresponding to the y components
       getline(geoFile, line);
+      log << line << endl;
       stringstream lineY(line);
 
       // extract the centerline point
@@ -4587,6 +4591,7 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
       {
         getline(lineY, coordY, separator);
         tmpCont.back().push_back(Point(stod(coordX), stod(coordY)));
+        log << coordX << "  " << coordY << endl;
       }
 
       // remove the last point if it is identical to the first point
@@ -4626,7 +4631,7 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
       tmpVecIdx.push_back(tmpIdx);
       surfaceIdx.push_back(tmpVecIdx);
 
-      //log << "Contour " << idxCont << " extracted" << endl;
+      log << "Contour " << idxCont << " extracted" << endl;
       idxCont++;
     }
     return true;
@@ -4656,8 +4661,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   vector<array<double, 4>> bboxes;
   array<double, 4> arrayZeros = { 0., 0., 0., 0. };
 
-  //ofstream log("log.txt", ofstream::app);
-  //log << "Start cross-section creation" << endl;
+  ofstream log("log.txt", ofstream::app);
+  log << "Start cross-section creation" << endl;
 
   if (m_geometryImported)
   {
@@ -4671,6 +4676,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   {
     extractContours(tract, contours, surfaceIdx, centerLine, normals);
   }
+
+  log << "Contours extracted" << endl;
 
   // compute the total area and the bounding box of each contour groups
   for (auto conts : contours)
@@ -4686,6 +4693,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       bboxes.back()[3] = max(bboxes.back()[3], cont.bbox().ymax());
     }
   }
+
+  log << "Bounding box extracted" << endl;
 
   // export total area
   //ofstream ar("area.txt");
@@ -4794,8 +4803,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     centerLine[lastCtl - 1].y = pt.y();
   }
 
-  //log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
-  //  << N.x() << "  " << N.y() << endl;
+  log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
+    << N.x() << "  " << N.y() << endl;
 
   //*******************************************
   // Create the cross-sections
@@ -4839,7 +4848,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   // create the cross-sections
   for (int i(1); i < nbCont; i++)
   {
-    //log << "\ni= " << i << endl;
+    log << "\ni= " << i << endl;
 
     //**********************************
     // Create previous cross-sections
@@ -4905,7 +4914,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
         }
       }
     }
-    //log << "SCaling factors " << scalingFactors[0] << "  " << scalingFactors[1] << endl;
+    log << "SCaling factors " << scalingFactors[0] << "  " << scalingFactors[1] << endl;
 
     // loop over the created contours
     for (int c(0); c < contours[i-1].size(); c++)
@@ -4927,13 +4936,13 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
       // set the curvature radius
       m_crossSections[secIdx]->setCurvatureRadius(prevCurvRadius);
-      //log << "Curv radius " << prevCurvRadius << endl;
+      log << "Curv radius " << prevCurvRadius << endl;
 
       // set the curvature angle
       m_crossSections[secIdx]->setCurvatureAngle(prevAngle);
-      //log << "angle " << prevAngle << endl;
+      log << "angle " << prevAngle << endl;
 
-      //log << "Section " << secIdx << " created" << endl;
+      log << "Section " << secIdx << " created" << endl;
 
       secIdx++;
     }
@@ -4982,7 +4991,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       }
     }
 
-    //log << "Minimal area checked" << endl;
+    log << "Minimal area checked" << endl;
 
     //**********************************
     // Create intermediate 0 length
@@ -5050,13 +5059,13 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
           auto itP = prevCont.begin();
           sidePrev = cont.has_on_bounded_side(*itP);
 
-          //log << "Sideprev " << sidePrev << endl;
+          log << "Sideprev " << sidePrev << endl;
 
           // loop over the points of the previous contour
           for (; itP != prevCont.end(); itP++)
           {
             side = cont.has_on_bounded_side(*itP);
-            // log << "Side " << side << endl;
+             log << "Side " << side << endl;
             // if the previous point and the next point are on
             // different sides
             if (side != sidePrev)
@@ -5065,29 +5074,32 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
               //if (secIdx == 223)
               //{
-              //  log << "Extract contour " << i << endl;
-              //  log << "Center line point in " << centerLine[i].x << "  "
-              //    << centerLine[i].y << endl;
-              //  log << "Normal in " << normals[i].x << "  "
-              //    << normals[i].y << endl;
-              //  ofstream os("cont.txt");
-              //  for (auto pt : cont) { os << pt.x() << "  " << pt.y() << endl; }
-              //  os.close();
-              //  log << "Extract prev contour " << i - 1 << endl;
-              //  log << "Center line point in" << centerLine[i-1].x << "  "
-              //    << centerLine[i-1].y << endl;
-              //  log << "Center line point out " << m_crossSections.back()->ctrLinePtOut() << endl;
-              //  os.open("pcont.txt");
-              //  log << "Normal out " << m_crossSections.back()->normalOut() << endl;
-              //  for (auto pt : prevCont) { os << pt.x() << "  " << pt.y() << endl; }
-              //  os.close();
+                log << "Extract contour " << i << endl;
+                log << "Center line point in " << centerLine[i].x << "  "
+                  << centerLine[i].y << endl;
+                log << "Normal in " << normals[i].x << "  "
+                  << normals[i].y << endl;
+                ofstream os("cont.txt");
+                for (auto pt : cont) { os << pt.x() << "  " << pt.y() << endl; }
+                os.close();
+                log << "Extract prev contour " << i - 1 << endl;
+                log << "Center line point in" << centerLine[i-1].x << "  "
+                  << centerLine[i-1].y << endl;
+                log << "Center line point out " << m_crossSections.back()->ctrLinePtOut() << endl;
+                os.open("pcont.txt");
+                log << "Normal out " << m_crossSections.back()->normalOut() << endl;
+                for (auto pt : prevCont) { os << pt.x() << "  " << pt.y() << endl; }
+                os.close();
               //}
 
               // compute the intersections of both contours
               intersections.clear();
+              log << "Before compute intersection" << endl;
+              log << "prevCont.orientation() " << prevCont.orientation() << endl;
+              log << "cont.orientation()" << cont.orientation() << endl;
               CGAL::intersection(prevCont, cont, back_inserter(intersections));
 
-              //log << intersections.size() << " intersections computed" << endl;
+              log << intersections.size() << " intersections computed" << endl;
 
               // loop over the intersection polygons created
               for (auto pol = intersections.begin();
@@ -5273,7 +5285,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     }
   }
   return true;
-  //log.close();
+  log.close();
 }
 
 //*************************************************************************
