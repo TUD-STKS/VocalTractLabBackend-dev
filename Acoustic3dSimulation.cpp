@@ -2680,8 +2680,10 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   for (int i(0); i < numFreqComputed; i++)
   {
     prop << m_tfFreqs[i] << "  " 
-      << abs(m_planeModeInputImpedance(i)) << "  "
-      << arg(m_planeModeInputImpedance(i)) << endl;
+      << abs(1i * 2. * M_PI * m_tfFreqs[i] * m_simuParams.volumicMass * 
+        m_planeModeInputImpedance(i)) << "  "
+      << arg(1i * 2. * M_PI * m_tfFreqs[i] * m_simuParams.volumicMass * 
+        m_planeModeInputImpedance(i)) << endl;
   }
   prop.close();
 
@@ -4447,7 +4449,7 @@ void Acoustic3dSimulation::getCurvatureAngleShift(Point2D P1, Point2D P2,
   //  shift    distance necessary to shift P2 along N2
   //        so that it is on the same circle arc as P1
 
-  //ofstream log("log.txt", ofstream::app);
+  ofstream log("log.txt", ofstream::app);
 
   double radii[2], angles[2];
 
@@ -4463,11 +4465,16 @@ void Acoustic3dSimulation::getCurvatureAngleShift(Point2D P1, Point2D P2,
   radii[1] = ((P2.y - P1.y) * N1.x - (P2.x - P1.x) * N1.y) /
     (N2.x * N1.y - N2.y * N1.x);
 
-  // compute the angle corresponding to the position of P1
-  angles[0] = fmod(atan2(-N1.y, -N1.x) + 2.*M_PI, 2.*M_PI);
-  angles[1] = fmod(atan2(-N2.y, -N2.x) + 2.*M_PI, 2.*M_PI);
+  log << "angle 0 " << atan2(-N1.y, -N1.x)
+    << " angle 1 " << atan2(-N2.y, -N2.x) << endl;
 
-  //log << "angle 0 " << angles[0] << " angle 1 " << angles[1];
+  // compute the angle corresponding to the position of P1
+  angles[0] = atan2(-N1.y, -N1.x);
+  angles[1] = atan2(-N2.y, -N2.x);
+  //angles[0] = fmod(atan2(-N1.y, -N1.x) + 2.*M_PI, 2.*M_PI);
+  //angles[1] = fmod(atan2(-N2.y, -N2.x) + 2.*M_PI, 2.*M_PI);
+
+  log << "angle 0 " << angles[0] << " angle 1 " << angles[1];
 
   // compute the average radius
   //radius = (radii[0] + radii[1]) / 2.;
@@ -4477,10 +4484,11 @@ void Acoustic3dSimulation::getCurvatureAngleShift(Point2D P1, Point2D P2,
   shift = radii[0] - radius;
 
   // compute the angle between both angular positions
-  angle = max(angles[0], angles[1]) - min(angles[0], angles[1]);
+  //angle = max(angles[0], angles[1]) - min(angles[0], angles[1]);
+  angle = abs(angles[1] - angles[0]);
 
-  //log << " angle " << angle << endl;
-  //log.close();
+  log << " angle " << angle << endl;
+  log.close();
 }
 
 //*****************************************************************************
@@ -4681,6 +4689,14 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   }
 
   log << "Contours extracted" << endl;
+
+  // extract centerline
+  ofstream ofs("ctl.txt");
+  for (auto pt : centerLine)
+  {
+    ofs << pt.x << "  " << pt.y << endl;
+  }
+  ofs.close();
 
   // compute the total area and the bounding box of each contour groups
   for (auto conts : contours)
