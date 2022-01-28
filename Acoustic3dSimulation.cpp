@@ -47,8 +47,6 @@ typedef CGAL::Delaunay_mesher_no_edge_refinement_2<CDT, Criteria> MesherNoRefine
 typedef CGAL::Polyline_simplification_2::Stop_below_count_ratio_threshold Stop;
 typedef CGAL::Polyline_simplification_2::Squared_distance_cost Cost;
 
-typedef CGAL::Exact_predicates_exact_constructions_kernel Ke;
-
 //const double MINIMAL_DISTANCE = 1e-14;
 
 // ****************************************************************************
@@ -4449,6 +4447,8 @@ void Acoustic3dSimulation::getCurvatureAngleShift(Point2D P1, Point2D P2,
   //  shift    distance necessary to shift P2 along N2
   //        so that it is on the same circle arc as P1
 
+  //ofstream log("log.txt", ofstream::app);
+
   double radii[2], angles[2];
 
   // compute the radius of the circle arc whose center
@@ -4464,8 +4464,10 @@ void Acoustic3dSimulation::getCurvatureAngleShift(Point2D P1, Point2D P2,
     (N2.x * N1.y - N2.y * N1.x);
 
   // compute the angle corresponding to the position of P1
-  angles[0] = atan2(-N1.y, -N1.x);
-  angles[1] = atan2(-N2.y, -N2.x);
+  angles[0] = fmod(atan2(-N1.y, -N1.x) + 2.*M_PI, 2.*M_PI);
+  angles[1] = fmod(atan2(-N2.y, -N2.x) + 2.*M_PI, 2.*M_PI);
+
+  //log << "angle 0 " << angles[0] << " angle 1 " << angles[1];
 
   // compute the average radius
   //radius = (radii[0] + radii[1]) / 2.;
@@ -4476,6 +4478,9 @@ void Acoustic3dSimulation::getCurvatureAngleShift(Point2D P1, Point2D P2,
 
   // compute the angle between both angular positions
   angle = max(angles[0], angles[1]) - min(angles[0], angles[1]);
+
+  //log << " angle " << angle << endl;
+  //log.close();
 }
 
 //*****************************************************************************
@@ -4565,10 +4570,9 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
 
       // extract the line corresponding to the x components
       stringstream lineX(line);
-      log << line << endl;
+
       // extract the line corresponding to the y components
       getline(geoFile, line);
-      log << line << endl;
       stringstream lineY(line);
 
       // extract the centerline point
@@ -4591,7 +4595,6 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
       {
         getline(lineY, coordY, separator);
         tmpCont.back().push_back(Point(stod(coordX), stod(coordY)));
-        log << coordX << "  " << coordY << endl;
       }
 
       // remove the last point if it is identical to the first point
@@ -4667,7 +4670,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   if (m_geometryImported)
   {
     if ( !extractContoursFromCsvFile(contours, surfaceIdx, centerLine, 
-      normals, vecScalingFactors, false))
+      normals, vecScalingFactors, true))
     {
       return false;
     }
@@ -4694,7 +4697,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     }
   }
 
-  log << "Bounding box extracted" << endl;
+  //log << "Bounding box extracted" << endl;
 
   // export total area
   //ofstream ar("area.txt");
@@ -4803,8 +4806,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     centerLine[lastCtl - 1].y = pt.y();
   }
 
-  log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
-    << N.x() << "  " << N.y() << endl;
+  //log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
+  //  << N.x() << "  " << N.y() << endl;
 
   //*******************************************
   // Create the cross-sections
@@ -4848,7 +4851,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   // create the cross-sections
   for (int i(1); i < nbCont; i++)
   {
-    log << "\ni= " << i << endl;
+    //log << "\ni= " << i << endl;
 
     //**********************************
     // Create previous cross-sections
@@ -4914,7 +4917,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
         }
       }
     }
-    log << "SCaling factors " << scalingFactors[0] << "  " << scalingFactors[1] << endl;
+    //log << "SCaling factors " << scalingFactors[0] << "  " << scalingFactors[1] << endl;
 
     // loop over the created contours
     for (int c(0); c < contours[i-1].size(); c++)
@@ -4936,13 +4939,13 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
       // set the curvature radius
       m_crossSections[secIdx]->setCurvatureRadius(prevCurvRadius);
-      log << "Curv radius " << prevCurvRadius << endl;
+      //log << "Curv radius " << prevCurvRadius << endl;
 
       // set the curvature angle
       m_crossSections[secIdx]->setCurvatureAngle(prevAngle);
-      log << "angle " << prevAngle << endl;
+      //log << "angle " << prevAngle << endl;
 
-      log << "Section " << secIdx << " created" << endl;
+      //log << "Section " << secIdx << " created" << endl;
 
       secIdx++;
     }
@@ -4991,7 +4994,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       }
     }
 
-    log << "Minimal area checked" << endl;
+    //log << "Minimal area checked" << endl;
 
     //**********************************
     // Create intermediate 0 length
@@ -5059,13 +5062,13 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
           auto itP = prevCont.begin();
           sidePrev = cont.has_on_bounded_side(*itP);
 
-          log << "Sideprev " << sidePrev << endl;
+          //log << "Sideprev " << sidePrev << endl;
 
           // loop over the points of the previous contour
           for (; itP != prevCont.end(); itP++)
           {
             side = cont.has_on_bounded_side(*itP);
-             log << "Side " << side << endl;
+             //log << "Side " << side << endl;
             // if the previous point and the next point are on
             // different sides
             if (side != sidePrev)
@@ -5074,32 +5077,30 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
               //if (secIdx == 223)
               //{
-                log << "Extract contour " << i << endl;
-                log << "Center line point in " << centerLine[i].x << "  "
-                  << centerLine[i].y << endl;
-                log << "Normal in " << normals[i].x << "  "
-                  << normals[i].y << endl;
-                ofstream os("cont.txt");
-                for (auto pt : cont) { os << pt.x() << "  " << pt.y() << endl; }
-                os.close();
-                log << "Extract prev contour " << i - 1 << endl;
-                log << "Center line point in" << centerLine[i-1].x << "  "
-                  << centerLine[i-1].y << endl;
-                log << "Center line point out " << m_crossSections.back()->ctrLinePtOut() << endl;
-                os.open("pcont.txt");
-                log << "Normal out " << m_crossSections.back()->normalOut() << endl;
-                for (auto pt : prevCont) { os << pt.x() << "  " << pt.y() << endl; }
-                os.close();
+                //log << "Extract contour " << i << endl;
+                //log << "Center line point in " << centerLine[i].x << "  "
+                //  << centerLine[i].y << endl;
+                //log << "Normal in " << normals[i].x << "  "
+                //  << normals[i].y << endl;
+                //ofstream os("cont.txt");
+                //for (auto pt : cont) { os << pt.x() << "  " << pt.y() << endl; }
+                //os.close();
+                //log << "Extract prev contour " << i - 1 << endl;
+                //log << "Center line point in" << centerLine[i-1].x << "  "
+                //  << centerLine[i-1].y << endl;
+                //log << "Center line point out " << m_crossSections.back()->ctrLinePtOut() << endl;
+                //os.open("pcont.txt");
+                //log << "Normal out " << m_crossSections.back()->normalOut() << endl;
+                //for (auto pt : prevCont) { os << pt.x() << "  " << pt.y() << endl; }
+                //os.close();
               //}
 
               // compute the intersections of both contours
               intersections.clear();
-              log << "Before compute intersection" << endl;
-              log << "prevCont.orientation() " << prevCont.orientation() << endl;
-              log << "cont.orientation()" << cont.orientation() << endl;
+              //log << "Before compute intersection" << endl;
               CGAL::intersection(prevCont, cont, back_inserter(intersections));
 
-              log << intersections.size() << " intersections computed" << endl;
+              //log << intersections.size() << " intersections computed" << endl;
 
               // loop over the intersection polygons created
               for (auto pol = intersections.begin();
