@@ -2178,8 +2178,16 @@ complex<double> Acoustic3dSimulation::acousticField(Point_3 queryPt)
 
   // check if the point is in the radiation domain
   vec = Vector(endCenterLine, Point(queryPt.x(), queryPt.z()));
-  angle = fmod(atan2(vec.y(), vec.x()) -
-    atan2(endNormal.y(), endNormal.x()) + 2. * M_PI, 2. * M_PI) - M_PI;
+  if (signbit(m_crossSections.back()->curvRadius() * m_crossSections.back()->circleArcAngle()))
+  {
+    angle = M_PI - fmod(atan2(vec.y(), vec.x()) -
+      atan2(endNormal.y(), endNormal.x()) + 2. * M_PI, 2. * M_PI);
+  }
+  else
+  {
+    angle = fmod(atan2(vec.y(), vec.x()) -
+      atan2(endNormal.y(), endNormal.x()) + 2. * M_PI, 2. * M_PI) - M_PI;
+  }
 
   //log << "Point " << queryPt << " angle " << angle << endl;
 
@@ -2296,13 +2304,6 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   lastSec = numSec - 1;
 
   log << "Number of sections: " << numSec << endl;
-
-  // export cross-sections parameters
-  for (int i(0); i < numSec; i++)
-  {
-    log << "Section " << i << endl;
-    log << *m_crossSections[i] << endl;
-  }
 
   //// exctract some contours
   //ostringstream os;
@@ -2789,30 +2790,30 @@ void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
   //******************************************************
 
   ofstream ofs;
-  ofs.open("sec.txt");
-  // extract parameters of the sections
-  for (int s(0); s < numSec; s++)
-  {
-    if (m_crossSections[s]->length() > 0.)
-    {
-      // entrance features
-      ofs << m_crossSections[s]->ctrLinePt().x << "  "
-        << m_crossSections[s]->ctrLinePt().y << "  "
-        << m_crossSections[s]->normal().x << "  "
-        << m_crossSections[s]->normal().y << "  "
-        << m_crossSections[s]->curvRadius() << "  "
-        << m_crossSections[s]->circleArcAngle() << endl;
+  //ofs.open("sec.txt");
+  //// extract parameters of the sections
+  //for (int s(0); s < numSec; s++)
+  //{
+  //  if (m_crossSections[s]->length() > 0.)
+  //  {
+  //    // entrance features
+  //    ofs << m_crossSections[s]->ctrLinePt().x << "  "
+  //      << m_crossSections[s]->ctrLinePt().y << "  "
+  //      << m_crossSections[s]->normal().x << "  "
+  //      << m_crossSections[s]->normal().y << "  "
+  //      << m_crossSections[s]->curvRadius() << "  "
+  //      << m_crossSections[s]->circleArcAngle() << endl;
 
-      // exist features
-      ofs << m_crossSections[s]->ctrLinePtOut().x() << "  "
-        << m_crossSections[s]->ctrLinePtOut().y() << "  "
-        << m_crossSections[s]->normalOut().x() << "  "
-        << m_crossSections[s]->normalOut().y() << "  "
-        << m_crossSections[s]->curvRadius() << "  "
-        << m_crossSections[s]->circleArcAngle() << endl;
-    }
-  }
-  ofs.close();
+  //    // exist features
+  //    ofs << m_crossSections[s]->ctrLinePtOut().x() << "  "
+  //      << m_crossSections[s]->ctrLinePtOut().y() << "  "
+  //      << m_crossSections[s]->normalOut().x() << "  "
+  //      << m_crossSections[s]->normalOut().y() << "  "
+  //      << m_crossSections[s]->curvRadius() << "  "
+  //      << m_crossSections[s]->circleArcAngle() << endl;
+  //  }
+  //}
+  //ofs.close();
 
   Eigen::MatrixXcd field;
   acousticFieldInPlane(field);
@@ -3999,10 +4000,19 @@ Point_3 Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(Point_3 pt)
 {
   Vector endNormal(m_crossSections.back()->normalOut());
   Vector vertical(Vector(0., 1.));
+  double angle;
 
   // rotate the point to compensate inclination of the end normal
-  double angle = fmod(atan2(endNormal.y(), endNormal.x()) -
-    atan2(vertical.y(), vertical.x()) + 2. * M_PI, 2. * M_PI);
+  if (signbit(m_crossSections.back()->curvRadius() * m_crossSections.back()->circleArcAngle()))
+  {
+    angle = fmod(atan2(endNormal.y(), endNormal.x()) -
+      atan2(vertical.y(), vertical.x()) + 2. * M_PI, 2. * M_PI) - M_PI;
+  }
+  else
+  {
+    angle = fmod(atan2(endNormal.y(), endNormal.x()) -
+      atan2(vertical.y(), vertical.x()) + 2. * M_PI, 2. * M_PI);
+  }
   Point ptVertPlane(pt.x(), pt.z());
 
   ofstream log("log.txt", ofstream::app);
@@ -4449,7 +4459,7 @@ void Acoustic3dSimulation::getCurvatureAngleShift(Point2D P1, Point2D P2,
   //  shift    distance necessary to shift P2 along N2
   //        so that it is on the same circle arc as P1
 
-  ofstream log("log.txt", ofstream::app);
+  //ofstream log("log.txt", ofstream::app);
 
   double radii[2], angles[2];
 
@@ -4465,16 +4475,17 @@ void Acoustic3dSimulation::getCurvatureAngleShift(Point2D P1, Point2D P2,
   radii[1] = ((P2.y - P1.y) * N1.x - (P2.x - P1.x) * N1.y) /
     (N2.x * N1.y - N2.y * N1.x);
 
-  log << "angle 0 " << atan2(-N1.y, -N1.x)
-    << " angle 1 " << atan2(-N2.y, -N2.x) << endl;
+  //log << "N1 " << N1.x << "  " << N1.y << "  "
+  //  << " N2 " << N2.x << "  " << N2.y << endl;
+
+  //log << "angle 0 " << atan2(N1.y, N1.x)
+  //  << " angle 1 " << atan2(N2.y, N2.x) << endl;
 
   // compute the angle corresponding to the position of P1
-  angles[0] = atan2(-N1.y, -N1.x);
-  angles[1] = atan2(-N2.y, -N2.x);
-  //angles[0] = fmod(atan2(-N1.y, -N1.x) + 2.*M_PI, 2.*M_PI);
-  //angles[1] = fmod(atan2(-N2.y, -N2.x) + 2.*M_PI, 2.*M_PI);
+  angles[0] = fmod(atan2(N1.y, N1.x) + 2. * M_PI, 2. * M_PI);
+  angles[1] = fmod(atan2(N2.y, N2.x) + 2. * M_PI, 2. * M_PI);
 
-  log << "angle 0 " << angles[0] << " angle 1 " << angles[1];
+  //log << "angle 0 " << angles[0] << " angle 1 " << angles[1] << endl;
 
   // compute the average radius
   //radius = (radii[0] + radii[1]) / 2.;
@@ -4483,12 +4494,30 @@ void Acoustic3dSimulation::getCurvatureAngleShift(Point2D P1, Point2D P2,
   // compute the vertical shift to apply to the contour
   shift = radii[0] - radius;
 
-  // compute the angle between both angular positions
-  //angle = max(angles[0], angles[1]) - min(angles[0], angles[1]);
-  angle = abs(angles[1] - angles[0]);
+  // compute the signed angle between both angular positions
+  angle = angles[1] - angles[0];
+  if ((2. * M_PI - abs(angle)) < abs(angle))
+  {
+    if (signbit(angle))
+    {
+      angle = 2. * M_PI - abs(angle);
+    }
+    else
+    {
+      angle = abs(angle) - 2. * M_PI;
+    }
+  }
+  //log << "Signed angle " << angle << endl;
 
-  log << " angle " << angle << endl;
-  log.close();
+  // compute the angle between both angular positions
+  //angle = abs(angles[1] - angles[0]);
+  //angle = min(2. * M_PI - angle, angle);
+
+  //log << " angle " << angle << endl;
+
+  //log << "Radius " << radius << endl;
+
+  //log.close();
 }
 
 //*****************************************************************************
@@ -4768,43 +4797,54 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   centerLine.push_back(centerLine.back());
   normals.push_back(normals.back());
   int lastCtl(centerLine.size() - 1);
-  //log << "Before last ctl " << centerLine[lastCtl - 2].x << "  "
-  //  << centerLine[lastCtl - 2].y << " normal "
-  //  << normals[lastCtl - 2].x << "  "
-  //  << normals[lastCtl - 2].y << endl;
-  //log << "Last ctl " << centerLine[lastCtl].x << "  "
-  //  << centerLine[lastCtl].y << " normal "
-  //  << normals[lastCtl].x << "  "
-  //  << normals[lastCtl].y << endl;
+  log << "Before last ctl " << centerLine[lastCtl - 2].x << "  "
+    << centerLine[lastCtl - 2].y << " normal "
+    << normals[lastCtl - 2].x << "  "
+    << normals[lastCtl - 2].y << endl;
+  log << "Last ctl " << centerLine[lastCtl].x << "  "
+    << centerLine[lastCtl].y << " normal "
+    << normals[lastCtl].x << "  "
+    << normals[lastCtl].y << endl;
 
   getCurvatureAngleShift(centerLine[lastCtl - 2], centerLine[lastCtl], 
     normals[lastCtl - 2], normals[lastCtl], curvRadius, angle, shift);
 
-  //log << "Curv radius " << curvRadius << endl;
+  log << "Curv radius " << curvRadius 
+    << " angle " << angle << endl;
 
   Point pt(Point(centerLine.back().x, centerLine.back().y));
   Vector N(Vector(normals.back().x, normals.back().y));
 
-  if (angle > MINIMAL_DISTANCE)
+  // get the sign of the curvature radius
+  double signCurvRadius((0. < curvRadius) - (curvRadius < 0.));
+
+  if (abs(angle) > MINIMAL_DISTANCE)
   {
-    angle /= -4.;
-    Transformation rotate(CGAL::ROTATION, sin(angle - M_PI / 2.),
-      cos(angle - M_PI / 2.));
-    Transformation translateInit(CGAL::TRANSLATION,
-      2. * abs(curvRadius) * sin(angle) * rotate(N));
-
-    pt = translateInit(pt);
-    centerLine[lastCtl - 1].x = pt.x();
-    centerLine[lastCtl - 1].y = pt.y();
-
-    if (curvRadius > 0.)
+    angle /= 4.;
+    if ((signbit(curvRadius) && !signbit(curvRadius * angle))
+      || (!signbit(curvRadius) && signbit(curvRadius * angle)))
     {
-      angle *= 2.;
+      Transformation rotate(CGAL::ROTATION, sin(M_PI / 2. - signCurvRadius * abs(angle)),
+        cos(M_PI / 2. - signCurvRadius * abs(angle)));
+      Transformation translateInit(CGAL::TRANSLATION,
+        -2. * abs(curvRadius) * sin(signCurvRadius * abs(angle)) * rotate(N));
+      pt = translateInit(pt);
+      log << "normal" << endl;
     }
     else
     {
-      angle *= -2.;
+      Transformation rotate(CGAL::ROTATION, sin(signCurvRadius* abs(angle) - M_PI / 2.),
+        cos(signCurvRadius* abs(angle) - M_PI / 2.));
+      Transformation translateInit(CGAL::TRANSLATION,
+        -2. * abs(curvRadius) * sin(signCurvRadius * abs(angle)) * rotate(N));
+      pt = translateInit(pt);
+      log << "x minus" << endl;
     }
+
+    centerLine[lastCtl - 1].x = pt.x();
+    centerLine[lastCtl - 1].y = pt.y();
+
+    angle *= -2.;
     Transformation rotateN(CGAL::ROTATION, sin(angle), cos(angle));
     N = rotateN(N);
     normals[lastCtl - 1].x = N.x();
@@ -4822,8 +4862,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     centerLine[lastCtl - 1].y = pt.y();
   }
 
-  //log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
-  //  << N.x() << "  " << N.y() << endl;
+  log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
+    << N.x() << "  " << N.y() << endl;
 
   //*******************************************
   // Create the cross-sections
@@ -5301,6 +5341,54 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       m_crossSections[tmpPrevSection[i]]->setNextSection(secIdx);
     }
   }
+
+  //***************************************************************
+  // Export data
+  //***************************************************************
+
+  // print cross-sections parameters in log file
+  for (int i(0); i < m_crossSections.size(); i++)
+  {
+    log << "Section " << i << endl;
+    log << *m_crossSections[i] << endl;
+  }
+
+  ofs.open("sec.txt");
+  // extract parameters of the sections
+  for (int s(0); s < m_crossSections.size(); s++)
+  {
+    if (m_crossSections[s]->length() > 0.)
+    {
+      // entrance features
+      ofs << m_crossSections[s]->ctrLinePt().x << "  "
+        << m_crossSections[s]->ctrLinePt().y << "  "
+        << m_crossSections[s]->normal().x << "  "
+        << m_crossSections[s]->normal().y << "  "
+        << m_crossSections[s]->curvRadius() << "  "
+        << m_crossSections[s]->circleArcAngle() << endl;
+
+      // exist features
+      ofs << m_crossSections[s]->ctrLinePtOut().x() << "  "
+        << m_crossSections[s]->ctrLinePtOut().y() << "  "
+        << m_crossSections[s]->normalOut().x() << "  "
+        << m_crossSections[s]->normalOut().y() << "  "
+        << m_crossSections[s]->curvRadius() << "  "
+        << m_crossSections[s]->circleArcAngle() << endl;
+    }
+  }
+  ofs.close();
+
+  // export the cross-section lengths
+  ofs.open("lengths.txt");
+  for (int i(0); i < m_crossSections.size(); i++)
+  {
+    if (m_crossSections[i]->length() != 0)
+    {
+      ofs << m_crossSections[i]->length() << endl;
+    }
+  }
+  ofs.close();
+
   return true;
   log.close();
 }
@@ -5383,7 +5471,7 @@ void Acoustic3dSimulation::exportGeoInCsv(string fileName)
           m_crossSections[i]->ctrLinePt().y);
         N = Vector(m_crossSections[i]->normal().x,
           m_crossSections[i]->normal().y);
-        theta = m_crossSections[i]->circleArcAngle()/2.;
+        theta = abs(m_crossSections[i]->circleArcAngle())/2.;
         Transformation rotate(CGAL::ROTATION, sin(M_PI / 2. - theta),
           cos(M_PI / 2. - theta));
         Transformation translate(CGAL::TRANSLATION,
@@ -5439,7 +5527,7 @@ void Acoustic3dSimulation::exportGeoInCsv(string fileName)
           m_crossSections[i]->ctrLinePt().y);
         N = Vector(m_crossSections[i]->normal().x,
           m_crossSections[i]->normal().y);
-        theta = m_crossSections[i]->circleArcAngle() / 2.;
+        theta = abs(m_crossSections[i]->circleArcAngle()) / 2.;
         Transformation rotate(CGAL::ROTATION, sin(-M_PI / 2. + theta),
           cos(-M_PI / 2. + theta));
         Transformation translate(CGAL::TRANSLATION,

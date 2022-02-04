@@ -1680,13 +1680,13 @@ double CrossSection2dFEM::scalingDerivative(double tau)
 {
   // compute the length of the section
   double al;
-  if (m_circleArcAngle < MINIMAL_DISTANCE)
+  if (abs(m_circleArcAngle) < MINIMAL_DISTANCE)
   {
       al = m_length;
   }
   else
   {
-      al = m_circleArcAngle * abs(m_curvatureRadius);
+      al = abs(m_circleArcAngle) * abs(m_curvatureRadius);
   }
 
   switch (m_areaProfile)
@@ -1987,7 +1987,7 @@ void CrossSection2dFEM::propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0, Eigen::
 {
   int mn(m_modesNumber);
   double volMass(simuParams.volumicMass);
-  double da(m_circleArcAngle);          // angle of the circle arc
+  double da(abs(m_circleArcAngle));          // angle of the circle arc
   double R(abs(m_curvatureRadius));        // radius of the circle arc
   double al(da * R);                // arc length
   int numX(simuParams.numIntegrationStep);
@@ -2167,7 +2167,7 @@ void CrossSection2dFEM::propagateAdmitRiccati(Eigen::MatrixXcd Y0,
 {
   int numX(simuParams.numIntegrationStep);
   int mn(m_modesNumber);
-  double da(m_circleArcAngle);          // angle of the circle arc
+  double da(abs(m_circleArcAngle));          // angle of the circle arc
   double R(abs(m_curvatureRadius));        // radius of the circle arc
   double al(da * R);                // arc length
   double dX(direction * al / (double)(numX - 1));
@@ -2316,7 +2316,7 @@ void CrossSection2dFEM::propagatePressureVelocityRiccati(Eigen::MatrixXcd V0,
   int numX(simuParams.numIntegrationStep);
   double volMass(simuParams.volumicMass);
   int mn(m_modesNumber);
-  double da(m_circleArcAngle);          // angle of the circle arc
+  double da(abs(m_circleArcAngle));          // angle of the circle arc
   double R(abs(m_curvatureRadius));        // radius of the circle arc
   double al(da * R);                // arc length
   double dX(direction * al / (double)(numX - 1));  
@@ -2473,7 +2473,7 @@ void CrossSection2dFEM::propagatePressureRiccati(Eigen::MatrixXcd P0,
 {
   int numX(simuParams.numIntegrationStep);
   int mn(m_modesNumber);
-  double da(m_circleArcAngle);          // angle of the circle arc
+  double da(abs(m_circleArcAngle));          // angle of the circle arc
   double R(abs(m_curvatureRadius));        // radius of the circle arc
   double al(da * R);                // arc length
   double dX(al / (double)(numX - 1));
@@ -2857,7 +2857,7 @@ bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut)
     Point ctl(m_ctrLinePt.x, m_ctrLinePt.y);
 
     // if there is no curvature 
-    if (m_circleArcAngle < MINIMAL_DISTANCE)
+    if (abs(m_circleArcAngle) < MINIMAL_DISTANCE)
     {
       //log << "No curvature" << endl;
       x = pt.x() - ctl.x();
@@ -2880,7 +2880,8 @@ bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut)
 
       // get the x coordinate by computing the angle between the 2 complex coordinate pts
       //x = R * fmod(arg(ctlCplx) - arg(ptCplx) + 2.*M_PI, 2.*M_PI);
-      if (m_curvatureRadius < 0.)
+      if (((m_curvatureRadius < 0.) && (m_curvatureRadius * m_circleArcAngle > 0.))
+        || ((m_curvatureRadius > 0.) && (m_curvatureRadius * m_circleArcAngle < 0.)))
       {
         x = R * fmod(arg(ctlCplx) - arg(ptCplx) + 2. * M_PI, 2. * M_PI);
       }
@@ -3169,7 +3170,7 @@ Point CrossSection2dFEM::ctrLinePtOut() const
     Point Pt = ctrLinePtIn();
     Vector N(normalIn());
     double theta;
-    if (m_circleArcAngle < MINIMAL_DISTANCE)
+    if (abs(m_circleArcAngle) < MINIMAL_DISTANCE)
     {
       theta = -M_PI / 2.;
       Transformation rotate(CGAL::ROTATION, sin(theta), cos(theta));
@@ -3179,9 +3180,10 @@ Point CrossSection2dFEM::ctrLinePtOut() const
     else
     {
       
-      theta = m_circleArcAngle / 2.;
+      theta = abs(m_circleArcAngle) / 2.;
       
-      if (signbit(m_curvatureRadius))
+      if ((signbit(m_curvatureRadius) && !signbit(m_curvatureRadius * m_circleArcAngle))
+        || (!signbit(m_curvatureRadius) && signbit(m_curvatureRadius * m_circleArcAngle)))
       {
         Transformation rotate(CGAL::ROTATION, sin(M_PI / 2. - theta),
           cos(theta - M_PI / 2.));
@@ -3209,15 +3211,7 @@ Vector CrossSection2dFEM::normalOut() const
 {
   if (length() > 0.)
   {
-    double thetaN;
-    if (signbit(m_curvatureRadius))
-    {
-      thetaN = -m_circleArcAngle;
-    }
-    else
-    {
-      thetaN = m_circleArcAngle;
-    }
+    double thetaN(m_circleArcAngle);
     Transformation rotateN(CGAL::ROTATION, sin(thetaN), cos(thetaN));
     return(rotateN(normalIn()));
   }
@@ -3228,9 +3222,9 @@ Vector CrossSection2dFEM::normalOut() const
 }
 //******************************************************
 double CrossSection2dFEM::length() const { 
-  if (m_circleArcAngle < MINIMAL_DISTANCE)
+  if (abs(m_circleArcAngle) < MINIMAL_DISTANCE)
   {return(m_length);}
-  else {return(m_circleArcAngle * abs(m_curvatureRadius));}            
+  else {return(abs(m_circleArcAngle) * abs(m_curvatureRadius));}            
  }
 vector<double> CrossSection2dFEM::intersectionsArea() const { return m_intersectionsArea; }
 double CrossSection2dFEM::spacing() const { return m_spacing; }
