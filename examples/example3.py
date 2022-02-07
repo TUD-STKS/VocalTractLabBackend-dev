@@ -130,8 +130,7 @@ if plt is not None and np is not None:
     plt.title('volume velocity transfer function')
     plt.legend()
     plt.tight_layout()
-    print('\nClose the plot in order to continue.')
-    plt.show()
+    plt.show(block=False)
 else:
     print('plotting not available; matplotlib needed')
     print('skip plotting')
