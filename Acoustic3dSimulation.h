@@ -137,6 +137,7 @@ public:
   int idxSecNoiseSource() const { return m_idxSecNoiseSource; }
   int idxConstriction() const { return m_idxConstriction; }
   pair<Point2D, Point2D> maxCSBoundingBox() const { return m_maxCSBoundingBox; }
+  pair<Point2D, Point2D> bboxSagittalPlane() const { return m_bboxXZ; }
   int numCrossSections(){ return m_crossSections.size(); }
   openEndBoundaryCond mouthBoundaryCond() const {return m_mouthBoundaryCond;}
 
@@ -181,6 +182,7 @@ private:
 
   // maximal bounding box of the cross-sections (for displaying mesh and modes)
   pair<Point2D,Point2D> m_maxCSBoundingBox;
+  pair<Point2D, Point2D> m_bboxXZ;
 
 
 // **************************************************************************

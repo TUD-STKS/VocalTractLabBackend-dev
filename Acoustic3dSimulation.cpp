@@ -13,7 +13,6 @@
 #include <Eigen/Dense>
 
 // for CGAL
-//#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include "Delaunay_mesh_vertex_base_with_info_2.h"
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
 #include <CGAL/Delaunay_mesh_face_base_2.h>
@@ -4586,10 +4585,6 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
 
   ifstream geoFile(m_geometryFile);
 
-  // initialize maximal bounding box
-  m_maxCSBoundingBox.first = Point2D(0., 0.);
-  m_maxCSBoundingBox.second = Point2D(0., 0.);
-
   // check if the file is opened
   if (!geoFile.is_open())
   {
@@ -4642,17 +4637,6 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
         tmpCont.back().erase(itLast);
       }
 
-      // compute the maximal bounding box of the created contour 
-      // (this is used after to scale the image of the mesh and modes)
-      m_maxCSBoundingBox.first.x = min(tmpCont.back().bbox().xmin(),
-        m_maxCSBoundingBox.first.x);
-      m_maxCSBoundingBox.first.y = min(tmpCont.back().bbox().ymin(),
-        m_maxCSBoundingBox.first.y);
-      m_maxCSBoundingBox.second.x = max(tmpCont.back().bbox().xmax(),
-        m_maxCSBoundingBox.second.x);
-      m_maxCSBoundingBox.second.y = max(tmpCont.back().bbox().ymax(),
-        m_maxCSBoundingBox.second.y);
-
       // if requested, simplify the contour removing points which are close
       if (simplifyContours)
       {
@@ -4699,8 +4683,9 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   vector<pair<double, double>> vecScalingFactors;
   vector<double> totAreas;
   vector<array<double, 4>> bboxes;
-  array<double, 4> arrayZeros = { 0., 0., 0., 0. };
+  array<double, 4> arrayZeros = { 0., 0., 0., 0. }, bboxXZ;
 
+  ofstream ofs;
   ofstream log("log.txt", ofstream::app);
   log << "Start cross-section creation" << endl;
 
@@ -4719,35 +4704,49 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
   log << "Contours extracted" << endl;
 
-  // extract centerline
-  ofstream ofs("ctl.txt");
-  for (auto pt : centerLine)
-  {
-    ofs << pt.x << "  " << pt.y << endl;
-  }
-  ofs.close();
+  //// compute the total area and the bounding box of each contour groups
+  //for (auto conts : contours)
+  //{
+  //  totAreas.push_back(0.);
+  //  bboxes.push_back(arrayZeros);
+  //  for (auto cont : conts){
+  //    totAreas.back() += abs(cont.area());
+  //    
+  //    bboxes.back()[0] = min(bboxes.back()[0], cont.bbox().xmin());
+  //    bboxes.back()[1] = max(bboxes.back()[1], cont.bbox().xmax());
+  //    bboxes.back()[2] = min(bboxes.back()[2], cont.bbox().ymin());
+  //    bboxes.back()[3] = max(bboxes.back()[3], cont.bbox().ymax());
+  //  }
+  //}
 
-  // compute the total area and the bounding box of each contour groups
-  for (auto conts : contours)
+  // initialize max bounding box
+  m_maxCSBoundingBox.first = Point2D(0., 0.);
+  m_maxCSBoundingBox.second = Point2D(0., 0.);
+
+  for (int i(0); i < contours.size(); i++)
   {
     totAreas.push_back(0.);
     bboxes.push_back(arrayZeros);
-    for (auto cont : conts){
+    for (auto cont : contours[i]) {
       totAreas.back() += abs(cont.area());
-      
+
       bboxes.back()[0] = min(bboxes.back()[0], cont.bbox().xmin());
       bboxes.back()[1] = max(bboxes.back()[1], cont.bbox().xmax());
       bboxes.back()[2] = min(bboxes.back()[2], cont.bbox().ymin());
       bboxes.back()[3] = max(bboxes.back()[3], cont.bbox().ymax());
     }
+
+    m_maxCSBoundingBox.first.x = min(bboxes.back()[0],
+      m_maxCSBoundingBox.first.x);
+    m_maxCSBoundingBox.first.y = min(bboxes.back()[2],
+      m_maxCSBoundingBox.first.y);
+    m_maxCSBoundingBox.second.x = max(bboxes.back()[1],
+      m_maxCSBoundingBox.second.x);
+    m_maxCSBoundingBox.second.y = max(bboxes.back()[3],
+      m_maxCSBoundingBox.second.y);
   }
 
   //log << "Bounding box extracted" << endl;
-
-  // export total area
-  //ofstream ar("area.txt");
-  //for (auto it : totAreas) { ar << it << endl; }
-  //ar.close();
 
   //*********************************************************
   // Create lambda expression to compute the scaling factors
@@ -5339,6 +5338,45 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     {
       m_crossSections[secIdx]->setPreviousSection(tmpPrevSection[i]);
       m_crossSections[tmpPrevSection[i]]->setNextSection(secIdx);
+    }
+  }
+
+  //***************************************************************
+  // Compute the XZ sagittal plane bounding box
+  //***************************************************************
+
+  Point ptMin, ptMax;
+
+  // initialize bounding box
+  m_bboxXZ.first = Point2D(0., 0.);
+  m_bboxXZ.second = Point2D(0., 0.);
+  
+  for (int i(0); i < m_crossSections.size(); i++)
+  {
+    if (m_crossSections[i]->contour().size() > 0)
+    {
+      auto bbox = m_crossSections[i]->contour().bbox();
+      log << "bbox " << bbox << " size cont " << m_crossSections[i]->contour().size() << endl;
+
+      Transformation translateMin(CGAL::TRANSLATION,
+        -m_crossSections[i]->scaleIn() * bbox.ymin() * m_crossSections[i]->normalIn());
+      ptMin = translateMin(m_crossSections[i]->ctrLinePtIn());
+      log << "Scale in " << m_crossSections[i]->scaleIn()
+        << " normal in " << m_crossSections[i]->normalIn()
+        << " ptMin " << ptMin << endl;
+      m_bboxXZ.first.x = min(m_bboxXZ.first.x, ptMin.x());
+      m_bboxXZ.first.y = min(m_bboxXZ.first.y, ptMin.y());
+
+      Transformation translateMax(CGAL::TRANSLATION,
+        m_crossSections[i]->scaleOut() * bbox.ymax() * m_crossSections[i]->normalOut());
+      ptMax = translateMax(m_crossSections[i]->ctrLinePtOut());
+      log << "Scale out " << m_crossSections[i]->scaleOut()
+        << " normal out " << m_crossSections[i]->normalOut()
+        << " ptMax " << ptMax << endl;
+      m_bboxXZ.second.x = max(m_bboxXZ.second.x, ptMax.x());
+      m_bboxXZ.second.y = max(m_bboxXZ.second.y, ptMax.y());
+      log << "m_bboxXZ " << m_bboxXZ.first.x << " " << m_bboxXZ.first.y << " "
+        << m_bboxXZ.second.x << " " << m_bboxXZ.second.y << endl;
     }
   }
 
