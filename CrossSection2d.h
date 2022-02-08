@@ -175,7 +175,7 @@ public:
     Eigen::MatrixXcd P0, double freq, struct simulationParameters simuParams, double nextArea) {;}
 
   // for acoustic field computation
-  virtual bool getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut){return bool();}
+  virtual bool getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut, bool useBbox){return bool();}
   virtual void radiatePressure(double distance, double freq,
     struct simulationParameters simuParams, Eigen::MatrixXcd& pressAmp) { ; }
   virtual complex<double> pin(Point pt) {return complex<double>();}
@@ -340,7 +340,7 @@ public:
     double nextArea);
 
   // for acoustic field computation
-  bool getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut);
+  bool getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut, bool useBbox);
   complex<double> pin(Point pt); 
   complex<double> pout(Point pt); 
   complex<double> qin(Point pt); 

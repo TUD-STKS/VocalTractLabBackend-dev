@@ -2194,7 +2194,7 @@ complex<double> Acoustic3dSimulation::acousticField(Point_3 queryPt)
   {
     for (int s(0); s < numSec; s++)
     {
-      if (m_crossSections[s]->getCoordinateFromCartesianPt(queryPt, outPt))
+      if (m_crossSections[s]->getCoordinateFromCartesianPt(queryPt, outPt, false))
       {
         //log << "Pt found " << outPt << endl;
         ptFound = true;
@@ -2218,6 +2218,29 @@ complex<double> Acoustic3dSimulation::acousticField(Point_3 queryPt)
   //log.close();
 
   return(field);
+}
+
+// **************************************************************************
+// If the query point (in the sagittal plane) is inside a segment return true
+// and write the segment index
+
+bool Acoustic3dSimulation::findSegmentContainingPoint(Point queryPt, int& idxSeg)
+{
+  Point_3 outPt;
+  bool segFound(false);
+
+  for (int i(0); i < m_crossSections.size(); i++)
+  {
+    if (m_crossSections[i]->getCoordinateFromCartesianPt(
+      Point_3(queryPt.x(), 0., queryPt.y()), outPt, true))
+    {
+      idxSeg = i;
+      segFound = true;
+      break;
+    }
+  }
+
+  return(segFound);
 }
 
 // **************************************************************************

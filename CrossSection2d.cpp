@@ -2843,8 +2843,11 @@ void CrossSection2dRadiation::radiatePressure(double distance, double freq,
 
 // **************************************************************************
 // Get transformed coordinate from an input cartesian point
+//
+// if the option useBbox is set to true, it is checked if the point lies inside 
+// the bounding box of the contour instead of the contour itself
 
-bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut)
+bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut, bool useBbox)
 {
   //ofstream log("log.txt", ofstream::app);
   //log << "Start get coordinates" << endl;
@@ -2913,6 +2916,16 @@ bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut)
       //log << "x > length" << endl;
       x = NAN; y = NAN; z = NAN;
       isInside = false;
+    }
+    else if (useBbox)
+    {
+      auto bbox = m_contour.bbox();
+      if ((y < bbox.xmin()) || (y > bbox.xmax())
+        || (z < bbox.ymin()) || (z > bbox.ymax()))
+      {
+        x = NAN; y = NAN; z = NAN;
+        isInside = false;
+      }
     }
     else if (m_contour.has_on_unbounded_side(Point(y, z)))
     {

@@ -106,6 +106,7 @@ public:
   void RayleighSommerfeldIntegral(vector<Point_3> points,
     Eigen::VectorXcd &radPress, double freq, int radSecIdx);
   complex<double> acousticField(Point_3 queryPt);
+  bool findSegmentContainingPoint(Point queryPt, int &idxSeg);
   Eigen::VectorXcd acousticField(vector<Point_3> queryPt);
   void acousticFieldInPlane(Eigen::MatrixXcd& field);
   void staticSimulation(VocalTract* tract);
