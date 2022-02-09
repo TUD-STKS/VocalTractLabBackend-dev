@@ -118,7 +118,7 @@ bool similarContours(Polygon_2& cont1, Polygon_2& cont2, double minDist)
 Acoustic3dSimulation::Acoustic3dSimulation()
 // initialise the physical constants
   : m_geometryImported(false),
-  m_meshDensity(10.),
+  m_meshDensity(5.),
   m_maxCutOnFreq(20000.),
   m_spectrumLgthExponent(10),
   m_idxSecNoiseSource(46), // for /sh/ 212, for vowels 46
@@ -4727,21 +4727,6 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
   log << "Contours extracted" << endl;
 
-  //// compute the total area and the bounding box of each contour groups
-  //for (auto conts : contours)
-  //{
-  //  totAreas.push_back(0.);
-  //  bboxes.push_back(arrayZeros);
-  //  for (auto cont : conts){
-  //    totAreas.back() += abs(cont.area());
-  //    
-  //    bboxes.back()[0] = min(bboxes.back()[0], cont.bbox().xmin());
-  //    bboxes.back()[1] = max(bboxes.back()[1], cont.bbox().xmax());
-  //    bboxes.back()[2] = min(bboxes.back()[2], cont.bbox().ymin());
-  //    bboxes.back()[3] = max(bboxes.back()[3], cont.bbox().ymax());
-  //  }
-  //}
-
   // initialize max bounding box
   m_maxCSBoundingBox.first = Point2D(0., 0.);
   m_maxCSBoundingBox.second = Point2D(0., 0.);
@@ -5379,25 +5364,31 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     if (m_crossSections[i]->contour().size() > 0)
     {
       auto bbox = m_crossSections[i]->contour().bbox();
+
       log << "bbox " << bbox << " size cont " << m_crossSections[i]->contour().size() << endl;
 
       Transformation translateMin(CGAL::TRANSLATION,
-        -m_crossSections[i]->scaleIn() * bbox.ymin() * m_crossSections[i]->normalIn());
+        m_crossSections[i]->scaleIn() * bbox.ymin() * m_crossSections[i]->normalIn());
       ptMin = translateMin(m_crossSections[i]->ctrLinePtIn());
+
       log << "Scale in " << m_crossSections[i]->scaleIn()
         << " normal in " << m_crossSections[i]->normalIn()
         << " ptMin " << ptMin << endl;
+
       m_bboxXZ.first.x = min(m_bboxXZ.first.x, ptMin.x());
       m_bboxXZ.first.y = min(m_bboxXZ.first.y, ptMin.y());
 
       Transformation translateMax(CGAL::TRANSLATION,
         m_crossSections[i]->scaleOut() * bbox.ymax() * m_crossSections[i]->normalOut());
       ptMax = translateMax(m_crossSections[i]->ctrLinePtOut());
+
       log << "Scale out " << m_crossSections[i]->scaleOut()
         << " normal out " << m_crossSections[i]->normalOut()
         << " ptMax " << ptMax << endl;
+
       m_bboxXZ.second.x = max(m_bboxXZ.second.x, ptMax.x());
       m_bboxXZ.second.y = max(m_bboxXZ.second.y, ptMax.y());
+
       log << "m_bboxXZ " << m_bboxXZ.first.x << " " << m_bboxXZ.first.y << " "
         << m_bboxXZ.second.x << " " << m_bboxXZ.second.y << endl;
     }
