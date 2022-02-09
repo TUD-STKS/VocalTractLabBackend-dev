@@ -30,7 +30,7 @@ except ImportError:
 try:
     from scipy.io import wavfile
 except ImportError:
-    wavefile = None
+    wavfile = None
 try:
     import matplotlib.pyplot as plt
 except ImportError:
@@ -223,8 +223,7 @@ if plt is not None and np is not None:
     plt.ylabel('amplitude')
     plt.ylim(-1, 1)
     plt.xlabel('sample [s]')
-    print('\nClose the plot in order to continue.')
-    plt.show()
+    plt.show(block=False)
 else:
     print('plotting not available; matplotlib needed')
     print('skip plotting')

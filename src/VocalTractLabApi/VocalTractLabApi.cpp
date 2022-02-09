@@ -1455,11 +1455,11 @@ int vtlGesturalScoreToTractSequence(const char* gesFileName, const char* tractSe
 //
 // Parameters:
 // o gesFileName (in): Name of the gestural score file.
-// o audioFileDuration (out): The number of audio samples, the audio file would
+// o numAudioSamples (out): The number of audio samples, the audio file would
 //   have, if the gestural score was synthesized. This number can be slightly 
 //   larger than the length of the gestural score because the audio is 
 //   synthesized in chunks of a constant size. If not wanted, set to NULL.
-// o gesFileDuration (out): The duration of the gestural score (in samples).
+// o numGestureSamples (out): The duration of the gestural score (in samples).
 //   If not wanted, set to NULL.
 //
 // Function return value:
@@ -1514,7 +1514,11 @@ int vtlGetGesturalScoreDuration(const char* gesFileName, int* numAudioSamples, i
         *numAudioSamples = ( (int)( ( gesturalScore->getDuration_pt() ) / NUM_CHUNK_SAMPLES ) + 1 )  * NUM_CHUNK_SAMPLES;
     }
 
+    // ****************************************************************
+    // Free the memory and return.
+    // ****************************************************************
 
+    delete gesturalScore;
     return 0;
 }
 

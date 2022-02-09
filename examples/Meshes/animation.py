@@ -7,7 +7,7 @@
 
 
 """
-Programm animates 3D vocal tract shapes and EMA points.
+Animated 3D vocal tract shapes and EMA points.
 
 Help Menu:
 h: print help menue to console
