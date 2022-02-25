@@ -3284,7 +3284,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
   int nbAngles(100);
   vector<int> surfaceIdx(nbAngles, 0), slectedModesIdx;
   double scalingFactors[2] = { 1., 1. };
-  double a(5.5), b(3.);
+  double a(5.5), b(3.2);
   double freq, freqMax, freqField, endAdmit;
   complex<double> result;
   int nbFreqs, mn, idxField, cnt;
@@ -3486,6 +3486,8 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
     ofs.open("nuE.txt");
     ofs << m_crossSections[0]->getMatrixE() << endl;
     ofs.close();
+
+    log << "Test matrix E finished" << endl;
 
     break;
     /////////////////////////////////////////////////////////////////////////////////
