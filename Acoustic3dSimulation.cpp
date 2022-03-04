@@ -150,8 +150,8 @@ Acoustic3dSimulation::Acoustic3dSimulation()
 
   // for acoustic field computation
   m_simuParams.freqField = 5000.;
-  m_simuParams.bboxField[0] = Point(-5., -10.);
-  m_simuParams.bboxField[1] = Point(10., 5.);
+  //m_simuParams.bboxField[0] = Point(-5., -10.);
+  //m_simuParams.bboxField[1] = Point(10., 5.);
   m_simuParams.fieldResolution = 30;
   m_simuParams.computeRadiatedField = false;
 
@@ -2812,36 +2812,12 @@ void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
   //******************************************************
 
   ofstream ofs;
-  //ofs.open("sec.txt");
-  //// extract parameters of the sections
-  //for (int s(0); s < numSec; s++)
-  //{
-  //  if (m_crossSections[s]->length() > 0.)
-  //  {
-  //    // entrance features
-  //    ofs << m_crossSections[s]->ctrLinePt().x << "  "
-  //      << m_crossSections[s]->ctrLinePt().y << "  "
-  //      << m_crossSections[s]->normal().x << "  "
-  //      << m_crossSections[s]->normal().y << "  "
-  //      << m_crossSections[s]->curvRadius() << "  "
-  //      << m_crossSections[s]->circleArcAngle() << endl;
 
-  //    // exist features
-  //    ofs << m_crossSections[s]->ctrLinePtOut().x() << "  "
-  //      << m_crossSections[s]->ctrLinePtOut().y() << "  "
-  //      << m_crossSections[s]->normalOut().x() << "  "
-  //      << m_crossSections[s]->normalOut().y() << "  "
-  //      << m_crossSections[s]->curvRadius() << "  "
-  //      << m_crossSections[s]->circleArcAngle() << endl;
-  //  }
-  //}
-  //ofs.close();
-
-  Eigen::MatrixXcd field;
-  acousticFieldInPlane(field);
+  //Eigen::MatrixXcd field;
+  acousticFieldInPlane(m_field);
   ofs.open("field.txt");
   stringstream txtField;
-  txtField << field.cwiseAbs();
+  txtField << m_field.cwiseAbs();     
   ofs << regex_replace(txtField.str(), regex("-nan\\(ind\\)"), "nan");
   ofs.close();
 
@@ -4708,7 +4684,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   vector<pair<double, double>> vecScalingFactors;
   vector<double> totAreas;
   vector<array<double, 4>> bboxes;
-  array<double, 4> arrayZeros = { 0., 0., 0., 0. }, bboxXZ;
+  array<double, 4> arrayZeros = { 0., 0., 0., 0. };
 
   ofstream ofs;
   ofstream log("log.txt", ofstream::app);
@@ -5355,11 +5331,20 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   // Compute the XZ sagittal plane bounding box
   //***************************************************************
 
-  Point ptMin, ptMax;
+  pair<Point2D, Point2D> bboxXZ;
 
   // initialize bounding box
-  m_bboxXZ.first = Point2D(0., 0.);
-  m_bboxXZ.second = Point2D(0., 0.);
+  bboxXZ.first = Point2D(0., 0.);
+  bboxXZ.second = Point2D(0., 0.);
+
+  // lambda expression to update the bounding box
+  auto updateBbox = [&]()
+  {
+    bboxXZ.first.x = min(bboxXZ.first.x, pt.x());
+    bboxXZ.first.y = min(bboxXZ.first.y, pt.y());
+    bboxXZ.second.x = max(bboxXZ.second.x, pt.x());
+    bboxXZ.second.y = max(bboxXZ.second.y, pt.y());
+  };
   
   for (int i(0); i < m_crossSections.size(); i++)
   {
@@ -5367,34 +5352,34 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     {
       auto bbox = m_crossSections[i]->contour().bbox();
 
-      log << "bbox " << bbox << " size cont " << m_crossSections[i]->contour().size() << endl;
-
-      Transformation translateMin(CGAL::TRANSLATION,
+      // pt in min
+      Transformation translateMinIn(CGAL::TRANSLATION,
         m_crossSections[i]->scaleIn() * bbox.ymin() * m_crossSections[i]->normalIn());
-      ptMin = translateMin(m_crossSections[i]->ctrLinePtIn());
+      pt = translateMinIn(m_crossSections[i]->ctrLinePtIn());
+      updateBbox();
 
-      log << "Scale in " << m_crossSections[i]->scaleIn()
-        << " normal in " << m_crossSections[i]->normalIn()
-        << " ptMin " << ptMin << endl;
+      // pt in max
+      Transformation translateMaxIn(CGAL::TRANSLATION,
+        m_crossSections[i]->scaleIn()* bbox.ymax()* m_crossSections[i]->normalIn());
+      pt = translateMaxIn(m_crossSections[i]->ctrLinePtIn());
+      updateBbox();
 
-      m_bboxXZ.first.x = min(m_bboxXZ.first.x, ptMin.x());
-      m_bboxXZ.first.y = min(m_bboxXZ.first.y, ptMin.y());
+      // pt out min
+      Transformation translateMinOut(CGAL::TRANSLATION,
+        m_crossSections[i]->scaleOut()* bbox.ymin()* m_crossSections[i]->normalOut());
+      pt = translateMinOut(m_crossSections[i]->ctrLinePtOut());
+      updateBbox();
 
-      Transformation translateMax(CGAL::TRANSLATION,
+      // pt out max
+      Transformation translateMaxOut(CGAL::TRANSLATION,
         m_crossSections[i]->scaleOut() * bbox.ymax() * m_crossSections[i]->normalOut());
-      ptMax = translateMax(m_crossSections[i]->ctrLinePtOut());
-
-      log << "Scale out " << m_crossSections[i]->scaleOut()
-        << " normal out " << m_crossSections[i]->normalOut()
-        << " ptMax " << ptMax << endl;
-
-      m_bboxXZ.second.x = max(m_bboxXZ.second.x, ptMax.x());
-      m_bboxXZ.second.y = max(m_bboxXZ.second.y, ptMax.y());
-
-      log << "m_bboxXZ " << m_bboxXZ.first.x << " " << m_bboxXZ.first.y << " "
-        << m_bboxXZ.second.x << " " << m_bboxXZ.second.y << endl;
+      pt = translateMaxOut(m_crossSections[i]->ctrLinePtOut());
+      updateBbox();
     }
   }
+
+  m_simuParams.bboxField[0] = Point(bboxXZ.first.x, bboxXZ.first.y);
+  m_simuParams.bboxField[1] = Point(bboxXZ.second.x, bboxXZ.second.y);
 
   //***************************************************************
   // Export data
@@ -5489,6 +5474,29 @@ complex<double> Acoustic3dSimulation::interpolateTransferFunction(double freq, i
   }
 
   return(interpolatedTF);
+}
+
+//*************************************************************************
+// Interpolate the acoustic field
+
+double Acoustic3dSimulation::interpolateAcousticField(Point querryPt)
+{
+  double field;
+
+  // check if the point is inside the bounding box
+  if ((querryPt.x() > m_simuParams.bboxField[0].x()) &&
+    (querryPt.x() < m_simuParams.bboxField[1].x()) &&
+    (querryPt.y() > m_simuParams.bboxField[0].y()) &&
+    (querryPt.y() < m_simuParams.bboxField[1].y()))
+  {
+    field = 0.;
+  }
+  else
+  {
+    field = NAN;
+  }
+
+  return field;
 }
 
 //*************************************************************************

@@ -116,6 +116,7 @@ public:
 
   // for data exportation
   complex<double> interpolateTransferFunction(double freq, int idxPt);
+  double interpolateAcousticField(Point querryPt);
   void exportGeoInCsv(string fileName);
   bool exportTransferFucntions(string fileName);
 
@@ -138,9 +139,18 @@ public:
   int idxSecNoiseSource() const { return m_idxSecNoiseSource; }
   int idxConstriction() const { return m_idxConstriction; }
   pair<Point2D, Point2D> maxCSBoundingBox() const { return m_maxCSBoundingBox; }
-  pair<Point2D, Point2D> bboxSagittalPlane() const { return m_bboxXZ; }
+  pair<Point2D, Point2D> bboxSagittalPlane() const 
+  { 
+    pair<Point2D, Point2D> bbox;
+    bbox.first = Point2D(m_simuParams.bboxField[0].x(),
+      m_simuParams.bboxField[0].y());
+    bbox.second = Point2D(m_simuParams.bboxField[1].x(),
+      m_simuParams.bboxField[1].y());
+    return bbox;
+  }
   int numCrossSections(){ return m_crossSections.size(); }
   openEndBoundaryCond mouthBoundaryCond() const {return m_mouthBoundaryCond;}
+  int acousticFieldSize() const { return m_field.size(); }
 
 // **************************************************************************
 /// Public data
@@ -178,13 +188,16 @@ private:
   vector<vector<vector<vector<double>>>> m_radiationMatrixInterp;
   vector<double> m_radiationFreqs;
   vector<double> m_tfFreqs;
-  Eigen::MatrixXcd m_transferFunctions;
-  Eigen::VectorXcd m_planeModeInputImpedance;
 
   // maximal bounding box of the cross-sections (for displaying mesh and modes)
-  pair<Point2D,Point2D> m_maxCSBoundingBox;
-  pair<Point2D, Point2D> m_bboxXZ;
+  pair<Point2D, Point2D> m_maxCSBoundingBox;
+  // for displaying segments and acoustic field
+  //pair<Point2D, Point2D> m_bboxXZ;
 
+  // simulation outputs
+  Eigen::MatrixXcd m_transferFunctions;
+  Eigen::MatrixXcd m_field;
+  Eigen::VectorXcd m_planeModeInputImpedance;
 
 // **************************************************************************
 // Private functions.
