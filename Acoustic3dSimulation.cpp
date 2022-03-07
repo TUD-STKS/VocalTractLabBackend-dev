@@ -2260,6 +2260,7 @@ void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
   ofstream log("log.txt", ofstream::app);
 
   field.resize(nPty, nPtx);
+  m_maxAmpField = 0.;
 
   for (int i(0); i < nPtx; i++)
   {
@@ -2281,9 +2282,13 @@ void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
 
       field(j, i) = acousticField(queryPt);
 
+      // compute the maximal amplitude of the field
+      m_maxAmpField = max(m_maxAmpField, abs(field(j, i)));
+
       //log << "Field computed" << endl;
     }
   }
+
   log.close();
 }
 
@@ -5489,14 +5494,64 @@ double Acoustic3dSimulation::interpolateAcousticField(Point querryPt)
     (querryPt.y() > m_simuParams.bboxField[0].y()) &&
     (querryPt.y() < m_simuParams.bboxField[1].y()))
   {
-    field = 0.;
+    // find the neighboring points
+    double dx(1. / (double)m_simuParams.fieldResolution);
+
+    int iMin(min((int)m_field.rows() - 2,
+      (int)floor((querryPt.y() - m_simuParams.bboxField[0].y()) / dx)));
+    int iMax(min((int)m_field.rows() - 1,
+      (int)ceil((querryPt.y() - m_simuParams.bboxField[0].y()) / dx)));
+    int jMin(min((int)m_field.cols() - 2,
+      (int)floor((querryPt.x() - m_simuParams.bboxField[0].x()) / dx)));
+    int jMax(min((int)m_field.cols() - 1,
+      (int)ceil((querryPt.x() - m_simuParams.bboxField[0].x()) / dx)));
+
+    field = abs((m_field(iMin, jMin) + m_field(iMin, jMax)
+      + m_field(iMax, jMin) + m_field(iMax, jMax)) / 4.);
   }
   else
   {
-    field = NAN;
+    field = -1.;
   }
 
   return field;
+}
+
+//*************************************************************************
+// Interpolate the acoustic field
+
+void Acoustic3dSimulation::interpolateAcousticField(Vec &coordX, Vec &coordY, Matrix &field)
+{
+  int nx(coordX.size());
+  int ny(coordY.size());
+  int iMin, jMin;
+  double dx(1. / (double)m_simuParams.fieldResolution);
+
+  field.resize(ny, nx);
+
+  for (int i(0); i < ny; i++)
+  {
+    for (int j(0); j < nx; j++)
+    {
+      if ((coordX(j) > m_simuParams.bboxField[0].x()) &&
+        (coordX(j) < m_simuParams.bboxField[1].x()) &&
+        (coordY(i) > m_simuParams.bboxField[0].y()) &&
+        (coordY(i) < m_simuParams.bboxField[1].y()))
+      {
+        iMin = min((int)m_field.rows() - 2,
+          (int)floor((coordY(i) - m_simuParams.bboxField[0].y()) / dx));
+        jMin = min((int)m_field.cols() - 2,
+          (int)floor((coordX(j) - m_simuParams.bboxField[0].x()) / dx));
+
+        field(i, j) = abs((m_field(iMin, jMin) + m_field(iMin, jMin + 1)
+          + m_field(iMin + 1, jMin) + m_field(iMin + 1, jMin + 1)) / 4.);
+      }
+      else
+      {
+        field(i, j) = -1.;
+      }
+    }
+  }
 }
 
 //*************************************************************************

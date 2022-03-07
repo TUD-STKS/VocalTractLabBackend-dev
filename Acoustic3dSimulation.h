@@ -15,6 +15,8 @@ typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef CGAL::Polygon_2<K>                            Polygon_2;
 typedef CGAL::Point_3<K>                Point_3;
 
+typedef Eigen::VectorXd                 Vec;
+
 // **************************************************************************
 // Identifiers for the glotis boundary condition
 // **************************************************************************
@@ -117,6 +119,7 @@ public:
   // for data exportation
   complex<double> interpolateTransferFunction(double freq, int idxPt);
   double interpolateAcousticField(Point querryPt);
+  void interpolateAcousticField(Vec &coordX, Vec &coordY, Matrix &field);
   void exportGeoInCsv(string fileName);
   bool exportTransferFucntions(string fileName);
 
@@ -151,6 +154,7 @@ public:
   int numCrossSections(){ return m_crossSections.size(); }
   openEndBoundaryCond mouthBoundaryCond() const {return m_mouthBoundaryCond;}
   int acousticFieldSize() const { return m_field.size(); }
+  double maxAmpField() const { return m_maxAmpField; }
 
 // **************************************************************************
 /// Public data
@@ -197,6 +201,7 @@ private:
   // simulation outputs
   Eigen::MatrixXcd m_transferFunctions;
   Eigen::MatrixXcd m_field;
+  double m_maxAmpField;
   Eigen::VectorXcd m_planeModeInputImpedance;
 
 // **************************************************************************
