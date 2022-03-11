@@ -2384,7 +2384,6 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
   //log << "inputPressure initialzed" << endl;
   complex<double> V0(1.0, 0.0);
   // for a constant input velocity q = -j * w * rho * v 
-  inputVelocity(0, 0) = -1i * 2. * M_PI * m_simuParams.volumicMass * V0;
   Eigen::MatrixXcd inputPressureNoise;
 
   if (m_idxSecNoiseSource < lastSec)
@@ -2461,6 +2460,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
       radAdmit.setZero(mn, mn);
       radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(
         pow(m_crossSections[lastSec]->scaleOut(), 2), 0.));
+      //radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(1., 0.));
       radImped = radAdmit.inverse();
       break;
     }
@@ -2520,8 +2520,10 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     //propagatePressure(startPressure, freq, m_method);
     //log << "Compute impedance in first section " <<
     //  m_crossSections[0]->computeImpedance() << endl;
-    inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass * 
-      m_crossSections[0]->area();
+    inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass
+      //* pow(m_crossSections[0]->scaleIn(), 2)
+      //* m_crossSections[0]->area() 
+      ;
     //log << "input velocity\n" << inputVelocity << endl;
     inputPressure = m_crossSections[0]->Zin() * inputVelocity;
     propagateVelocityPress(inputVelocity, inputPressure, freq, 0, lastSec);
