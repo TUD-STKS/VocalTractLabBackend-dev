@@ -2177,15 +2177,33 @@ complex<double> Acoustic3dSimulation::acousticField(Point_3 queryPt)
 
   // check if the point is in the radiation domain
   vec = Vector(endCenterLine, Point(queryPt.x(), queryPt.z()));
-  if (signbit(m_crossSections.back()->curvRadius() * m_crossSections.back()->circleArcAngle()))
+  // for straight segments
+  if (m_crossSections.back()->circleArcAngle() <= MINIMAL_DISTANCE)
   {
-    angle = M_PI - fmod(atan2(vec.y(), vec.x()) -
-      atan2(endNormal.y(), endNormal.x()) + 2. * M_PI, 2. * M_PI);
+    double length(m_crossSections.back()->ctrLinePtOut().x()
+        - m_crossSections.back()->ctrLinePtIn().x());
+    if (signbit(vec.x() * length))
+    {
+      angle = -1.;
+    }
+    else
+    {
+      angle = 1.;
+    }  
   }
   else
+  // for curved segments
   {
-    angle = fmod(atan2(vec.y(), vec.x()) -
-      atan2(endNormal.y(), endNormal.x()) + 2. * M_PI, 2. * M_PI) - M_PI;
+    if (signbit(m_crossSections.back()->curvRadius() * m_crossSections.back()->circleArcAngle()))
+    {
+      angle = M_PI - fmod(atan2(vec.y(), vec.x()) -
+        atan2(endNormal.y(), endNormal.x()) + 2. * M_PI, 2. * M_PI);
+    }
+    else
+    {
+      angle = fmod(atan2(vec.y(), vec.x()) -
+        atan2(endNormal.y(), endNormal.x()) + 2. * M_PI, 2. * M_PI) - M_PI;
+    }
   }
 
   //log << "Point " << queryPt << " angle " << angle << endl;
@@ -2521,8 +2539,8 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     //log << "Compute impedance in first section " <<
     //  m_crossSections[0]->computeImpedance() << endl;
     inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass
-      //* pow(m_crossSections[0]->scaleIn(), 2)
-      //* m_crossSections[0]->area() 
+      * pow(m_crossSections[0]->scaleIn(), 2)
+      * m_crossSections[0]->area() 
       ;
     //log << "input velocity\n" << inputVelocity << endl;
     inputPressure = m_crossSections[0]->Zin() * inputVelocity;
