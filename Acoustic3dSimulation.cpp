@@ -2539,7 +2539,7 @@ void Acoustic3dSimulation::staticSimulation(VocalTract* tract)
     //log << "Compute impedance in first section " <<
     //  m_crossSections[0]->computeImpedance() << endl;
     inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass
-      * pow(m_crossSections[0]->scaleIn(), 2)
+      * pow(m_crossSections[0]->scaleIn(), 3)
       * m_crossSections[0]->area() 
       ;
     //log << "input velocity\n" << inputVelocity << endl;
@@ -2801,7 +2801,7 @@ void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
     m_crossSections[0]->numberOfModes(), 1));
   complex<double> V0(1.0, 0.0);
   // for a constant input velocity q = -j * w * rho * v 
-  inputVelocity(0, 0) = -1i * 2. * M_PI * m_simuParams.volumicMass * V0;
+  //inputVelocity(0, 0) = -1i * 2. * M_PI * m_simuParams.volumicMass * V0;
   log << "source generated" << endl;
 
   // Compute the radiation impedance and admittance 
@@ -2817,6 +2817,7 @@ void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
     radAdmit = Eigen::MatrixXcd::Zero(mn, mn);
     radAdmit.diagonal().setConstant(complex<double>(
           pow(m_crossSections[lastSec]->scaleOut(), 2), 0.));
+    //radAdmit.diagonal().setConstant(complex<double>(1., 0.));
     radImped = radAdmit.inverse();
   }
   log << "End impedance computed" << endl;
@@ -2826,8 +2827,10 @@ void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
   log << "Impedance and admittance computed" << endl;
 
   // propagate velocity and pressure
-  inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass * 
-    m_crossSections[0]->area();
+  inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass
+    * pow(m_crossSections[0]->scaleIn(), 3)
+    * m_crossSections[0]->area()
+    ;
   inputPressure = m_crossSections[0]->Zin() * inputVelocity;
   propagateVelocityPress(inputVelocity, inputPressure, freq, 0, lastSec);
   log << "Pressure and velocity computed" << endl;
@@ -5742,7 +5745,7 @@ void Acoustic3dSimulation::exportGeoInCsv(string fileName)
 }
 
 //*************************************************************************
-// EXport the transfer functions in a text file
+// Export the transfer functions in a text file
 
 bool Acoustic3dSimulation::exportTransferFucntions(string fileName)
 {
@@ -5765,6 +5768,29 @@ bool Acoustic3dSimulation::exportTransferFucntions(string fileName)
   }
   ofs.close();
 
+  log.close();
+
+  // FIXME: Check if the file have been successfully opened
+  return true;
+}
+
+//*************************************************************************
+// Export the acoustic field in a text file
+
+bool Acoustic3dSimulation::exportAcousticField(string fileName)
+{
+  ofstream log("log.txt", ofstream::app);
+  log << "Export acoustic field to file:" << endl;
+  log << fileName << endl;
+
+  ofstream ofs;
+  ofs.open(fileName, ofstream::out | ofstream::trunc);
+
+  stringstream txtField;
+  txtField << m_field.cwiseAbs();
+  ofs << regex_replace(txtField.str(), regex("-nan\\(ind\\)"), "nan");
+
+  ofs.close();
   log.close();
 
   // FIXME: Check if the file have been successfully opened

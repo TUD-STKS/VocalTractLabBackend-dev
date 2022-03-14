@@ -122,6 +122,7 @@ public:
   void interpolateAcousticField(Vec &coordX, Vec &coordY, Matrix &field);
   void exportGeoInCsv(string fileName);
   bool exportTransferFucntions(string fileName);
+  bool exportAcousticField(string fileName);
 
 
 // **************************************************************************
