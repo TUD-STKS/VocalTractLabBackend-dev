@@ -87,6 +87,7 @@ public:
   // For solving the wave problem 
   void computeMeshAndModes();
   void computeJunctionMatrices(bool computeG);
+  void requestModesAndJunctionComputation() { m_simuParams.needToComputeModesAndJunctions = true; }
   void propagateImpedAdmitBranch(vector< Eigen::MatrixXcd> Q0, double freq,
     vector<int> startSections, vector<int> endSections, double direction);
   void propagateImpedAdmit(Eigen::MatrixXcd& startImped, Eigen::MatrixXcd& startAdmit, 
@@ -111,7 +112,8 @@ public:
   bool findSegmentContainingPoint(Point queryPt, int &idxSeg);
   Eigen::VectorXcd acousticField(vector<Point_3> queryPt);
   void acousticFieldInPlane(Eigen::MatrixXcd& field);
-  void staticSimulation(VocalTract* tract);
+  void solveWaveProblem(VocalTract* tract, double freq, bool precomputeRadImped);
+  void computeTransferFunction(VocalTract* tract);
   void computeAcousticField(VocalTract* tract);
   void coneConcatenationSimulation(string fileName);
   void runTest(enum testType tType, string fileName);
@@ -220,10 +222,14 @@ private:
     vector< Polygon_2> &contours, vector<vector<int>> &surfacesIdx);
   void getCurvatureAngleShift(Point2D P1, Point2D P2,
     Point2D N1, Point2D N2, double& radius, double& angle, double& shift);
+  
+  // for radiation impedance 
   void preComputeRadiationMatrices(int nbRadFreqs, int idxRadSec);
   void interpolateRadiationImpedance(Eigen::MatrixXcd& imped, double freq, int idxRadSec); 
   void interpolateRadiationAdmittance(Eigen::MatrixXcd& admit, double freq, int idxRadSec);
   void radiationImpedance(Eigen::MatrixXcd& imped, double freq, double gridDensity, int idxRadSec);
+  void getRadiationImpedanceAdmittance(Eigen::MatrixXcd& imped, Eigen::MatrixXcd& admit, 
+    double freq, int idxRadSec);
 };
 
 #endif

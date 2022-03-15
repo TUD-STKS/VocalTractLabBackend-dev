@@ -73,6 +73,9 @@ struct simulationParameters
   bool curved;
   bool varyingArea;
   bool junctionLosses;
+  bool needToComputeModesAndJunctions;
+  bool radImpedPrecomputed;
+  double radImpedGridDensity;
 
   // for transfer function computation
   double maxComputedFreq;
