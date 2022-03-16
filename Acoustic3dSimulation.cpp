@@ -2403,7 +2403,7 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
 }
 
 // **************************************************************************
-// Run a static simulation
+// Compute the transfer function(s)
 
 void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
 {
