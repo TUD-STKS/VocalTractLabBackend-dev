@@ -53,7 +53,7 @@ public:
   static Acoustic3dSimulation *getInstance();
 
   void setBoundarySpecificAdmittance();
-  void setSimulationParameters(double meshDensity, double maxCutOnFreq, 
+  void setSimulationParameters(double meshDensity,
     int secNoiseSource, int secConstriction,
     int expSpectrumLgth, struct simulationParameters simuParams,
     enum openEndBoundaryCond cond);
@@ -83,6 +83,7 @@ public:
     vector<Point2D>& centerLine, vector<Point2D>& normals, 
     vector<pair<double, double>>& scalingFactors, bool simplifyContours);
   bool createCrossSections(VocalTract* tract, bool createRadSection);
+  void importGeometry(VocalTract* tract);
 
   // For solving the wave problem 
   void computeMeshAndModes();
@@ -184,7 +185,6 @@ private:
   string m_geometryFile;
   contourInterpolationMethod m_contInterpMeth;
   double m_meshDensity;
-  double m_maxCutOnFreq;
   // the number of frequencies is 2 ^ (m_spectrumLgthExponent - 1)
   int m_spectrumLgthExponent;
   int m_numFreq;

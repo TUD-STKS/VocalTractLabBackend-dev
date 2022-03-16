@@ -64,6 +64,7 @@ struct simulationParameters
   double sndSpeed;
   int numIntegrationStep;
   int orderMagnusScheme;
+  double maxCutOnFreq;
   complex<double> viscousBndSpecAdm;
   complex<double> thermalBndSpecAdm;
   bool freqDepLosses;
@@ -98,7 +99,7 @@ class CrossSection2d
 public:
 
   CrossSection2d();
-  CrossSection2d(double maxCutOnFreq, Point2D ctrLinePt, Point2D normal);
+  CrossSection2d(Point2D ctrLinePt, Point2D normal);
   ~CrossSection2d();
 
   // cross section parameters
@@ -118,6 +119,7 @@ public:
   virtual void setCurvatureAngle(double angle) { ; }
 
   // cross section mesh and modes
+  virtual void setSpacing(double spacing) { ; }
   virtual void buildMesh() { ; }
   void setModesNumber(int nb) { m_modesNumber = nb; }
   virtual void computeModes(struct simulationParameters simuParams) { ; }
@@ -269,7 +271,7 @@ protected:
   Point2D m_normal;
   double m_area;
   int m_modesNumber;
-  double m_maxCutOnFreq;
+  //double m_maxCutOnFreq;
   int m_direction[4]; // 0 dir Z | 1 dir Y | 2 dir Q | dir P
   vector<Eigen::MatrixXcd> m_impedance;
   vector<Eigen::MatrixXcd> m_admittance;
@@ -291,16 +293,16 @@ class CrossSection2dFEM : public CrossSection2d
 
 public:
 
-  CrossSection2dFEM(double maxCutOnFreq, Point2D ctrLinePt, Point2D normal,
-    double area, double spacing,
-    Polygon_2 contour, vector<int> surfacesIdx,
-    double inMeshDensity, double inLength, double scalingFactors[2]);
+  CrossSection2dFEM(Point2D ctrLinePt, Point2D normal,
+    double area, double spacing, Polygon_2 contour, vector<int> surfacesIdx,
+    double inLength, double scalingFactors[2]);
   ~CrossSection2dFEM();
 
   void setJunctionSection(bool junction);
   void setCurvatureRadius(double radius);
   void setCurvatureAngle(double angle);
 
+  void setSpacing(double spacing) { m_spacing = spacing; }
   void buildMesh();
   void computeModes(struct simulationParameters simuParams);
   void selectModes(vector<int> modesIdx);
@@ -407,7 +409,7 @@ private:
   vector<int> m_surfaceIdx;        // surface indexes of cont pts
   vector<int> m_surfIdxList;        // list of different surf idx
   double m_length;
-  double m_meshDensity;
+  //double m_meshDensity;
   vector<double> m_intersectionsArea;
   double m_spacing;
   vector<double> m_eigenFreqs;
@@ -423,17 +425,6 @@ private:
   Matrix m_E;
   vector<Matrix> m_KR2;
 
-
-  // **************************************************************************
-  // Private functions.
-  // **************************************************************************
-
-private:
-
-  //void initializeCrossSection(double inputUpProf[VocalTract::NUM_PROFILE_SAMPLES],
-  //  double inputLoProf[VocalTract::NUM_PROFILE_SAMPLES], int upperProfileSurface[VocalTract::NUM_PROFILE_SAMPLES],
-  //  int lowerProfileSurface[VocalTract::NUM_PROFILE_SAMPLES]);
-
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -448,8 +439,7 @@ class CrossSection2dRadiation : public CrossSection2d
 
 public:
 
-  CrossSection2dRadiation(double maxCutOnFreq, Point2D ctrLinePt, Point2D normal,
-    double radius, double PMLThickness);
+  CrossSection2dRadiation(Point2D ctrLinePt, Point2D normal, double radius, double PMLThickness);
   ~CrossSection2dRadiation() { ; }
 
   //void set(double maxCutOnFreq, Point2D ctrLinePt, Point2D normal,
@@ -524,7 +514,7 @@ private:
 // Private functions.
 // **************************************************************************
 
-  void setBesselParam(double soundSpeed);
+  void setBesselParam(struct simulationParameters simuParams);
 };
 
 // Print cross-section parameters

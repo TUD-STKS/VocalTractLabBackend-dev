@@ -209,7 +209,6 @@ void BesselJDerivativeZero(int v, int n, map<double, pair<int,int>> &zeros)
 
 CrossSection2d::CrossSection2d()
 {
-  m_maxCutOnFreq = 20000.;
   m_ctrLinePt = Point2D(0., 0.);
   m_normal = Point2D(0., 1.);
   m_modesNumber = 0;
@@ -219,9 +218,8 @@ CrossSection2d::CrossSection2d()
   setPdir(1);
 }
 
-CrossSection2d::CrossSection2d(double maxCutOnFreq, Point2D ctrLinePt, Point2D normal)
-  : m_maxCutOnFreq(maxCutOnFreq), 
-  m_ctrLinePt(ctrLinePt),
+CrossSection2d::CrossSection2d(Point2D ctrLinePt, Point2D normal)
+  : m_ctrLinePt(ctrLinePt),
   m_normal(normal),
   m_modesNumber(0)
 {
@@ -231,12 +229,10 @@ CrossSection2d::CrossSection2d(double maxCutOnFreq, Point2D ctrLinePt, Point2D n
   setPdir(1);
 }
 
-CrossSection2dFEM::CrossSection2dFEM(double maxCutOnFreq, Point2D ctrLinePt, Point2D normal,
-  double area, double spacing,
-  Polygon_2 contour, vector<int> surfacesIdx,
-  double inMeshDensity, double inLength, double scalingFactors[2])
-  : CrossSection2d(maxCutOnFreq, ctrLinePt, normal),
-  m_meshDensity(inMeshDensity),
+CrossSection2dFEM::CrossSection2dFEM(Point2D ctrLinePt, Point2D normal,
+  double area, double spacing, Polygon_2 contour, vector<int> surfacesIdx,
+double inLength, double scalingFactors[2])
+  : CrossSection2d(ctrLinePt, normal),
   m_length(inLength),
   m_junctionSection(false),
   m_spacing(spacing),
@@ -259,9 +255,8 @@ CrossSection2dFEM::CrossSection2dFEM(double maxCutOnFreq, Point2D ctrLinePt, Poi
   }
 
 CrossSection2dRadiation::CrossSection2dRadiation(
-  double maxCutOnFreq, Point2D ctrLinePt, Point2D normal,
-  double radius, double PMLThickness)
-  :CrossSection2d(maxCutOnFreq, ctrLinePt, normal),
+  Point2D ctrLinePt, Point2D normal, double radius, double PMLThickness)
+  :CrossSection2d(ctrLinePt, normal),
   m_radius(radius),
   m_PMLThickness(PMLThickness)
   {
@@ -321,36 +316,29 @@ void CrossSection2dFEM::setCurvatureAngle(double angle) {
 void CrossSection2dFEM::buildMesh()
 {
   int idx;
-  int estimateNbVert(4 * pow(m_meshDensity, 2));
   m_points.clear();
-  m_points.reserve(estimateNbVert);
   m_triangles.clear();
-  m_triangles.reserve(2 * estimateNbVert);
   m_meshContourSeg.clear();
   m_meshContourSeg.reserve(2 * m_contour.size());
   array<double, 2> pts;
   array<int, 3> tempTri;
   array<int, 2> tempSeg;
 
-  //ofstream log("log.txt", ofstream::app);
-  //log << "Start build mesh" << endl;
-  //log << "spacing " << m_spacing << endl;
+  ofstream log("log.txt", ofstream::app);
+  log << "Start build mesh" << endl;
+  log << "spacing " << m_spacing << endl;
 
   m_mesh.clear();
   m_mesh.insert_constraint(m_contour.vertices_begin(), m_contour.vertices_end(), true);
-  //log << "Contour point inserted" << endl;
-  //ofstream ofs("cont.txt");
-  //for (auto pt : m_contour) { ofs << pt.x() << "  " << pt.y() << endl; }
-  //ofs.close();
+
   Mesher mesher(m_mesh);
-  //log << "mesher created" << endl;
+
   mesher.set_criteria(Criteria(0.125, m_spacing));
-  //log << "Creteria set" << endl;
+
   mesher.refine_mesh();
-  //log << "mesh refined" << endl;
+
   CGAL::lloyd_optimize_mesh_2(m_mesh,
     CGAL::parameters::max_iteration_number = 10);
-  //log << "Mesh generated" << endl;
 
   // store the point coordinates and attribute indexes to the vertexes
   idx = 0;
@@ -393,7 +381,7 @@ void CrossSection2dFEM::buildMesh()
       m_triangles.push_back(tempTri);
     }
   }
-  //log.close();
+  log.close();
 }
 
 // ****************************************************************************
@@ -709,7 +697,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   // cut-on frequency and determine the number of modes
   {
     idx = 0;
-    maxWaveNumber = pow(2 * M_PI * m_maxCutOnFreq / simuParams.sndSpeed, 2);
+    maxWaveNumber = pow(2 * M_PI * simuParams.maxCutOnFreq / simuParams.sndSpeed, 2);
     while ((eigenSolver.eigenvalues()[idx] < maxWaveNumber)
       && (idx < eigenSolver.eigenvalues().size()))
     {
@@ -909,7 +897,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
 // The zeros are from the work of Curtis and Beattie (1957)
 // More precise and more zero could be obtained using boost library
 
-void CrossSection2dRadiation::setBesselParam(double soundSpeed)
+void CrossSection2dRadiation::setBesselParam(struct simulationParameters simuParams)
 {
   int mu(0), estimateModeNumber, nZeros(30);
   double fc;
@@ -924,11 +912,11 @@ void CrossSection2dRadiation::setBesselParam(double soundSpeed)
   do
   {
     BesselJDerivativeZero(mu, 1, zeros);
-    fc = soundSpeed * zeros.rbegin()->first / 2. / M_PI / m_radius;
+    fc = simuParams.sndSpeed * zeros.rbegin()->first / 2. / M_PI / m_radius;
     //log << "mu: " << mu << " fc " << fc << endl;
     mu++;
     
-  } while (fc < m_maxCutOnFreq/2.);
+  } while (fc < simuParams.maxCutOnFreq/2.);
   // remove last mu because it corresponds to a zero superior to the 
   // maximal cut-off frequency
   mu--;
@@ -943,7 +931,7 @@ void CrossSection2dRadiation::setBesselParam(double soundSpeed)
   // estimate the number of modes from the maximal cut-on frequency 
   // as (BesselZero^2) / 7
   estimateModeNumber = zeros.size()*2;
-  //estimateModeNumber = 2. * pow(2 * M_PI * m_radius * m_maxCutOnFreq / soundSpeed, 2) / 7.;
+  //estimateModeNumber = 2. * pow(2 * M_PI * m_radius * simuParams.maxCutOnFreq / soundSpeed, 2) / 7.;
   //log << "Estimated mode num " << estimateModeNumber << endl;
 
   // reserve necessary space 
@@ -998,7 +986,7 @@ void CrossSection2dRadiation::computeModes(struct simulationParameters simuParam
   //log << "Start compute modes radiation" << endl;
 
 
-  setBesselParam(simuParams.sndSpeed);
+  setBesselParam(simuParams);
 
   //log << "Bessel param set" << endl;
 
@@ -3257,291 +3245,12 @@ vector<Matrix> CrossSection2dFEM::getMatrixF() const { return m_F; }
 Matrix CrossSection2dFEM::getMatrixGStart() const { return m_Gstart; }
 Matrix CrossSection2dFEM::getMatrixGEnd() const { return m_Gend; }
 
-// **************************************************************************
-// Private functions.
-// **************************************************************************
-
-//void CrossSection2d::initializeCrossSection(double inputUpProf[VocalTract::NUM_PROFILE_SAMPLES],
-//  double inputLoProf[VocalTract::NUM_PROFILE_SAMPLES], int upperProfileSurface[VocalTract::NUM_PROFILE_SAMPLES],
-//  int lowerProfileSurface[VocalTract::NUM_PROFILE_SAMPLES])
-//{
-//  int idxContour(0);
-//  double temporaryUpProf[VocalTract::NUM_PROFILE_SAMPLES];
-//  std::fill_n(temporaryUpProf, VocalTract::NUM_PROFILE_SAMPLES, VocalTract::INVALID_PROFILE_SAMPLE);
-//  double temporaryLoProf[VocalTract::NUM_PROFILE_SAMPLES];
-//  std::fill_n(temporaryLoProf, VocalTract::NUM_PROFILE_SAMPLES, VocalTract::INVALID_PROFILE_SAMPLE);
-//  double tempArea(0.);
-//  Polygon_2 tempPoly;
-//  vector<int> tempSufIdx;
-//  tempSufIdx.reserve(3* VocalTract::NUM_PROFILE_SAMPLES);
-//  double dist;
-//  int nIntermPts;
-//  Vector vecNextPt;
-//  Vector vecInsertPt;
-//  double alpha;
-//  bool toNewSurf(false);
-//  bool toNewSurfTeeth(true);
-//
-//  // identify the samples between two contours as invalid samples
-//  for (int i(1); i < VocalTract::NUM_PROFILE_SAMPLES - 1; i++)
-//  {
-//    if ((inputUpProf[i - 1] == inputLoProf[i - 1]) && (inputUpProf[i + 1] == inputLoProf[i + 1]))
-//    {
-//      inputUpProf[i] = VocalTract::INVALID_PROFILE_SAMPLE;
-//      inputLoProf[i] = VocalTract::INVALID_PROFILE_SAMPLE;
-//    }
-//  }
-//
-//  // initialize the first elements of the temporary profiles
-//  temporaryUpProf[0] = inputUpProf[0];
-//  temporaryLoProf[0] = inputLoProf[0];
-//
-//  // create the meshes corresponding to the potentially multiple close contours
-//  for (int i(1); i < VocalTract::NUM_PROFILE_SAMPLES; i++)
-//  {
-//    // store samples in the temporary profiles
-//    temporaryUpProf[i] = inputUpProf[i];
-//    temporaryLoProf[i] = inputLoProf[i];
-//
-//
-//
-//    // compute area
-//    tempArea += 0.5 * (inputUpProf[i - 1] + inputUpProf[i] - inputLoProf[i - 1] - inputLoProf[i]) *
-//      VocalTract::PROFILE_SAMPLE_LENGTH;
-//
-//    // if the contour ends, create the corresponding mesh and compute the
-//    // corresponding modes
-//    if ((inputUpProf[i - 1] != inputLoProf[i - 1])
-//      && (inputUpProf[i] == inputLoProf[i])
-//      && (inputUpProf[min(i + 1, VocalTract::NUM_PROFILE_SAMPLES - 1)]
-//        == inputLoProf[min(i + 1, VocalTract::NUM_PROFILE_SAMPLES - 1)]))
-//    {
-//      m_area.push_back(tempArea);
-//      m_spacing.push_back(sqrt(tempArea) / m_meshDensity);
-//
-//      // create the polygon corresponding to the upper part of the contour
-//      int idxBig;
-//      for (int p(0); p < (i + 1); p++)
-//      {
-//        if (temporaryUpProf[p] != VocalTract::INVALID_PROFILE_SAMPLE)
-//        {
-//          idxBig = p;
-//          for (int pt(idxBig); pt < (i + 1); pt++)
-//          {
-//            // insert new point in the polygon
-//            tempPoly.push_back(Point(pt * VocalTract::PROFILE_SAMPLE_LENGTH -
-//              VocalTract::PROFILE_LENGTH / 2, temporaryUpProf[pt]));
-//            tempSufIdx.push_back(upperProfileSurface[pt]);
-//
-//            // check if it is necessary to add an intermediate point
-//            if ((pt != (VocalTract::NUM_PROFILE_SAMPLES - 1)) &&
-//              (temporaryUpProf[pt + 1] != VocalTract::INVALID_PROFILE_SAMPLE))
-//            {
-//              // compute the distance with the next point if it exists
-//              dist = sqrt(pow((temporaryUpProf[pt] - temporaryUpProf[pt + 1]), 2) +
-//                pow(VocalTract::PROFILE_SAMPLE_LENGTH, 2));
-//
-//              // compute the number of necessary subdivision of contour segment
-//              nIntermPts = (int)floor(dist / VocalTract::PROFILE_SAMPLE_LENGTH / 2.) + 1;
-//
-//              // if the next surface is different from the previous one
-//              if (upperProfileSurface[pt] !=
-//                upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)])
-//              {
-//                toNewSurf = !toNewSurf;
-//
-//                // if the exited surface is a  tooth
-//                if ((upperProfileSurface[pt] == 0) || (upperProfileSurface[pt] == 1))
-//                {
-//                  toNewSurf = toNewSurfTeeth;
-//                }
-//                // if the next surface is a tooth
-//                else if ((upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)] == 0)
-//                  || (upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)] == 1))
-//                {
-//                  // flip this value
-//                  toNewSurfTeeth = !toNewSurfTeeth;
-//                  toNewSurf = toNewSurfTeeth;
-//                }
-//
-//              }
-//
-//              // if necessary, add intermediate points
-//              if (nIntermPts > 1)
-//              {
-//                // next point on the upper profile
-//                vecNextPt = Vector(Point(0., 0.), Point((pt + 1) * VocalTract::PROFILE_SAMPLE_LENGTH -
-//                  VocalTract::PROFILE_LENGTH / 2, temporaryUpProf[pt + 1]));
-//
-//                for (int n(1); n < nIntermPts; n++)
-//                {
-//                  alpha = 1. / (double)(nIntermPts - n + 1);
-//                  vecInsertPt = alpha * vecNextPt +
-//                    (1. - alpha) * Vector(Point(0., 0.), *(tempPoly.vertices_end() - 1));
-//
-//                  // add point to the upper profile
-//                  tempPoly.push_back(Point(vecInsertPt.x(), vecInsertPt.y()));
-//                  if (toNewSurf)
-//                  {
-//                    tempSufIdx.push_back(upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)]);
-//                  }
-//                  else
-//                  {
-//                    tempSufIdx.push_back(tempSufIdx.back());
-//                  }
-//                }
-//              }
-//            }
-//          }
-//          break;
-//        }
-//      }
-//
-//
-//      toNewSurf = true;
-//
-//      // create the polygon corresponding to the lower part of the contour
-//      for (int p(i - 1); p > idxBig; p--)
-//      {
-//        vecNextPt = Vector(Point(0., 0.), Point(p * VocalTract::PROFILE_SAMPLE_LENGTH -
-//          VocalTract::PROFILE_LENGTH / 2, temporaryLoProf[p]));
-//
-//        // compute the distance with the next point if it exists
-//        dist = sqrt(pow(vecNextPt.y() - (tempPoly.vertices_end() - 1)->y(), 2) +
-//          pow(VocalTract::PROFILE_SAMPLE_LENGTH, 2));
-//
-//        // compute the number of necessary subdivision of contour segment
-//        nIntermPts = (int)floor(dist / VocalTract::PROFILE_SAMPLE_LENGTH / 2.) + 1;
-//
-//        // if the next surface is different from the previous one
-//        if (tempSufIdx.back() != lowerProfileSurface[p])
-//        {
-//          toNewSurf = !toNewSurf;
-//
-//          // if the exited surface is a  tooth
-//          if ((tempSufIdx.back() == 0) || (tempSufIdx.back() == 1))
-//          {
-//            toNewSurf = toNewSurfTeeth;
-//          }
-//          // if the next surface is a tooth
-//          else if ((lowerProfileSurface[p] == 0) || (lowerProfileSurface[p] == 1))
-//          {
-//            // flip this value
-//            toNewSurfTeeth = !toNewSurfTeeth;
-//            toNewSurf = toNewSurfTeeth;
-//          }
-//
-//        }
-//
-//        // if necessary, add intermediate points
-//        if (nIntermPts > 1)
-//        {
-//
-//          for (int n(1); n < nIntermPts; n++)
-//          {
-//            alpha = 1. / (double)(nIntermPts - n + 1);
-//            vecInsertPt = alpha * vecNextPt +
-//              (1. - alpha) * Vector(Point(0., 0.), *(tempPoly.vertices_end() - 1));
-//
-//            // add point to the upper profile
-//            tempPoly.push_back(Point(vecInsertPt.x(), vecInsertPt.y()));
-//            if (toNewSurf)
-//            {
-//              tempSufIdx.push_back(lowerProfileSurface[p]);
-//            }
-//            else
-//            {
-//              tempSufIdx.push_back(tempSufIdx.back());
-//            }
-//          }
-//        }
-//
-//        // insert the next point
-//        tempPoly.push_back(Point(vecNextPt.x(), vecNextPt.y()));
-//        tempSufIdx.push_back(lowerProfileSurface[p]);
-//      }
-//
-//      // check if it is necessary to add intermediary points in the last intervall
-//      vecNextPt = Vector(Point(0., 0.), Point(idxBig * VocalTract::PROFILE_SAMPLE_LENGTH -
-//        VocalTract::PROFILE_LENGTH / 2, temporaryLoProf[idxBig]));
-//
-//      // compute the distance with the next point if it exists
-//      dist = sqrt(pow(vecNextPt.y() - (tempPoly.vertices_end() - 1)->y(), 2) +
-//        pow(VocalTract::PROFILE_SAMPLE_LENGTH, 2));
-//
-//      // compute the number of necessary subdivision of contour segment
-//      nIntermPts = (int)floor(dist / VocalTract::PROFILE_SAMPLE_LENGTH / 2.) + 1;
-//
-//      // if the next surface is different from the previous one
-//      if (tempSufIdx.back() != lowerProfileSurface[idxBig])
-//      {
-//        toNewSurf = !toNewSurf;
-//
-//        // if the exited surface is a  tooth
-//        if ((tempSufIdx.back() == 0) || (tempSufIdx.back() == 1))
-//        {
-//          toNewSurf = toNewSurfTeeth;
-//        }
-//        // if the next surface is a tooth
-//        else if ((lowerProfileSurface[idxBig] == 0) || (lowerProfileSurface[idxBig] == 1))
-//        {
-//          // flip this value
-//          toNewSurfTeeth = !toNewSurfTeeth;
-//          toNewSurf = toNewSurfTeeth;
-//        }
-//
-//      }
-//
-//      // if necessary, add intermediate points
-//      if (nIntermPts > 1)
-//      {
-//        for (int n(1); n < nIntermPts; n++)
-//        {
-//          alpha = 1. / (double)(nIntermPts - n + 1);
-//          vecInsertPt = alpha * vecNextPt +
-//            (1. - alpha) * Vector(Point(0., 0.), *(tempPoly.vertices_end() - 1));
-//
-//          // add point to the upper profile
-//          tempPoly.push_back(Point(vecInsertPt.x(), vecInsertPt.y()));
-//          if (toNewSurf)
-//          {
-//            tempSufIdx.push_back(lowerProfileSurface[idxBig]);
-//          }
-//          else
-//          {
-//            tempSufIdx.push_back(tempSufIdx.back());
-//          }
-//        }
-//      }
-//
-//      m_contour.push_back(tempPoly);
-//      m_surfaceIdx.push_back(tempSufIdx);
-//
-//      // reinitialize the temporary profiles and area
-//      tempArea = 0.;
-//      std::fill_n(temporaryUpProf, VocalTract::NUM_PROFILE_SAMPLES, VocalTract::INVALID_PROFILE_SAMPLE);
-//      std::fill_n(temporaryLoProf, VocalTract::NUM_PROFILE_SAMPLES, VocalTract::INVALID_PROFILE_SAMPLE);
-//      tempPoly.clear();
-//      tempSufIdx.clear();
-//
-//      idxContour++;
-//    }
-//  }
-//}
-
 // ****************************************************************************
 // Operator overload
 // ****************************************************************************
 
 // **************************************************************************
 // Print cross-section parameters
-
-//ostream& operator<<(ostream &os, const CrossSection2d &cs)
-//{
-  //os << "Centerline points " << cs.ctrLinePt().x << "  "
-   //<< cs.ctrLinePt().y << endl;
-  //return(os);
-//}
 
 ostream& operator<<(ostream &os, const CrossSection2d &cs)
 {

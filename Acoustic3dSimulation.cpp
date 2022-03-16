@@ -119,7 +119,6 @@ Acoustic3dSimulation::Acoustic3dSimulation()
 // initialise the physical constants
   : m_geometryImported(false),
   m_meshDensity(5.),
-  m_maxCutOnFreq(20000.),
   m_spectrumLgthExponent(10),
   m_idxSecNoiseSource(46), // for /sh/ 212, for vowels 46
   m_idxConstriction(40),
@@ -133,6 +132,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
     (m_simuParams.temperature + KELVIN_SHIFT));
   m_simuParams.numIntegrationStep = 3;
   m_simuParams.orderMagnusScheme = 2;
+  m_simuParams.maxCutOnFreq = 20000.;
   m_simuParams.propMethod = MAGNUS;
   m_simuParams.freqDepLosses = false;
   m_simuParams.wallLosses = false;
@@ -239,12 +239,11 @@ Acoustic3dSimulation *Acoustic3dSimulation::getInstance()
 // ****************************************************************************
 // Set computation parameters
 
-void Acoustic3dSimulation::setSimulationParameters(double meshDensity, double maxCutOnFreq,
+void Acoustic3dSimulation::setSimulationParameters(double meshDensity,
   int secNoiseSource, int secConstriction, int expSpectrumLgth, 
   struct simulationParameters simuParams, enum openEndBoundaryCond cond)
 {
   m_meshDensity = meshDensity;
-  m_maxCutOnFreq = maxCutOnFreq;
   m_idxSecNoiseSource = secNoiseSource;
   m_idxConstriction = secConstriction;
   m_spectrumLgthExponent = expSpectrumLgth;
@@ -342,7 +341,7 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
 
   log << "MODE COMPUTATION PARAMETERS:" << endl;
   log << "Mesh density: " << m_meshDensity << endl;
-  log << "Max cut-on frequency: " << m_maxCutOnFreq << " Hz" << endl;
+  log << "Max cut-on frequency: " << m_simuParams.maxCutOnFreq << " Hz" << endl;
   log << endl;
 
   log << "INTEGRATION SCHEME PARAMETERS:" << endl;
@@ -436,9 +435,9 @@ void Acoustic3dSimulation::addCrossSectionFEM(double area,
   Polygon_2 contours, vector<int> surfacesIdx,
   double length, Point2D ctrLinePt, Point2D normal, double scalingFactors[2])
 {
-  m_crossSections.push_back(unique_ptr< CrossSection2d>(new CrossSection2dFEM(m_maxCutOnFreq, 
+  m_crossSections.push_back(unique_ptr< CrossSection2d>(new CrossSection2dFEM(
     ctrLinePt, normal, area, spacing, contours, surfacesIdx,
-    m_meshDensity, length, scalingFactors)));
+    length, scalingFactors)));
 
 }
 
@@ -446,7 +445,7 @@ void Acoustic3dSimulation::addCrossSectionRadiation(Point2D ctrLinePt, Point2D n
   double radius, double PMLThickness)
 {
   m_crossSections.push_back(unique_ptr< CrossSection2d>(new
-    CrossSection2dRadiation(m_maxCutOnFreq, ctrLinePt, normal,
+    CrossSection2dRadiation(ctrLinePt, normal,
       radius, PMLThickness)));
 }
 
@@ -473,6 +472,7 @@ void Acoustic3dSimulation::computeMeshAndModes()
   for (int i(0); i < m_crossSections.size(); i++)
   {
     start = std::chrono::system_clock::now();
+    m_crossSections[i]->setSpacing(sqrt(m_crossSections[i]->area()) / m_meshDensity);
     m_crossSections[i]->buildMesh();
     end = std::chrono::system_clock::now();
     elapsed_seconds = end - start;
@@ -2422,6 +2422,13 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
   generateLogFileHeader(false);
   ofstream log("log.txt", ofstream::app);
 
+  // set mode number to 0 to make sure that it is defined by the maximal cutoff 
+  // frequency when modes are computed
+  for (int i(0); i < m_crossSections.size(); i++)
+  {
+    m_crossSections[i]->setModesNumber(0);
+  }
+
   // compute the coordinates of the transfer function point
   tfPoint = movePointFromExitLandmarkToGeoLandmark(m_simuParams.tfPoint);
   m_simuParams.computeRadiatedField = true;
@@ -3772,7 +3779,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
     m_simuParams.percentageLosses = 0.;
     m_simuParams.wallLosses = false;
     m_simuParams.curved = false;
-    m_maxCutOnFreq = 30000.;
+    m_simuParams.maxCutOnFreq = 30000.;
     m_geometryImported = true; // to have the good bounding box for modes plot
     m_simuParams.sndSpeed = 34400;
 
@@ -3921,7 +3928,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 //    m_simuParams.wallLosses = false;
       //m_simuParams.orderMagnusScheme = 4;
     //m_meshDensity = 15.;
-    //m_maxCutOnFreq = 20000;
+    //m_simuParams.maxCutOnFreq = 20000;
     //m_simuParams.numIntegrationStep = 50;
     m_simuParams.maxComputedFreq = 10000;
     m_simuParams.curved = true;
@@ -3963,7 +3970,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
     m_crossSections[0]->setAreaVariationProfileType(ELEPHANT);
     m_crossSections[0]->setCurvatureRadius(-inRadius);
     m_crossSections[0]->setCurvatureAngle(inAngle);
-    mn = min(100., m_maxCutOnFreq);
+    mn = min(100., m_simuParams.maxCutOnFreq);
     m_crossSections[0]->setModesNumber(mn);
   
     log << "Cross-section created" << endl;
@@ -4153,7 +4160,6 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 
       // Set the proper simulation parameters
       m_geometryImported = true; // to have the good bounding box for modes plot
-      //m_maxCutOnFreq = 1.;
 
       generateLogFileHeader(true);
       log << "Start test scale rad imped" << endl;
@@ -4439,7 +4445,7 @@ CrossSection2d * Acoustic3dSimulation::crossSection(int csIdx) const
 }
 double Acoustic3dSimulation::meshDensity() const { return m_meshDensity; }
 //int Acoustic3dSimulation::modeNumber() const { return m_modeNumber; }
-double Acoustic3dSimulation::maxCutOnFreq() const { return m_maxCutOnFreq; }
+double Acoustic3dSimulation::maxCutOnFreq() const { return m_simuParams.maxCutOnFreq; }
 int Acoustic3dSimulation::numIntegrationStep() const { return m_simuParams.numIntegrationStep; }
 
 // **************************************************************************
@@ -5725,6 +5731,24 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   ofs.close();
 
   return true;
+  log.close();
+}
+
+//*************************************************************************
+
+void Acoustic3dSimulation::importGeometry(VocalTract* tract)
+{
+  ofstream log("log.txt", ofstream::app);
+
+  if (createCrossSections(tract, false))
+  {
+    log << "Geometry successfully imported" << endl;
+  }
+  else
+  {
+    log << "Importation failed" << endl;
+  }
+
   log.close();
 }
 
