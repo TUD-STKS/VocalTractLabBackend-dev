@@ -2280,6 +2280,8 @@ void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
 
   ofstream log("log.txt", ofstream::app);
 
+  log << "lx " << lx << " ly " << ly << endl;
+
   field.resize(nPty, nPtx);
   m_maxAmpField = 0.;
 
@@ -2393,6 +2395,7 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
   inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass
     * pow(m_crossSections[0]->scaleIn(), 3)
     * m_crossSections[0]->area()
+    / m_crossSections[lastSec]->scaleOut()
     ;
   inputPressure = m_crossSections[0]->Zin() * inputVelocity;
 
@@ -3037,75 +3040,79 @@ void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
 
   auto start = std::chrono::system_clock::now();
 
-  // create the cross-sections
-  if (createCrossSections(tract, false))
-  {
-    log << "Geometry successfully imported" << endl;
-  }
-  else
-  {
-    log << "Importation failed" << endl;
-  }
-  numSec = m_crossSections.size();
-  lastSec = numSec - 1;
-  log << "Number of sections: " << numSec << endl;
+  solveWaveProblem(tract, freq, false);
 
-  // Export cross-sections parameters
-  for (int i(0); i < numSec; i++)
-  {
-    log << "\nSection " << i << endl;
-    log << *m_crossSections[i] << endl;
-  }
+  ///////////////////////////////////////////////////////////////////////////////
 
-  // create the mesh and compute modes
-  computeMeshAndModes();
-  log << "Modes computed" << endl;
+  //// create the cross-sections
+  //if (createCrossSections(tract, false))
+  //{
+  //  log << "Geometry successfully imported" << endl;
+  //}
+  //else
+  //{
+  //  log << "Importation failed" << endl;
+  //}
+  //numSec = m_crossSections.size();
+  //lastSec = numSec - 1;
+  //log << "Number of sections: " << numSec << endl;
 
-  // Compute junction matrices
-  computeJunctionMatrices(false);
-  log << "Junction matrices computed " << endl;
+  //// Export cross-sections parameters
+  //for (int i(0); i < numSec; i++)
+  //{
+  //  log << "\nSection " << i << endl;
+  //  log << *m_crossSections[i] << endl;
+  //}
 
-  // generate source matrix
-  Eigen::MatrixXcd inputVelocity(Eigen::MatrixXcd::Zero(
-  m_crossSections[0]->numberOfModes(), 1));
-  Eigen::MatrixXcd inputPressure(Eigen::MatrixXcd::Zero(
-    m_crossSections[0]->numberOfModes(), 1));
-  complex<double> V0(1.0, 0.0);
-  // for a constant input velocity q = -j * w * rho * v 
-  //inputVelocity(0, 0) = -1i * 2. * M_PI * m_simuParams.volumicMass * V0;
-  log << "source generated" << endl;
+  //// create the mesh and compute modes
+  //computeMeshAndModes();
+  //log << "Modes computed" << endl;
 
-  // Compute the radiation impedance and admittance 
-  Eigen::MatrixXcd radImped, radAdmit;
-  int mn(m_crossSections[lastSec]->numberOfModes());
-  switch (m_mouthBoundaryCond)
-  {
-  case RADIATION:
-    radiationImpedance(radImped, freq, 15., lastSec);
-    radAdmit = radImped.inverse();
-    break;
-  case ADMITTANCE_1:
-    radAdmit = Eigen::MatrixXcd::Zero(mn, mn);
-    radAdmit.diagonal().setConstant(complex<double>(
-          pow(m_crossSections[lastSec]->scaleOut(), 2), 0.));
-    //radAdmit.diagonal().setConstant(complex<double>(1., 0.));
-    radImped = radAdmit.inverse();
-  }
-  log << "End impedance computed" << endl;
+  //// Compute junction matrices
+  //computeJunctionMatrices(false);
+  //log << "Junction matrices computed " << endl;
 
-  // propagate impedance and admittance
-  propagateImpedAdmit(radImped, radAdmit, freq, lastSec, 0);
-  log << "Impedance and admittance computed" << endl;
+  //// generate source matrix
+  //Eigen::MatrixXcd inputVelocity(Eigen::MatrixXcd::Zero(
+  //m_crossSections[0]->numberOfModes(), 1));
+  //Eigen::MatrixXcd inputPressure(Eigen::MatrixXcd::Zero(
+  //  m_crossSections[0]->numberOfModes(), 1));
+  //complex<double> V0(1.0, 0.0);
+  //// for a constant input velocity q = -j * w * rho * v 
+  ////inputVelocity(0, 0) = -1i * 2. * M_PI * m_simuParams.volumicMass * V0;
+  //log << "source generated" << endl;
 
-  // propagate velocity and pressure
-  inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass
-    * pow(m_crossSections[0]->scaleIn(), 3)
-    * m_crossSections[0]->area()
-    / m_crossSections.back()->scaleOut()
-    ;
-  inputPressure = m_crossSections[0]->Zin() * inputVelocity;
-  propagateVelocityPress(inputVelocity, inputPressure, freq, 0, lastSec);
-  log << "Pressure and velocity computed" << endl;
+  //// Compute the radiation impedance and admittance 
+  //Eigen::MatrixXcd radImped, radAdmit;
+  //int mn(m_crossSections[lastSec]->numberOfModes());
+  //switch (m_mouthBoundaryCond)
+  //{
+  //case RADIATION:
+  //  radiationImpedance(radImped, freq, 15., lastSec);
+  //  radAdmit = radImped.inverse();
+  //  break;
+  //case ADMITTANCE_1:
+  //  radAdmit = Eigen::MatrixXcd::Zero(mn, mn);
+  //  radAdmit.diagonal().setConstant(complex<double>(
+  //        pow(m_crossSections[lastSec]->scaleOut(), 2), 0.));
+  //  //radAdmit.diagonal().setConstant(complex<double>(1., 0.));
+  //  radImped = radAdmit.inverse();
+  //}
+  //log << "End impedance computed" << endl;
+
+  //// propagate impedance and admittance
+  //propagateImpedAdmit(radImped, radAdmit, freq, lastSec, 0);
+  //log << "Impedance and admittance computed" << endl;
+
+  //// propagate velocity and pressure
+  //inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass
+  //  * pow(m_crossSections[0]->scaleIn(), 3)
+  //  * m_crossSections[0]->area()
+  //  / m_crossSections.back()->scaleOut()
+  //  ;
+  //inputPressure = m_crossSections[0]->Zin() * inputVelocity;
+  //propagateVelocityPress(inputVelocity, inputPressure, freq, 0, lastSec);
+  //log << "Pressure and velocity computed" << endl;
 
   //******************************************************
   // Extract acoustic field
@@ -4424,7 +4431,7 @@ void Acoustic3dSimulation::RayleighSommerfeldIntegral(vector<Point_3> points,
 
           // compute integral
           radPress(p) -= areaFaces[f] * quadPtWeight *
-            Vm(m) * interpolatedModes(f * 3 + g, m) * exp(-1i * k * scaling * r) / r;
+            Vm(m) * interpolatedModes(f * 3 + g, m) * exp(-1i * k * scaling * r) / scaling / r;
         }
       }
     }

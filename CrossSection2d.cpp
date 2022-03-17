@@ -609,7 +609,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
     }
 
     // compute the x and y coordinate of the quadrature points
-    // loop of ver quadrature points
+    // loop over quadrature points
     for (int q(0); q < 3; q++) { Xrs[q] = 0.;  Yrs[q] = 0.; }
     for (int q(0); q < 3; q++)
     {
