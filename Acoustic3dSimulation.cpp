@@ -2395,7 +2395,7 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
   inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass
     * pow(m_crossSections[0]->scaleIn(), 3)
     * m_crossSections[0]->area()
-    / m_crossSections[lastSec]->scaleOut()
+    /// m_crossSections[lastSec]->scaleOut()
     ;
   inputPressure = m_crossSections[0]->Zin() * inputVelocity;
 
