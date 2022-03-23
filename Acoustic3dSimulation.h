@@ -92,14 +92,14 @@ public:
   void propagateImpedAdmitBranch(vector< Eigen::MatrixXcd> Q0, double freq,
     vector<int> startSections, vector<int> endSections, double direction);
   void propagateImpedAdmit(Eigen::MatrixXcd& startImped, Eigen::MatrixXcd& startAdmit, 
-    double freq, int startSection, int endSection, int direction);
+    double freq, int startSection, int endSection, std::chrono::duration<double> *time, int direction);
   void propagateImpedAdmit(Eigen::MatrixXcd& startImped, Eigen::MatrixXcd& startAdmit,
-    double freq, int startSection, int endSection);
+    double freq, int startSection, int endSection, std::chrono::duration<double> *time);
   void propagateAdmit(Eigen::MatrixXcd radImped, double freq);
   void propagateVelocityPress(Eigen::MatrixXcd &startVelocity, Eigen::MatrixXcd &startPressure, 
-    double freq, int startSection, int endSection, int direction);
+    double freq, int startSection, int endSection, std::chrono::duration<double> *time, int direction);
   void propagateVelocityPress(Eigen::MatrixXcd& startVelocity, Eigen::MatrixXcd& startPressure,
-    double freq, int startSection, int endSection);
+    double freq, int startSection, int endSection, std::chrono::duration<double> *time);
   void propagatePressure(Eigen::MatrixXcd startVelocity, double freq);
   //void propagateAcPressure(vector<Eigen::MatrixXcd> inputPressure, double freq);
 
@@ -113,7 +113,8 @@ public:
   bool findSegmentContainingPoint(Point queryPt, int &idxSeg);
   Eigen::VectorXcd acousticField(vector<Point_3> queryPt);
   void acousticFieldInPlane(Eigen::MatrixXcd& field);
-  void solveWaveProblem(VocalTract* tract, double freq, bool precomputeRadImped);
+  void solveWaveProblem(VocalTract* tract, double freq, bool precomputeRadImped,
+    std::chrono::duration<double>& time, std::chrono::duration<double> *timeExp);
   void computeTransferFunction(VocalTract* tract);
   void computeAcousticField(VocalTract* tract);
   void coneConcatenationSimulation(string fileName);

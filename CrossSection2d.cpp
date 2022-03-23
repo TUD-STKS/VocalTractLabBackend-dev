@@ -1697,7 +1697,7 @@ double CrossSection2dFEM::scalingDerivative(double tau)
 // Propagate impedance, admittance, pressure or velocity using the 
 // order 2 or 4 Magnu-Moebius scheme
 void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
-  double freq, double direction, enum physicalQuantity quant)
+  double freq, double direction, enum physicalQuantity quant, std::chrono::duration<double> *time)
 {
   // track time
   auto startTot = std::chrono::system_clock::now();
@@ -1839,7 +1839,8 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         omega = (dX * omega).exp();
 
         end = std::chrono::system_clock::now();
-        matricesMag += end - start;
+        *time += end - start;
+        //*time = *time + matricesMag;
         start = std::chrono::system_clock::now();
 
         break;
