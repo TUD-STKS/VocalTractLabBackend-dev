@@ -324,9 +324,9 @@ void CrossSection2dFEM::buildMesh()
   array<int, 3> tempTri;
   array<int, 2> tempSeg;
 
-  ofstream log("log.txt", ofstream::app);
-  log << "Start build mesh" << endl;
-  log << "spacing " << m_spacing << endl;
+  //ofstream log("log.txt", ofstream::app);
+  //log << "Start build mesh" << endl;
+  //log << "spacing " << m_spacing << endl;
 
   m_mesh.clear();
   m_mesh.insert_constraint(m_contour.vertices_begin(), m_contour.vertices_end(), true);
@@ -381,7 +381,7 @@ void CrossSection2dFEM::buildMesh()
       m_triangles.push_back(tempTri);
     }
   }
-  log.close();
+  //log.close();
 }
 
 // ****************************************************************************
@@ -1717,6 +1717,7 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
 
   //ofstream log("log.txt", ofstream::app);
   //log << "Start propagate magnus, numX " << numX << endl;
+  //log << "mn " << mn << endl;
 
   if (m_length == 0.)
   {
@@ -1823,7 +1824,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         {
           K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
         }
-        //K2 += 1i * k * KR2;
         K2 += 1i * k * l0 * KR2;
 
         // build matrix A0
@@ -1930,6 +1930,7 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
 
           break;
         }
+
       // compute the propagated quantity at the next point
       switch (quant)
       {
