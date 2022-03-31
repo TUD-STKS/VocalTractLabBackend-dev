@@ -2530,6 +2530,7 @@ bool GesturalScore::setGestureDuration(int gestureType, int gestureIndex, double
 	}
 	auto* g = s->getGesture(gestureIndex);
 	g->duration_s = newDuration_s;
+	return true;
 }
 
 bool GesturalScore::setGestureNeutral(int gestureType, int gestureIndex, double isNeutral)
@@ -2664,6 +2665,24 @@ int GesturalScore::insertGesture(int gestureType, double insertPos_s, int gestur
 	}
 }
 
+bool GesturalScore::setGestureValue(int gestureType, int gestureIndex, std::string newVal)
+{
+	if ((gestureType < 0) || (gestureType >= GesturalScore::NUM_GESTURE_TYPES))
+	{
+		return false;
+	}
+	GestureSequence* s = &gestures[gestureType];
+
+	if (!s->isValidIndex(gestureIndex))
+	{
+		return false;
+	}
+
+	auto* g = s->getGesture(gestureIndex);
+	g->sVal = newVal;
+	return true;
+}
+
 bool GesturalScore::changeTargetValue(int gestureType, int gestureIndex, double delta)
 {
 	if ((gestureType < 0) || (gestureType >= GesturalScore::NUM_GESTURE_TYPES))
@@ -2680,6 +2699,7 @@ bool GesturalScore::changeTargetValue(int gestureType, int gestureIndex, double 
 	auto* g = s->getGesture(gestureIndex);
 	g->dVal -= delta;
 	gestures[gestureType].limitGestureParams(*g);
+	return true;
 }
 
 
