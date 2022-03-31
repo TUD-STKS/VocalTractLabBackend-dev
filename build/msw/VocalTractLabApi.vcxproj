@@ -26,6 +26,7 @@
     <ClCompile Include="..\..\src\VocalTractLabBackend\GeometricGlottis.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\Geometry.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\GesturalScore.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\GesturalScoreWithHistory.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\Glottis.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\GlottisFactory.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\IirFilter.cpp" />
@@ -94,6 +95,7 @@
     <ClInclude Include="..\..\include\VocalTractLabBackend\XmlExceptions.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\XmlHelper.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\XmlNode.h" />
+    <ClInclude Include="..\..\src\VocalTractLabBackend\GesturalScoreWithHistory.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A9B93E13-A27D-42B6-BE82-7B564A6071BA}</ProjectGuid>

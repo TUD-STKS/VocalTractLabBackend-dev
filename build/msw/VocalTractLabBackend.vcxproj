@@ -25,6 +25,7 @@
     <ClCompile Include="..\..\src\VocalTractLabBackend\GeometricGlottis.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\Geometry.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\GesturalScore.cpp" />
+    <ClCompile Include="..\..\src\VocalTractLabBackend\GesturalScoreWithHistory.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\Glottis.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\GlottisFactory.cpp" />
     <ClCompile Include="..\..\src\VocalTractLabBackend\IirFilter.cpp" />
@@ -61,6 +62,7 @@
     <ClInclude Include="..\..\include\VocalTractLabBackend\GeometricGlottis.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\Geometry.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\GesturalScore.h" />
+    <ClInclude Include="..\..\include\VocalTractLabBackend\GesturalScoreWithHistory.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\Glottis.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\GlottisFactory.h" />
     <ClInclude Include="..\..\include\VocalTractLabBackend\IirFilter.h" />

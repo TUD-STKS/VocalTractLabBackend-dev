@@ -102,13 +102,16 @@
     <ClCompile Include="..\..\src\VocalTractLabBackend\XmlHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\VocalTractLabBackend\XmlNode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\VocalTractLabBackend\Speaker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\VocalTractLabBackend\GlottisFactory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\XmlNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\GesturalScoreWithHistory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -126,9 +129,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\VocalTractLabBackend\Geometry.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\VocalTractLabBackend\GesturalScore.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\VocalTractLabBackend\Glottis.h">
@@ -209,9 +209,6 @@
     <ClInclude Include="..\..\include\VocalTractLabBackend\XmlHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\VocalTractLabBackend\XmlNode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\VocalTractLabBackend\AnatomyParams.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -222,6 +219,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\VocalTractLabBackend\Speaker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\VocalTractLabBackend\XmlNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\VocalTractLabBackend\GesturalScore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\VocalTractLabBackend\GesturalScoreWithHistory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

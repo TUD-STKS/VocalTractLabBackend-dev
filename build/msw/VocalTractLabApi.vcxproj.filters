@@ -94,15 +94,16 @@
     <ClCompile Include="..\..\src\VocalTractLabBackend\XmlHelper.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\VocalTractLabBackend\XmlNode.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\VocalTractLabBackend\GlottisFactory.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\VocalTractLabBackend\Speaker.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\XmlNode.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\VocalTractLabBackend\GesturalScoreWithHistory.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\src\VocalTractLabApi\VocalTractLabApi.def" />
@@ -210,14 +211,15 @@
     <ClInclude Include="..\..\include\VocalTractLabBackend\XmlHelper.h">
       <Filter>Sources</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\VocalTractLabBackend\XmlNode.h">
-      <Filter>Sources</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\VocalTractLabBackend\GlottisFactory.h">
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\VocalTractLabBackend\Speaker.h">
       <Filter>Sources</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\VocalTractLabBackend\XmlNode.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\VocalTractLabBackend\GesturalScoreWithHistory.h" />
   </ItemGroup>
 </Project>
