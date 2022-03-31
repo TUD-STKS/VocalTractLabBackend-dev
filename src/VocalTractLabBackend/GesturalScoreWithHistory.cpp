@@ -127,6 +127,18 @@ bool GesturalScoreWithHistory::setGestureDuration(int gestureType, int gestureIn
 	return success;
 }
 
+bool GesturalScoreWithHistory::setGestureNeutral(int gestureType, int gestureIndex, double isNeutral)
+{
+	const bool success = AddOperation()->setGestureNeutral(gestureType, gestureIndex, isNeutral);
+	if (!success)
+	{
+		// Nothing was changed so don't keep a record
+		history_.pop_back();
+		current_ = history_.end() - 1;
+	}
+	return success;
+}
+
 bool GesturalScoreWithHistory::loadGesturesXml(const string& fileName, bool& allValuesInRange)
 {
 	return AddOperation()->loadGesturesXml(fileName, allValuesInRange);

@@ -182,7 +182,7 @@ public:
   int insertGesture(int gestureType, double insertPos_s, int gestureIndex);
 
   bool setGestureDuration(int gestureType, int gestureIndex, double newDuration_s);
-
+  bool setGestureNeutral(int gestureType, int gestureIndex, double isNeutral);
 
   bool loadGesturesXml(const string &fileName, bool &allValuesInRange);
   bool saveGesturesXml(const string &fileName);
