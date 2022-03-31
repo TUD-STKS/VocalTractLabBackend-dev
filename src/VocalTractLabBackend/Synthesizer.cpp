@@ -293,8 +293,8 @@ void Synthesizer::synthesizeGesturalScore(GesturalScore *gesturalScore,
 {
   int i;
   vector<double> signalPart;
-  Glottis *glottis = gesturalScore->glottis;
-  VocalTract *vocalTract = gesturalScore->vocalTract;
+  Glottis *glottis = gesturalScore->getGlottis();
+  VocalTract *vocalTract = gesturalScore->getVocalTract();
   double tractParams[VocalTract::NUM_PARAMS];
   double glottisParams[Glottis::MAX_CONTROL_PARAMS];
   int scoreLength_pt = gesturalScore->getDuration_pt();
@@ -772,7 +772,7 @@ bool Synthesizer::gesturalScoreToTractSequenceFile(GesturalScore *gesturalScore,
   int i, k;
   double tractParams[VocalTract::NUM_PARAMS];
   double glottisParams[Glottis::MAX_CONTROL_PARAMS];
-  int numGlottisParams = (int)gesturalScore->glottis->controlParam.size();
+  int numGlottisParams = (int)gesturalScore->getGlottis()->controlParam.size();
   int scoreLength_pt = gesturalScore->getDuration_pt();
   int numStates = (int)(scoreLength_pt / NUM_CHUNCK_SAMPLES) + 2;
   double pos_s = 0.0;
@@ -795,7 +795,7 @@ bool Synthesizer::gesturalScoreToTractSequenceFile(GesturalScore *gesturalScore,
   file << "#" << endl;
 
   // Write the name of the glottis model.
-  file << gesturalScore->glottis->getName() << endl;
+  file << gesturalScore->getGlottis()->getName() << endl;
 
   // Write the number of states.
   file << numStates << endl;
@@ -846,7 +846,7 @@ bool Synthesizer::gesturalScoreToTubeSequenceFile(GesturalScore *gesturalScore, 
   int i, k;
   double tractParams[VocalTract::NUM_PARAMS];
   double glottisParams[Glottis::MAX_CONTROL_PARAMS];
-  int numGlottisParams = (int)gesturalScore->glottis->controlParam.size();
+  int numGlottisParams = (int)gesturalScore->getGlottis()->controlParam.size();
   int scoreLength_pt = gesturalScore->getDuration_pt();
   int numStates = (int)(scoreLength_pt / NUM_CHUNCK_SAMPLES) + 2;
   double pos_s = 0.0;
@@ -864,7 +864,7 @@ bool Synthesizer::gesturalScoreToTubeSequenceFile(GesturalScore *gesturalScore, 
   // Save the current state of the vocal tract.
   // ****************************************************************
 
-  gesturalScore->vocalTract->storeControlParams();
+  gesturalScore->getVocalTract()->storeControlParams();
 
   // ****************************************************************
   // Write some header data into the file.
@@ -882,7 +882,7 @@ bool Synthesizer::gesturalScoreToTubeSequenceFile(GesturalScore *gesturalScore, 
   file << "#" << endl;
 
   // Write the name of the glottis model.
-  file << gesturalScore->glottis->getName() << endl;
+  file << gesturalScore->getGlottis()->getName() << endl;
 
   // Write the number of states.
   file << numStates << endl;
@@ -911,12 +911,12 @@ bool Synthesizer::gesturalScoreToTubeSequenceFile(GesturalScore *gesturalScore, 
 
     for (k = 0; k < VocalTract::NUM_PARAMS; k++)
     {
-      gesturalScore->vocalTract->param[k].x = tractParams[k];
+      gesturalScore->getVocalTract()->param[k].x = tractParams[k];
     }
-    gesturalScore->vocalTract->calculateAll();
+    gesturalScore->getVocalTract()->calculateAll();
 
     // Transform the vocal tract model into a tube.
-    gesturalScore->vocalTract->getTube(&tube);
+    gesturalScore->getVocalTract()->getTube(&tube);
 
     // Write the new parameters to the file
 
@@ -952,7 +952,7 @@ bool Synthesizer::gesturalScoreToTubeSequenceFile(GesturalScore *gesturalScore, 
   // Restore the current state of the vocal tract.
   // ****************************************************************
 
-  gesturalScore->vocalTract->restoreControlParams();
+  gesturalScore->getVocalTract()->restoreControlParams();
 
   // Close the file.
   file.close();

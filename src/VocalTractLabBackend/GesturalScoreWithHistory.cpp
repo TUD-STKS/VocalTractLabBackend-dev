@@ -6,6 +6,37 @@ GesturalScoreWithHistory::GesturalScoreWithHistory(VocalTract* vocalTract, Glott
 	current_ = history_.begin();
 }
 
+std::vector<GesturalScore>::iterator GesturalScoreWithHistory::get() const
+{
+	return current_;
+}
+
+bool GesturalScoreWithHistory::CanUndo() const
+{
+	return current_ - history_.begin() > 0;
+}
+
+bool GesturalScoreWithHistory::CanRedo() const
+{
+	return current_ < history_.end() - 1;
+}
+
+void GesturalScoreWithHistory::Undo()
+{
+	if(CanUndo())
+	{
+		--current_;
+	}
+}
+
+void GesturalScoreWithHistory::Redo()
+{
+	if (CanRedo())
+	{
+		++current_;
+	}
+}
+
 void GesturalScoreWithHistory::clear()
 {
 	AddOperation()->clear();
@@ -40,6 +71,24 @@ void GesturalScoreWithHistory::addVelicOpeningGesture(double openingBegin_s, dou
 bool GesturalScoreWithHistory::hasVelicOpening(double gestureBegin_s, double gestureEnd_s, double testTime_s) const
 {
 	return current_->hasVelicOpening(gestureBegin_s, gestureEnd_s, testTime_s);
+}
+
+bool GesturalScoreWithHistory::deleteGesture(int gestureType, int gestureIndex)
+{
+	const bool success = AddOperation()->deleteGesture(gestureType, gestureIndex);
+	if (!success)
+	{
+		// Nothing was changed so don't keep a record
+		history_.pop_back();
+		current_ = history_.end() - 1;
+	}
+	return success;
+}
+
+int GesturalScoreWithHistory::insertGesture(int gestureType, double insertPos_s,
+                                            int gestureIndex)
+{
+	return AddOperation()->insertGesture(gestureType, insertPos_s, gestureIndex);
 }
 
 bool GesturalScoreWithHistory::loadGesturesXml(const string& fileName, bool& allValuesInRange)
@@ -105,6 +154,51 @@ void GesturalScoreWithHistory::changeDuration(double factor)
 void GesturalScoreWithHistory::changeTimeConstants(double factor)
 {
 	AddOperation()->changeTimeConstants(factor);
+}
+
+GestureSequence* GesturalScoreWithHistory::getGestures() const
+{
+	return current_->getGestures();
+}
+
+Glottis* GesturalScoreWithHistory::getGlottis() const
+{
+	return current_->getGlottis();
+}
+
+void GesturalScoreWithHistory::setGlottis(Glottis* newGlottis)
+{
+	AddOperation()->setGlottis(newGlottis);
+}
+
+VocalTract* GesturalScoreWithHistory::getVocalTract() const
+{
+	return current_->getVocalTract();
+}
+
+void GesturalScoreWithHistory::setVocalTract(VocalTract* newVocalTract)
+{
+	AddOperation()->setVocalTract(newVocalTract);
+}
+
+vector<Target>* GesturalScoreWithHistory::getTractParamTargets()
+{
+	return current_->getTractParamTargets();
+}
+
+vector<Target>* GesturalScoreWithHistory::getGlottisParamTargets()
+{
+	return current_->getGlottisParamTargets();
+}
+
+vector<double>* GesturalScoreWithHistory::getTractParamCurve()
+{
+	return current_->getTractParamCurve();
+}
+
+vector<double>* GesturalScoreWithHistory::getGlottisParamCurve()
+{
+	return current_->getGlottisParamCurve();
 }
 
 void GesturalScoreWithHistory::getTube(Tube& tube) const

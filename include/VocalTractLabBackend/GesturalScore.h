@@ -156,17 +156,6 @@ public:
     NUM_GESTURE_TYPES
   };
 
-  GestureSequence gestures[NUM_GESTURE_TYPES];
-  vector<Target> tractParamTargets[VocalTract::NUM_PARAMS];
-  vector<Target> glottisParamTargets[Glottis::MAX_CONTROL_PARAMS];
-  vector<double> tractParamCurve[VocalTract::NUM_PARAMS];
-  vector<double> glottisParamCurve[Glottis::MAX_CONTROL_PARAMS];
-
-  // The objects associated with these pointers are not administrated
-  // by this class.
-  VocalTract *vocalTract;
-  Glottis *glottis;
-
   // **************************************************************************
   // Public functions.
   // **************************************************************************
@@ -186,6 +175,9 @@ public:
   
   void addVelicOpeningGesture(double openingBegin_s, double openingEnd_s);
   bool hasVelicOpening(double gestureBegin_s, double gestureEnd_s, double testTime_s);
+
+  bool deleteGesture(int gestureType, int gestureIndex);
+  int insertGesture(int gestureType, double insertPos_s, int gestureIndex);
 
   bool loadGesturesXml(const string &fileName, bool &allValuesInRange);
   bool saveGesturesXml(const string &fileName);
@@ -224,6 +216,17 @@ public:
   static double getF0_st(double freq_Hz);
   static double getF0_Hz(double freq_st);
 
+  GestureSequence* getGestures();
+  Glottis* getGlottis() const;
+  void setGlottis(Glottis* newGlottis);
+  VocalTract* getVocalTract() const;
+  void setVocalTract(VocalTract* newVocalTract);
+
+  vector<Target>* getTractParamTargets();
+  vector<Target>* getGlottisParamTargets();
+  vector<double>* getTractParamCurve();
+  vector<double>* getGlottisParamCurve();
+
   // **************************************************************************
   // Overwritten functions of the interface class.
   // **************************************************************************
@@ -248,6 +251,17 @@ private:
   int leftTubeIndex;
   vector<double> inputSignal;
   vector<double> tauSignal;
+
+  GestureSequence gestures[NUM_GESTURE_TYPES];
+  vector<Target> tractParamTargets[VocalTract::NUM_PARAMS];
+  vector<Target> glottisParamTargets[Glottis::MAX_CONTROL_PARAMS];
+  vector<double> tractParamCurve[VocalTract::NUM_PARAMS];
+  vector<double> glottisParamCurve[Glottis::MAX_CONTROL_PARAMS];
+
+  // The objects associated with these pointers are not administrated
+  // by this class.
+  VocalTract* vocalTract;
+  Glottis* glottis;
 
   // **************************************************************************
   // Private functions.

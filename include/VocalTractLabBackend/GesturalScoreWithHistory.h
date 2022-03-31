@@ -31,6 +31,7 @@ class GesturalScoreWithHistory
 {
 public:
 	// Constructors
+	GesturalScoreWithHistory() = default;
 	GesturalScoreWithHistory(VocalTract* vocalTract, Glottis* glottis);
 	// Copy and move constructors
 	GesturalScoreWithHistory(const GesturalScoreWithHistory& other) = default;
@@ -38,6 +39,14 @@ public:
 	// Destructors
 	~GesturalScoreWithHistory() = default;
 
+	// Get the current gestural score
+	std::vector<GesturalScore>::iterator get() const;
+
+	bool CanUndo() const;
+	bool CanRedo() const;
+
+	void Undo();
+	void Redo();
 
 	/*
 	 * Facade for GesturalScore interface
@@ -53,6 +62,9 @@ public:
 
 	void addVelicOpeningGesture(double openingBegin_s, double openingEnd_s);
 	bool hasVelicOpening(double gestureBegin_s, double gestureEnd_s, double testTime_s) const;
+
+	bool deleteGesture(int gestureType, int gestureIndex);
+	int insertGesture(int gestureType, double insertPos_s, int gestureIndex);
 
 	bool loadGesturesXml(const string& fileName, bool& allValuesInRange);
 	bool saveGesturesXml(const string& fileName) const;
@@ -72,7 +84,18 @@ public:
 
 	void changeDuration(double factor);
 	void changeTimeConstants(double factor);
-	
+
+	GestureSequence* getGestures() const;
+	Glottis* getGlottis() const;
+	void setGlottis(Glottis* newGlottis);
+	VocalTract* getVocalTract() const;
+	void setVocalTract(VocalTract* newVocalTract);
+
+	vector<Target>* getTractParamTargets();
+	vector<Target>* getGlottisParamTargets();
+	vector<double>* getTractParamCurve();
+	vector<double>* getGlottisParamCurve();
+
 	// **************************************************************************
 	// Overwritten functions of the interface class.
 	// **************************************************************************
