@@ -182,6 +182,7 @@ public:
   int insertGesture(int gestureType, double insertPos_s, int gestureIndex);
 
   bool setGestureValue(int gestureType, int gestureIndex, std::string newVal);
+  bool setGestureValue(int gestureType, int gestureIndex, double newVal);
   bool setGestureDuration(int gestureType, int gestureIndex, double newDuration_s);
   bool setGestureNeutral(int gestureType, int gestureIndex, double isNeutral);
 

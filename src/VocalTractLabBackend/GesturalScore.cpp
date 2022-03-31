@@ -2683,6 +2683,25 @@ bool GesturalScore::setGestureValue(int gestureType, int gestureIndex, std::stri
 	return true;
 }
 
+bool GesturalScore::setGestureValue(int gestureType, int gestureIndex, double newVal)
+{
+	if ((gestureType < 0) || (gestureType >= GesturalScore::NUM_GESTURE_TYPES))
+	{
+		return false;
+	}
+	GestureSequence* s = &gestures[gestureType];
+
+	if (!s->isValidIndex(gestureIndex))
+	{
+		return false;
+	}
+
+	auto* g = s->getGesture(gestureIndex);
+	g->dVal = newVal;
+	s->limitGestureParams(*g);
+	return true;
+}
+
 bool GesturalScore::changeTargetValue(int gestureType, int gestureIndex, double delta)
 {
 	if ((gestureType < 0) || (gestureType >= GesturalScore::NUM_GESTURE_TYPES))
