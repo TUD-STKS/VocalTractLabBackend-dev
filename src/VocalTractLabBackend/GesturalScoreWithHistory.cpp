@@ -115,6 +115,18 @@ int GesturalScoreWithHistory::insertGesture(int gestureType, double insertPos_s,
 	return AddOperation()->insertGesture(gestureType, insertPos_s, gestureIndex);
 }
 
+bool GesturalScoreWithHistory::setGestureDuration(int gestureType, int gestureIndex, double newDuration_s)
+{
+	const bool success = AddOperation()->setGestureDuration(gestureType, gestureIndex, newDuration_s);
+	if (!success)
+	{
+		// Nothing was changed so don't keep a record
+		history_.pop_back();
+		current_ = history_.end() - 1;
+	}
+	return success;
+}
+
 bool GesturalScoreWithHistory::loadGesturesXml(const string& fileName, bool& allValuesInRange)
 {
 	return AddOperation()->loadGesturesXml(fileName, allValuesInRange);

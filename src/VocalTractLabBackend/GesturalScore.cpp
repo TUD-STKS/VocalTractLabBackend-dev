@@ -2516,6 +2516,22 @@ bool GesturalScore::hasVelicOpening(double gestureBegin_s, double gestureEnd_s, 
 	return hasOpening;
 }
 
+bool GesturalScore::setGestureDuration(int gestureType, int gestureIndex, double newDuration_s)
+{
+	if ((gestureType < 0) || (gestureType >= GesturalScore::NUM_GESTURE_TYPES))
+	{
+		return false;
+	}
+	GestureSequence* s = &gestures[gestureType];
+
+	if (!s->isValidIndex(gestureIndex))
+	{
+		return false;
+	}
+	auto* g = s->getGesture(gestureIndex);
+	g->duration_s = newDuration_s;
+}
+
 bool GesturalScore::changeGestureEnd(int gestureType, int gestureIndex, double newEnd_s, bool stretchNextGesture)
 {
 	if ((gestureType < 0) || (gestureType >= GesturalScore::NUM_GESTURE_TYPES))

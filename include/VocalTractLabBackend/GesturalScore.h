@@ -181,6 +181,7 @@ public:
   bool deleteGesture(int gestureType, int gestureIndex);
   int insertGesture(int gestureType, double insertPos_s, int gestureIndex);
 
+  bool setGestureDuration(int gestureType, int gestureIndex, double newDuration_s);
 
 
   bool loadGesturesXml(const string &fileName, bool &allValuesInRange);
