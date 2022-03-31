@@ -73,6 +73,30 @@ bool GesturalScoreWithHistory::hasVelicOpening(double gestureBegin_s, double ges
 	return current_->hasVelicOpening(gestureBegin_s, gestureEnd_s, testTime_s);
 }
 
+bool GesturalScoreWithHistory::changeGestureEnd(int gestureType, int gestureIndex, double newEnd_s, bool stretchNextGesture)
+{
+	const bool success = AddOperation()->changeGestureEnd(gestureType, gestureIndex, newEnd_s, stretchNextGesture);
+	if (!success)
+	{
+		// Nothing was changed, so don't keep a record
+		history_.pop_back();
+		current_ = history_.end() - 1;
+	}
+	return success;
+}
+
+bool GesturalScoreWithHistory::changeTargetValue(int gestureType, int gestureIndex, double delta)
+{
+	const bool success = AddOperation()->changeTargetValue(gestureType, gestureIndex, delta);
+	if (!success)
+	{
+		// Nothing was changed, so don't keep a record
+		history_.pop_back();
+		current_ = history_.end() - 1;
+	}
+	return success;
+}
+
 bool GesturalScoreWithHistory::deleteGesture(int gestureType, int gestureIndex)
 {
 	const bool success = AddOperation()->deleteGesture(gestureType, gestureIndex);

@@ -176,8 +176,12 @@ public:
   void addVelicOpeningGesture(double openingBegin_s, double openingEnd_s);
   bool hasVelicOpening(double gestureBegin_s, double gestureEnd_s, double testTime_s);
 
+  bool changeGestureEnd(int gestureType, int gestureIndex, double newEnd_s, bool stretchNextGesture);
+  bool changeTargetValue(int gestureType, int gestureIndex, double delta);
   bool deleteGesture(int gestureType, int gestureIndex);
   int insertGesture(int gestureType, double insertPos_s, int gestureIndex);
+
+
 
   bool loadGesturesXml(const string &fileName, bool &allValuesInRange);
   bool saveGesturesXml(const string &fileName);

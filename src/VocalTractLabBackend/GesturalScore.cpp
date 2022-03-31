@@ -2516,6 +2516,60 @@ bool GesturalScore::hasVelicOpening(double gestureBegin_s, double gestureEnd_s, 
 	return hasOpening;
 }
 
+bool GesturalScore::changeGestureEnd(int gestureType, int gestureIndex, double newEnd_s, bool stretchNextGesture)
+{
+	if ((gestureType < 0) || (gestureType >= GesturalScore::NUM_GESTURE_TYPES))
+	{
+		return false;
+	}
+	GestureSequence* s = &gestures[gestureType];
+
+	if (!s->isValidIndex(gestureIndex))
+	{
+		return false;
+	}
+	auto* g = s->getGesture(gestureIndex);
+	const auto begin_s = s->getGestureBegin_s(gestureIndex);
+
+	if (stretchNextGesture && s->numGestures() > gestureIndex + 1)
+	{
+		// Shrink or expand the next gesture
+		Gesture* nextGesture = s->getGesture(gestureIndex + 1);
+		const double gesturePos_s = s->getGestureBegin_s(gestureIndex);
+		const double EPSILON = 0.001;     // = 1 ms
+
+		if (newEnd_s < gesturePos_s + EPSILON)
+		{
+			newEnd_s = gesturePos_s + EPSILON;
+		}
+
+		if (newEnd_s > gesturePos_s + g->duration_s + nextGesture->duration_s - EPSILON)
+		{
+			newEnd_s = gesturePos_s + g->duration_s + nextGesture->duration_s - EPSILON;
+		}
+
+		if (newEnd_s < gesturePos_s)
+		{
+			newEnd_s = gesturePos_s;
+		}
+
+		const double deltaPos_s = newEnd_s - (gesturePos_s + g->duration_s);
+		g->duration_s += deltaPos_s;
+		nextGesture->duration_s -= deltaPos_s;
+		return true;
+	}
+
+	if (begin_s < newEnd_s)
+	{
+		g->duration_s = newEnd_s - begin_s;
+		s->limitGestureParams(*g);
+		return true;
+	}
+
+	return false;
+
+}
+
 bool GesturalScore::deleteGesture(int gestureType, int gestureIndex)
 {
 	GestureSequence* sequence = &gestures[gestureType];
@@ -2575,6 +2629,24 @@ int GesturalScore::insertGesture(int gestureType, double insertPos_s, int gestur
 
 		return sequence->numGestures() - 1;
 	}
+}
+
+bool GesturalScore::changeTargetValue(int gestureType, int gestureIndex, double delta)
+{
+	if ((gestureType < 0) || (gestureType >= GesturalScore::NUM_GESTURE_TYPES))
+	{
+		return false;
+	}
+	GestureSequence* s = &gestures[gestureType];
+
+	if (!s->isValidIndex(gestureIndex))
+	{
+		return false;
+	}
+
+	auto* g = s->getGesture(gestureIndex);
+	g->dVal -= delta;
+	gestures[gestureType].limitGestureParams(*g);
 }
 
 
