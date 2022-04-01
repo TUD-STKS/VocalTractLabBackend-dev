@@ -69,6 +69,7 @@ public:
 	int insertGesture(int gestureType, double insertPos_s, int gestureIndex);
 
 	bool setGestureSlope(int gestureType, int gestureIndex, double slope);
+	bool setGestureTimeConstant(int gestureType, int gestureIndex, double timeConstant);
 	bool setGestureValue(int gestureType, int gestureIndex, std::string newVal);
 	bool setGestureValue(int gestureType, int gestureIndex, double newVal);
 	bool setGestureDuration(int gestureType, int gestureIndex, double newDuration_s);

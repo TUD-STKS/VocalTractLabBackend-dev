@@ -127,6 +127,18 @@ bool GesturalScoreWithHistory::setGestureSlope(int gestureType, int gestureIndex
 	return success;
 }
 
+bool GesturalScoreWithHistory::setGestureTimeConstant(int gestureType, int gestureIndex, double timeConstant)
+{
+	const bool success = AddOperation()->setGestureTimeConstant(gestureType, gestureIndex, timeConstant);
+	if (!success)
+	{
+		// Nothing was changed so don't keep a record
+		history_.pop_back();
+		current_ = history_.end() - 1;
+	}
+	return success;
+}
+
 bool GesturalScoreWithHistory::setGestureValue(int gestureType, int gestureIndex, std::string newVal)
 {
 	const bool success = AddOperation()->setGestureValue(gestureType, gestureIndex, newVal);
