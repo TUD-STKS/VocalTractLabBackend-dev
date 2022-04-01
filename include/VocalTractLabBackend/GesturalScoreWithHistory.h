@@ -125,6 +125,7 @@ public:
 
 private:
 	[[nodiscard]] std::vector<GesturalScore>::iterator AddOperation();
+	void LimitHistory();
 	void ResetHistory();
 
 private:
