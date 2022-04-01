@@ -17,6 +17,7 @@ set(BackendSources
  src/VocalTractLabBackend/GeometricGlottis.cpp 
  src/VocalTractLabBackend/Geometry.cpp 
  src/VocalTractLabBackend/GesturalScore.cpp 
+ src/VocalTractLabBackend/GesturalScoreWithHistory.cpp 
  src/VocalTractLabBackend/Glottis.cpp 
  src/VocalTractLabBackend/GlottisFactory.cpp 
  src/VocalTractLabBackend/IirFilter.cpp 
