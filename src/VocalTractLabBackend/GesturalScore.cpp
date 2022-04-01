@@ -2678,7 +2678,12 @@ bool GesturalScore::setGestureSlope(int gestureType, int gestureIndex, double sl
 		return false;
 	}
 	auto* g = s->getGesture(gestureIndex);
-	g->slope = s->minSlope + slope * (s->maxSlope - s->minSlope);
+	const auto newSlope = s->minSlope + slope * (s->maxSlope - s->minSlope);
+	if (abs(newSlope - g->slope) < 0.0001)
+	{
+		return false;
+	}
+	g->slope = newSlope;
 	return true;
 }
 
@@ -2695,7 +2700,12 @@ bool GesturalScore::setGestureTimeConstant(int gestureType, int gestureIndex, do
 		return false;
 	}
 	auto* g = s->getGesture(gestureIndex);
-	g->tau_s = s->minTau_s + timeConstant * (s->maxTau_s - s->minTau_s);
+	const auto newTau = s->minTau_s + timeConstant * (s->maxTau_s - s->minTau_s);
+	if(abs(newTau - g->tau_s) < 0.0001)
+	{
+		return false;
+	}
+	g->tau_s = newTau;
 	return true;
 }
 
