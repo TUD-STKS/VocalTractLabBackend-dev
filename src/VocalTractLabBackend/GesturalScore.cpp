@@ -2665,6 +2665,23 @@ int GesturalScore::insertGesture(int gestureType, double insertPos_s, int gestur
 	}
 }
 
+bool GesturalScore::setGestureSlope(int gestureType, int gestureIndex, double slope)
+{
+	if ((gestureType < 0) || (gestureType >= GesturalScore::NUM_GESTURE_TYPES))
+	{
+		return false;
+	}
+	GestureSequence* s = &gestures[gestureType];
+
+	if (!s->isValidIndex(gestureIndex) || s->minSlope >= s->maxSlope)
+	{
+		return false;
+	}
+	auto* g = s->getGesture(gestureIndex);
+	g->slope = s->minSlope + slope * (s->maxSlope - s->minSlope);
+	return true;
+}
+
 bool GesturalScore::setGestureValue(int gestureType, int gestureIndex, std::string newVal)
 {
 	if ((gestureType < 0) || (gestureType >= GesturalScore::NUM_GESTURE_TYPES))
