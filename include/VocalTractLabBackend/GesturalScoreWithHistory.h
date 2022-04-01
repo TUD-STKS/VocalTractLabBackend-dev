@@ -42,6 +42,10 @@ public:
 	// Get the current gestural score
 	std::vector<GesturalScore>::iterator get() const;
 
+	size_t GetHistorySize() const;
+	size_t GetMaxHistorySize() const;
+	bool SetMaxHistorySize(size_t newMaxHistorySize);
+
 	bool CanUndo() const;
 	bool CanRedo() const;
 
@@ -127,6 +131,8 @@ private:
 	// Memento design pattern: Keep a history of instances of the tracked object
 	std::vector<GesturalScore> history_;
 	std::vector<GesturalScore>::iterator current_;
+	size_t maxHistorySize_{10};
+
 
 
 

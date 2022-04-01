@@ -11,6 +11,24 @@ std::vector<GesturalScore>::iterator GesturalScoreWithHistory::get() const
 	return current_;
 }
 
+size_t GesturalScoreWithHistory::GetHistorySize() const
+{
+	return history_.size();
+}
+
+size_t GesturalScoreWithHistory::GetMaxHistorySize() const
+{
+	return maxHistorySize_;
+}
+
+bool GesturalScoreWithHistory::SetMaxHistorySize(size_t newMaxHistorySize)
+{
+	if (newMaxHistorySize == 0) { return false; }
+
+	maxHistorySize_ = newMaxHistorySize;
+	return true;
+}
+
 bool GesturalScoreWithHistory::CanUndo() const
 {
 	return current_ - history_.begin() > 0;
@@ -337,6 +355,12 @@ std::vector<GesturalScore>::iterator GesturalScoreWithHistory::AddOperation()
 {
 	// First remove all steps from current position to end of vector
 	history_.erase(current_ + 1, history_.end());
+	// Limit the size of the history to save RAM usage
+	if (history_.size() > maxHistorySize_)
+	{
+		const auto numExcessItems = history_.size() - maxHistorySize_;
+		history_.erase(history_.begin(), history_.begin() + numExcessItems);
+	}
 	// Then add a copy of the last state
 	history_.emplace_back(*current_);
 	current_ = history_.end() - 1;	
