@@ -6840,10 +6840,10 @@ bool VocalTract::exportTractContourSvg(const string &fileName, bool addCenterLin
   // Write the "header and open the svg- and the group element.
 
   os << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << endl;
-  os << "<svg width=\"720\" height=\"576\" viewBox=\"-170 -100 500 400\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">" << endl;
+  os << "<svg width=\"768\" height=\"576\" viewBox=\"-170 -90 520 390\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">" << endl;
   indent += 2;
 
-  os << string(indent, ' ') << "<rect x=\"-170\" y=\"-100\" width=\"100%\" height=\"100%\" fill=\"white\" />" << endl;
+  os << string(indent, ' ') << "<rect x=\"-170\" y=\"-90\" width=\"100%\" height=\"100%\" fill=\"white\" />" << endl;
 
   os << string(indent, ' ') << "<g>" << endl;
   indent += 2;
