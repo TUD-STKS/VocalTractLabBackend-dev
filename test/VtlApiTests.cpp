@@ -25,7 +25,7 @@ TEST(ApiTest, Version)
 	char version[64];
 	vtlGetVersion(version);
 	std::string s(version);
-	EXPECT_EQ(s, std::string("API 2.4.1 ") + std::string(__DATE__));
+	EXPECT_EQ(s, std::string("API 2.4.2 ") + std::string(__DATE__));
 }
 
 TEST(ApiTest, Constants)
