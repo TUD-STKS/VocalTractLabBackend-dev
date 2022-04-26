@@ -416,6 +416,10 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   log << "max x " << m_simuParams.bboxField[1].x() << endl;
   log << "min y " << m_simuParams.bboxField[0].y() << endl;
   log << "max y " << m_simuParams.bboxField[1].y() << endl;
+  if (m_simuParams.computeRadiatedField)
+  {
+    log << "Compute radiated field" << endl;
+  }
   log << endl;
   log.close();
 }
