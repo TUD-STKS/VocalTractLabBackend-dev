@@ -41,6 +41,11 @@ enum testType {
     SCALE_RAD_IMP
 };
 
+enum tfType {
+  GLOTTAL,
+  NOISE
+};
+
 class Acoustic3dSimulation
 {
 // **************************************************************************
@@ -121,11 +126,11 @@ public:
   void runTest(enum testType tType, string fileName);
 
   // for data exportation
-  complex<double> interpolateTransferFunction(double freq, int idxPt);
+  complex<double> interpolateTransferFunction(double freq, int idxPt, enum tfType type);
   double interpolateAcousticField(Point querryPt);
   void interpolateAcousticField(Vec &coordX, Vec &coordY, Matrix &field);
   void exportGeoInCsv(string fileName);
-  bool exportTransferFucntions(string fileName);
+  bool exportTransferFucntions(string fileName, enum tfType type);
   bool exportAcousticField(string fileName);
 
 
@@ -203,7 +208,8 @@ private:
   //pair<Point2D, Point2D> m_bboxXZ;
 
   // simulation outputs
-  Eigen::MatrixXcd m_transferFunctions;
+  Eigen::MatrixXcd m_glottalSourceTF;
+  Eigen::MatrixXcd m_noiseSourceTF;
   Eigen::MatrixXcd m_field;
   double m_maxAmpField;
   Eigen::VectorXcd m_planeModeInputImpedance;
