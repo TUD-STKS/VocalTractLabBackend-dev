@@ -3162,8 +3162,15 @@ Eigen::MatrixXcd CrossSection2d::Pin() const
 //******************************************************
 Eigen::MatrixXcd CrossSection2d::Pout() const
 {
-  if (Pdir() == 1) { return m_acPressure.back(); }
-  else { return m_acPressure[0]; }
+  if (m_acPressure.size() == 0)
+  {
+    return Eigen::MatrixXcd();
+  }
+  else
+  {
+    if (Pdir() == 1) { return m_acPressure.back(); }
+    else { return m_acPressure[0]; }
+  }
 }
 //******************************************************
 Point CrossSection2dFEM::ctrLinePtOut() const
