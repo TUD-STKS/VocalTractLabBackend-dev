@@ -12,6 +12,9 @@
 #include <filesystem>
 
 // Some files used in or produced by the various tests. Paths are relative to repo root (set executable working directory accordingly!)
+const char* emaFile = "test/resources/example01.ema";
+const char* exportedMeshPath = "test/resources/exportedMesh/";
+const char* exportMeshBaseName = "mesh";
 const char* gesFile = "test/resources/example01.ges";
 const char* speakerFile = "resources/JD3.speaker";
 const char* svgFile = "test/resources/ExportTractSvg.svg";
@@ -25,7 +28,7 @@ TEST(ApiTest, Version)
 	char version[64];
 	vtlGetVersion(version);
 	std::string s(version);
-	EXPECT_EQ(s, std::string("API 2.4.1 ") + std::string(__DATE__));
+	EXPECT_EQ(s, std::string("API 2.4.2 ") + std::string(__DATE__));
 }
 
 TEST(ApiTest, Constants)
@@ -224,6 +227,32 @@ TEST(ApiTest, GesToAudio_DataOut)
 	vtlClose();
 }
 
+TEST(ApiTest, GesToEma)
+{
+	vtlInitialize(speakerFile);
+
+	int ret = vtlGesturalScoreToEma(gesFile, emaFile);
+
+	EXPECT_EQ(ret, 0);
+
+	vtlClose();
+}
+
+TEST(ApiTest, GesToEmaAndMesh)
+{
+	vtlInitialize(speakerFile);
+
+	// Make sure the export path is exists but is empty
+	std::filesystem::remove_all(exportedMeshPath);
+	std::filesystem::create_directory(exportedMeshPath);
+
+	int ret = vtlGesturalScoreToEmaAndMesh(gesFile, exportedMeshPath, exportMeshBaseName);
+
+	EXPECT_EQ(ret, 0);
+
+	vtlClose();
+}
+
 TEST(ApiTest, GesToTract)
 {
 	vtlInitialize(speakerFile);
@@ -254,6 +283,50 @@ TEST(ApiTest, TractToAudio_DataOut)
 	std::vector<double> audio(44100 * 30);
 	int numSamples;
 	int ret = vtlTractSequenceToAudio(tractSeqFile, "", &audio[0], &numSamples);
+
+	EXPECT_EQ(ret, 0);
+
+	vtlClose();
+}
+
+TEST(ApiTest, TractToEmaAndMesh)
+{
+	vtlInitialize(speakerFile);
+
+	// Make sure the export path is exists but is empty
+	std::filesystem::remove_all(exportedMeshPath);
+	std::filesystem::create_directory(exportedMeshPath);
+
+	int numFrames = 10;
+	int audioSamplingRate, numTubeSections, numVocalTractParams, numGlottisParams, numAudioSamplesPerTractState;
+	double internalAudioSamplingRate;
+	int ret = vtlGetConstants(&audioSamplingRate, &numTubeSections,
+		&numVocalTractParams, &numGlottisParams, &numAudioSamplesPerTractState, &internalAudioSamplingRate);
+	std::vector<double> tractParams(numVocalTractParams, 0.0);
+	std::vector<double> tractSeq;
+	std::vector<double> glottisParams(numGlottisParams, 0.0);
+	std::vector<double> glottisSeq;
+
+	const char* shapeName = "a";
+	vtlGetTractParams(shapeName, &tractParams[0]);
+	
+	const char* glottisShapeName = "modal";
+	vtlGetGlottisParams(glottisShapeName, &glottisParams[0]);
+
+	for (int i = 0; i < numFrames; ++i)
+	{
+		tractSeq.insert(tractSeq.end(), tractParams.begin(), tractParams.end());
+		glottisSeq.insert(glottisSeq.end(), glottisParams.begin(), glottisParams.end());
+	}
+
+	int numEmaPoints = 3;
+	int surf[] = { 16,16,16 };   // Surface of selected EMA point
+	int vert[] = { 115,225,335 };  // Vertex Index of selected EMA point
+
+	ret = vtlTractSequenceToEmaAndMesh(tractSeq.data(), glottisSeq.data(),
+		numVocalTractParams, numGlottisParams, numFrames, numEmaPoints,
+		surf, vert,
+		exportedMeshPath, exportMeshBaseName);
 
 	EXPECT_EQ(ret, 0);
 

@@ -1,4 +1,4 @@
-![CMake](https://github.com/TUD-STKS/VocalTractLabBackend-dev/actions/workflows/cmake.yml/badge.svg) ![MSBuild](https://github.com/TUD-STKS/VocalTractLabBackend-dev/actions/workflows/msbuild.yml/badge.svg)
+![CMake](https://github.com/TUD-STKS/VocalTractLabBackend-dev/actions/workflows/cmake.yml/badge.svg) ![MSBuild](https://github.com/TUD-STKS/VocalTractLabBackend-dev/actions/workflows/msbuild.yml/badge.svg) [![Python examples](https://github.com/TUD-STKS/VocalTractLabBackend-dev/actions/workflows/python_examples.yml/badge.svg)](https://github.com/TUD-STKS/VocalTractLabBackend-dev/actions/workflows/python_examples.yml) [![MATLAB examples](https://github.com/TUD-STKS/VocalTractLabBackend-dev/actions/workflows/matlab_examples.yml/badge.svg)](https://github.com/TUD-STKS/VocalTractLabBackend-dev/actions/workflows/matlab_examples.yml) 
 
 # VocalTractLabBackend-dev
 This repo contains the VocalTractLab backend source code and the C/C++ API for on-going development work. *This is not the place for official stable releases!* 
@@ -26,7 +26,7 @@ git clone https://github.com/TUD-STKS/VocalTractLabBackend-dev
 - Open a shell/command prompt and navigate to ``out``
 - Configure the project and generate a build system:
 ```
-cmake ..
+cmake .. -DCMAKE_BUILD_TYPE=Release
 ```
 - Build the library (still from within the folder ``out``)
 ```
