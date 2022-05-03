@@ -124,6 +124,7 @@ public:
   void computeAcousticField(VocalTract* tract);
   void coneConcatenationSimulation(string fileName);
   void runTest(enum testType tType, string fileName);
+  void cleanAcousticField();
 
   // for data exportation
   complex<double> interpolateTransferFunction(double freq, int idxPt, enum tfType type);

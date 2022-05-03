@@ -123,7 +123,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_idxSecNoiseSource(46), // for /sh/ 212, for vowels 46
   m_idxConstriction(40),
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
-  m_mouthBoundaryCond(ADMITTANCE_1),
+  m_mouthBoundaryCond(RADIATION),
   m_contInterpMeth(AREA)
 {
   m_simuParams.temperature = 31.4266; // for 350 m/s
@@ -326,6 +326,17 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   {
   case RADIATION:
     log << "RADIATION" << endl;
+    log << "Radiation impedance grid density: "
+      << m_simuParams.radImpedGridDensity << endl;
+    log << "Radiation impedance precomputed: ";
+    if (m_simuParams.radImpedPrecomputed)
+    {
+      log << "YES" << endl;
+    }
+    else
+    {
+      log << "NO" << endl;
+    }
     break;
   case IFINITE_WAVGUIDE:
     log << "IFINITE_WAVGUIDE" << endl;
@@ -342,7 +353,10 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   log << "MODE COMPUTATION PARAMETERS:" << endl;
   log << "Mesh density: " << m_meshDensity << endl;
   log << "Max cut-on frequency: " << m_simuParams.maxCutOnFreq << " Hz" << endl;
-  log << endl;
+  log << "Compute modes and junction matrices: ";
+  if (m_simuParams.needToComputeModesAndJunctions) { log << "YES"; }
+  else { log << "NO"; }
+  log << endl << endl;
 
   log << "INTEGRATION SCHEME PARAMETERS:" << endl;
   log << "Propagation mmethod: ";
@@ -416,9 +430,14 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   log << "max x " << m_simuParams.bboxField[1].x() << endl;
   log << "min y " << m_simuParams.bboxField[0].y() << endl;
   log << "max y " << m_simuParams.bboxField[1].y() << endl;
+  log << "Compute radiated field ";
   if (m_simuParams.computeRadiatedField)
   {
-    log << "Compute radiated field" << endl;
+    log << "YES" << endl;
+  }
+  else
+  {
+    log << "NO" << endl;
   }
   log << endl;
   log.close();
@@ -2380,6 +2399,16 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
     m_simuParams.needToComputeModesAndJunctions = false;
   }
 
+  if (precomputeRadImped && !m_simuParams.radImpedPrecomputed 
+    && (m_mouthBoundaryCond == RADIATION))
+  {
+    start = std::chrono::system_clock::now();
+    preComputeRadiationMatrices(16, lastSec);
+    end = std::chrono::system_clock::now();
+    elapsed_seconds = end - start;
+    log << "Time radiation impedance: " << elapsed_seconds.count() << endl;
+  }
+
   //******************************************************
   // Set sources parameters
   //******************************************************
@@ -2465,6 +2494,10 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
   auto end = std::chrono::system_clock::now();
   std::chrono::duration<double> timePropa(0.), timeComputeField(0.), timeExp(0.), time;
 
+  // activate computation of radiated field since in most of the 
+  // cases the reception point of the transfer functions is outside
+  m_simuParams.computeRadiatedField = true;
+
   generateLogFileHeader(false);
   ofstream log("log.txt", ofstream::app);
 
@@ -2481,7 +2514,7 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
 
   // compute the coordinates of the transfer function point
   tfPoint = movePointFromExitLandmarkToGeoLandmark(m_simuParams.tfPoint);
-  m_simuParams.computeRadiatedField = true;
+  
 
   // resize the frequency vector
   m_tfFreqs.clear();
@@ -4260,6 +4293,13 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
   }
 
   log.close();
+}
+
+// ****************************************************************************
+
+void Acoustic3dSimulation::cleanAcousticField()
+{
+  m_field.resize(0, 0);
 }
 
 // ****************************************************************************
