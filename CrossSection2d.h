@@ -85,7 +85,8 @@ struct simulationParameters
   // for acoustic field computation
   double freqField;
   Point bboxField[2];
-  int fieldResolution; // number of points per cm
+  int fieldResolution;        // number of points per cm
+  int fieldResolutionPicture; // number of points per cm of the last field computation
   bool computeRadiatedField;
 };
 

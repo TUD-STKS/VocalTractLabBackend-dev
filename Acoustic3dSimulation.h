@@ -166,6 +166,7 @@ public:
   openEndBoundaryCond mouthBoundaryCond() const {return m_mouthBoundaryCond;}
   int acousticFieldSize() const { return m_field.size(); }
   double maxAmpField() const { return m_maxAmpField; }
+  double lastFreqComputed() const { return m_lastFreqComputed; }
 
 // **************************************************************************
 /// Public data
@@ -195,6 +196,8 @@ private:
   // the number of frequencies is 2 ^ (m_spectrumLgthExponent - 1)
   int m_spectrumLgthExponent;
   int m_numFreq;
+  int m_numFreqPicture;
+  double m_lastFreqComputed;
   int m_idxSecNoiseSource;
   int m_idxConstriction;
   openEndBoundaryCond m_glottisBoundaryCond;

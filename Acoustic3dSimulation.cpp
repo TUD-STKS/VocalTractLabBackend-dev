@@ -156,12 +156,16 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   //m_simuParams.bboxField[0] = Point(-5., -10.);
   //m_simuParams.bboxField[1] = Point(10., 5.);
   m_simuParams.fieldResolution = 30;
+  m_simuParams.fieldResolutionPicture = 30;
   m_simuParams.computeRadiatedField = false;
 
   m_numFreq = 1 << (m_spectrumLgthExponent - 1);
+  m_numFreqPicture = m_numFreq;
   spectrum.setNewLength(2 * m_numFreq);
   spectrumNoise.setNewLength(2 * m_numFreq);
   spectrumConst.setNewLength(2 * m_numFreq);
+
+  m_lastFreqComputed = NAN;
 
   setBoundarySpecificAdmittance();
 }
@@ -425,6 +429,8 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   log << "ACOUSTIC FIELD COMPUTATION PARAMETERS:" << endl;
   log << "Acoustic field computation at " << m_simuParams.freqField
   << " Hz with " << m_simuParams.fieldResolution << " points per cm" << endl;
+  log << "Spatial resolution for field picture: " 
+    << m_simuParams.fieldResolutionPicture << " points per cm" << endl;
   log << "Bounding box:" << endl;
   log << "min x " << m_simuParams.bboxField[0].x() << endl;
   log << "max x " << m_simuParams.bboxField[1].x() << endl;
@@ -2313,7 +2319,10 @@ void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
 
   ofstream log("log.txt", ofstream::app);
 
-  log << "lx " << lx << " ly " << ly << endl;
+  //log << "lx " << lx << " ly " << ly << endl;
+
+  // set the field resolution of the field picture as the one used for the computation
+  m_simuParams.fieldResolutionPicture = m_simuParams.fieldResolution;
 
   field.resize(nPty, nPtx);
   m_maxAmpField = 0.;
@@ -2358,6 +2367,8 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
   int numSec(m_crossSections.size()); 
   int lastSec(numSec - 1);
   int mn;
+
+  m_lastFreqComputed = freq;
 
   ofstream log("log.txt", ofstream::app);
   ofstream ofs;
@@ -2493,6 +2504,9 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
   auto start = std::chrono::system_clock::now();
   auto end = std::chrono::system_clock::now();
   std::chrono::duration<double> timePropa(0.), timeComputeField(0.), timeExp(0.), time;
+
+  // copy the number of frequencies for display
+  m_numFreqPicture = m_numFreq;
 
   // activate computation of radiated field since in most of the 
   // cases the reception point of the transfer functions is outside
@@ -2683,429 +2697,6 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
     << hours << " h " << minutes << " m " << seconds << " s" << endl;
 
   log.close();
-
-  ///////////////////////////////////////////////////////////////////////////
-  //int numSec, lastSec; 
-  //double freq, freqSteps((double)SAMPLING_RATE/2./(double)m_numFreq);
-  //int numFreqComputed((int)ceil(m_simuParams.maxComputedFreq / freqSteps));
-  //int mn; // mode number in the last section
-  //complex<double> velocity;
-  //Eigen::VectorXcd pressure;
-  //Eigen::MatrixXcd startPressure, radAdmit, radImped, upStreamImpAdm, 
-  //  prevVelo, prevPress;
-  //Matrix F;
-  //vector<Point_3> tfPoint;
-  //ofstream prop;
-
-  //generateLogFileHeader(true);
-  //ofstream log("log.txt", ofstream::app);
-
-  //auto startTot = std::chrono::system_clock::now();
-
-  ////******************************
-  //// create the cross-sections
-  ////******************************
-
-  //if (createCrossSections(tract, false))
-  //{
-  //  log << "Geometry successfully imported" << endl;
-  //}
-  //else
-  //{
-  //  log << "Importation failed" << endl;
-  //}
-
-  //numSec = m_crossSections.size();
-  //lastSec = numSec - 1;
-
-  //log << "Number of sections: " << numSec << endl;
-
-  //// FIXME: update the values of m_idxSecNoiseSource and m_idxConstriction
-  //// in the 3D simu properties dialog when they are changed
-  //// check if the noise source index is within the indexes range
-  //if (m_idxSecNoiseSource >= numSec)
-  //{
-  //  m_idxSecNoiseSource = numSec - 1;
-  //}
-  //// check if the constriction location is within the indexes range
-  //if (m_idxConstriction >= numSec)
-  //{
-  //  m_idxConstriction = numSec - 1;
-  //}
-
-  ////log << "before compute mode" << endl;
-
-  //// create the mesh and compute modes
-  //computeMeshAndModes();
-  //log << "Modes computed" << endl;
-  //mn = m_crossSections[lastSec]->numberOfModes();
-
-  //// compute junction matrices
-  //auto start = std::chrono::system_clock::now();
-  //computeJunctionMatrices(false);
-  //auto end = std::chrono::system_clock::now();
-  //std::chrono::duration<double> elapsed_seconds = end - startTot;
-  //log << "Junction matrices computed " << 
-  //  elapsed_seconds.count() << " s" << endl;
-
-  //// generate source matrix
-  //Eigen::MatrixXcd inputVelocity(Eigen::MatrixXcd::Zero(
-  //m_crossSections[0]->numberOfModes(), 1));
-  ////log << "inputVelocity initialized" << endl;
-  //Eigen::MatrixXcd inputPressure(Eigen::MatrixXcd::Zero(
-  //  m_crossSections[0]->numberOfModes(), 1));
-  ////log << "inputPressure initialzed" << endl;
-  //complex<double> V0(1.0, 0.0);
-  //// for a constant input velocity q = -j * w * rho * v 
-  //Eigen::MatrixXcd inputPressureNoise;
-
-  //if (m_idxSecNoiseSource < lastSec)
-  //{
-  //  // extract the junction matrix of the noise source section
-  //  F = m_crossSections[m_idxSecNoiseSource]->getMatrixF()[0];
-  //  log << "noise source junction matrix extracted" << endl;
-  //  inputPressureNoise.setZero(
-  //      m_crossSections[m_idxSecNoiseSource]->numberOfModes(), 1);
-  //  inputPressureNoise(0, 0) = V0;
-  //}
-
-  //log << "source generated" << endl;
-
-  //// compute the coordinates of the transfer function point
-  //tfPoint = movePointFromExitLandmarkToGeoLandmark(m_simuParams.tfPoint);
-  //m_simuParams.computeRadiatedField = true;
-
-  //log << "Tf point " << tfPoint[0] << endl;
-
-  //if (m_mouthBoundaryCond == RADIATION)
-  //{
-  //  // Precompute the radiation impedance and admittance at a few frequencies
-  //  preComputeRadiationMatrices(16, lastSec);
-  //}
-
-  //// resize the frequency vector
-  //m_tfFreqs.clear();
-  //m_tfFreqs.reserve(numFreqComputed);
-
-  //// resize the transfer function matrix
-  //m_glottalSourceTF.resize(numFreqComputed, m_simuParams.tfPoint.size());
-
-  //// resize the plane mode input impedance vector
-  //m_planeModeInputImpedance.resize(numFreqComputed);
-
-  //end = std::chrono::system_clock::now();
-  //elapsed_seconds = end - startTot;
-  //log << "Time precomputations " << elapsed_seconds.count() << " s" << endl;
-
-  ////*****************************************************************************
-
-  //// Create the progress dialog
-  //progressDialog = new wxGenericProgressDialog("Transfer function computation",
-  //  "Wait until the transfer function computation finished or press [Cancel]",
-  //  numFreqComputed, NULL,
-  //  wxPD_CAN_ABORT | wxPD_AUTO_HIDE | wxPD_ELAPSED_TIME);
-
-  //start = std::chrono::system_clock::now();
-
-  //// loop over frequencies
-  //for (int i(0); i < numFreqComputed; i++)
-  //{
-  //  freq = max(0.1, (double)i * freqSteps);
-  //  m_tfFreqs.push_back(freq);
-  //  log << "################################" << endl;
-  //  log << "frequency " << i+1 << "/" << numFreqComputed << " f = " << freq
-  //    << " Hz" << endl;
-
-  //  // generate radiation impedance and admittance
-  //  start = std::chrono::system_clock::now();
-  //  // m_crossSections[lastSec]->characteristicImpedance(radImped,
-  //  //   freq, m_soundSpeed, m_volumicMass, 0);
-  //  //m_crossSections[lastSec]->characteristicAdmittance(radAdmit,
-  //  //  freq, m_soundSpeed, m_volumicMass, 0);
-
-  //  switch (m_mouthBoundaryCond)
-  //  {
-  //  case RADIATION:
-  //    interpolateRadiationImpedance(radImped, freq, lastSec);
-  //    interpolateRadiationAdmittance(radAdmit, freq, lastSec);
-  //    break;
-  //  case ADMITTANCE_1:
-  //    radAdmit.setZero(mn, mn);
-  //    radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(
-  //      pow(m_crossSections[lastSec]->scaleOut(), 2), 0.));
-  //    //radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(1., 0.));
-  //    radImped = radAdmit.inverse();
-  //    break;
-  //  }
-
-  //  end = std::chrono::system_clock::now();
-  //  elapsed_seconds = end - start;
-  //  log << "Time charac imped/admit " << elapsed_seconds.count() << " s" << endl;
-
-  //  // propagate impedance and admittance
-  //  start = std::chrono::system_clock::now();
-  //  //propagateAdmit(radAdmit, freq, m_method);
-  //  propagateImpedAdmit(radImped, radAdmit, freq, lastSec, 0);
-
-  //  // Extract plane mode input impedance
-  //  m_planeModeInputImpedance(i) = m_crossSections[0]->Zin()(0,0);
-  //  
-  //  end = std::chrono::system_clock::now();
-  //  elapsed_seconds = end - start;
-  //  log << "Time impedance " << elapsed_seconds.count() << " s" << endl;
-
-  //  //// extract admittance
-  //  //prop.open("adm.txt", ofstream::app);
-  //  //for (int c(0); c < lastSec; c++)
-  //  //{
-  //  //  prop << abs(m_crossSections[c]->Yin()(0, 0)) << "  ";
-  //  //}
-  //  //prop << endl;
-  //  //prop.close();
-
-  //  //// extract impedance
-  //  //prop.open("imp.txt", ofstream::app);
-  //  //for (int c(0); c < lastSec; c++)
-  //  //{
-  //  //  prop << abs(m_crossSections[c]->Zin()(0, 0)) << "  ";
-  //  //}
-  //  //prop << endl;
-  //  //prop.close();
-
-  //  //// print radiation impedance
-  //  //prop.open("radR.txt", ofstream::app);
-  //  //prop << m_crossSections[lastSec]->endImpedance().real() << endl;
-  //  //prop.close();
-  //  //prop.open("radI.txt", ofstream::app);
-  //  //prop << m_crossSections[lastSec]->endImpedance().imag() << endl;
-  //  //prop.close();
-  //  //prop.open("admR.txt", ofstream::app);
-  //  //prop << m_crossSections[lastSec]->endAdmittance().real() << endl;
-  //  //prop.close();
-  //  //prop.open("admI.txt", ofstream::app);
-  //  //prop << m_crossSections[lastSec]->endAdmittance().imag() << endl;
-  //  //prop.close();
-
-  //  // propagate axial velocity and pressure
-  //  start = std::chrono::system_clock::now();
-  //  //startPressure = m_crossSections[1]->startAdmittance().fullPivLu().inverse()
-  //  //  * inputVelocity;
-  //  //propagatePressure(startPressure, freq, m_method);
-  //  //log << "Compute impedance in first section " <<
-  //  //  m_crossSections[0]->computeImpedance() << endl;
-  //  inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass
-  //    * pow(m_crossSections[0]->scaleIn(), 3)
-  //    * m_crossSections[0]->area() 
-  //    ;
-  //  //log << "input velocity\n" << inputVelocity << endl;
-  //  inputPressure = m_crossSections[0]->Zin() * inputVelocity;
-  //  propagateVelocityPress(inputVelocity, inputPressure, freq, 0, lastSec);
-  //  end = std::chrono::system_clock::now();
-  //  elapsed_seconds = end - start;
-  //  log << "Time velocity pressure " << elapsed_seconds.count() << " s" << endl;
-
-  //  //// extract pressure
-  //  //prop.open("pamp.txt", ofstream::app);
-  //  //for (int c(0); c < lastSec; c++)
-  //  //{
-  //  //  prop << abs(m_crossSections[c]->Pin()(0,0)) << "  "
-  //  //    << abs(m_crossSections[c]->Pout()(0, 0)) << "  ";
-  //  //}
-  //  //prop << endl;
-  //  //prop.close();
-
-  //  //// extract potential
-  //  //prop.open("qamp.txt", ofstream::app);
-  //  //for (int c(0); c < lastSec; c++)
-  //  //{
-  //  //  prop << abs(m_crossSections[c]->Qin()(0, 0)) << "  "
-  //  //    << abs(m_crossSections[c]->Qout()(0, 0)) << "  ";
-  //  //}
-  //  //prop.close();
-
-  //  start = std::chrono::system_clock::now();
-
-  //  //*****************************************************************************
-  //  //  Compute acoustic pressure 
-  //  //*****************************************************************************
-
-  //  pressure = acousticField(tfPoint);
-  //  m_glottalSourceTF.row(i) = pressure;
-
-  //  spectrum.setValue(i, pressure(0));
-
-  //  log << "Acoustic pressure computed" << endl;
-
-  //  //*****************************************************************************
-  //  //  Compute transfer function of the noise source
-  //  //*****************************************************************************
-
-  //  if (m_idxSecNoiseSource < lastSec)
-  //  {
-  //    //// get the transfer function from the glottis to the constriction
-  //    //// location for vowels
-  //    //spectrumConst.setValue(i, m_crossSections[m_idxConstriction]->Pout()(0, 0));
-
-  //    // save the input impedance of the upstream part
-  //    // if the section expends
-  //    if ((pow(m_crossSections[m_idxSecNoiseSource + 1]->scaleIn(), 2) *
-  //      m_crossSections[m_idxSecNoiseSource + 1]->area()) >
-  //      (pow(m_crossSections[m_idxSecNoiseSource]->scaleOut(), 2) * 
-  //      m_crossSections[m_idxSecNoiseSource]->area()))
-  //    {
-  //      upStreamImpAdm = m_crossSections[m_idxSecNoiseSource]->Zout();
-  //    }
-  //    // if the section contracts
-  //    else
-  //    {
-  //      upStreamImpAdm = m_crossSections[m_idxSecNoiseSource]->Yout();
-  //    }
-  //    log << "upstream input impedance saved" << endl;
-
-  //    // set glottis boundary condition
-  //    
-  //    switch (m_glottisBoundaryCond)
-  //    {
-  //    case HARD_WALL:
-  //      radImped.setZero();
-  //      radImped.diagonal().setConstant(100000.);
-  //      radAdmit.setZero();
-  //      radAdmit.diagonal().setConstant(1. / 100000.);
-  //      break;
-  //    case IFINITE_WAVGUIDE:
-  //      m_crossSections[0]->characteristicImpedance(radImped, freq, m_simuParams);
-  //      m_crossSections[0]->characteristicAdmittance(radAdmit, freq, m_simuParams);
-  //      break;
-  //    }
-
-  //    // propagate impedance and admittance from the glottis to the location
-  //    // of the second sound source
-  //    propagateImpedAdmit(radImped, radAdmit, freq, 0, m_idxSecNoiseSource);
-
-  //    log << "Imped admit propagated" << endl;
-
-  //    // compute the pressure and the velocity at the entrance of the next section
-  //    // if the section expends
-  //    if ((pow(m_crossSections[m_idxSecNoiseSource + 1]->scaleIn(), 2) * 
-  //      m_crossSections[m_idxSecNoiseSource +1]->area()) >
-  //      (pow(m_crossSections[m_idxSecNoiseSource]->scaleOut(), 2) * 
-  //      m_crossSections[m_idxSecNoiseSource]->area()))
-  //    {
-  //      prevVelo = (F.transpose()) * ((freq * upStreamImpAdm - freq * 
-  //        m_crossSections[m_idxSecNoiseSource]->Zout()).householderQr()
-  //        .solve(inputPressureNoise));
-  //      prevPress = freq *
-  //        m_crossSections[m_idxSecNoiseSource +1]->Zin() * prevVelo;
-  //    }
-  //    // if the section contracts
-  //    else
-  //    {
-  //      prevPress = (F.transpose()) * ((upStreamImpAdm -
-  //        m_crossSections[m_idxSecNoiseSource]->Yout()).householderQr()
-  //        .solve( -m_crossSections[m_idxSecNoiseSource]->Yout() *
-  //          inputPressureNoise));
-
-  //      prevVelo =
-  //        m_crossSections[m_idxSecNoiseSource +1]->Yin()* prevPress;
-  //    }
-
-  //    log << "Previous pressure/velocity computed" << endl;
-  //    
-  //    // propagate the pressure and the velocity in the upstream part
-  //    propagateVelocityPress(prevVelo, prevPress, freq, 
-  //      min(m_idxSecNoiseSource +1, lastSec), lastSec);
-
-  //    log << "Velocity and pressure propagated" << endl;
-
-  //    pressure = acousticField(tfPoint);
-
-  //    end = std::chrono::system_clock::now();
-
-  //    spectrumNoise.setValue(i, pressure(0));
-  //  }
-  //  elapsed_seconds = end - start;
-  //  log << "Remaining time " << elapsed_seconds.count() << " s" << endl;
-
-  //  //*****************************************************************************
-
-  //  if (progressDialog->Update(i) == false)
-  //  {
-  //    progressDialog->Destroy();
-  //    progressDialog = NULL;
-
-  //    return;
-  //  }
-  //}
-
-  //// generate spectra values for negative frequencies
-  //log << "\n Generate spectrum negative part" << endl;
-  //for (int i(m_numFreq); i < 2*m_numFreq; i++)
-  //{
-  //  spectrum.re[i] = spectrum.re[2 * m_numFreq - i - 1];
-  //  spectrum.im[i] = -spectrum.im[2 * m_numFreq - i - 1];
-  //  spectrumNoise.re[i] = spectrumNoise.re[2 * m_numFreq - i - 1];
-  //  spectrumNoise.im[i] = -spectrumNoise.im[2 * m_numFreq - i - 1];
-  //  spectrumConst.re[i] = spectrumConst.re[2 * m_numFreq - i - 1];
-  //  spectrumConst.im[i] = -spectrumConst.im[2 * m_numFreq - i - 1];
-  //}
-
-  //// create the file containing the transfer function
-  ////prop.open("press.txt");
-  ////prop << "num_points: " << spectrum.N << endl;
-  ////prop << "frequency_Hz  magnitude  phase_rad" << endl;
-  ////for (int i(0); i < spectrum.N; i++)
-  ////{
-  //  //freq = max(0.1, (double)i * freqSteps);
-  //  //prop << freq << "  " 
-  //    //<< spectrum.getMagnitude(i) << "  " 
-  //    //<< spectrum.getPhase(i) << "  "
-  //    //<< spectrumNoise.getMagnitude(i) << "  "
-  //    //<< spectrumNoise.getPhase(i) << "  "
-  //    //<< spectrumConst.getMagnitude(i) << "  "
-  //    //<< spectrumConst.getPhase(i)
-  //    //<< endl;
-  ////}
-
-  ////for (int i(0); i < numFreqComputed; i++)
-  ////{
-  //  //prop << m_tfFreqs[i] << "  ";
-  //  //for (int p(0); p < tfPoint.size(); p++)
-  //  //{
-  //    //prop << abs(m_glottalSourceTF(i,p)) << "  "
-  //      //<< arg(m_glottalSourceTF(i,p)) << "  ";
-  //  //}
-  //  //prop << endl;
-  ////}
-  ////prop.close();
-
-  //// Export plane mode input impedance
-  //prop.open("zin.txt");
-  //for (int i(0); i < numFreqComputed; i++)
-  //{
-  //  prop << m_tfFreqs[i] << "  " 
-  //    << abs(1i * 2. * M_PI * m_tfFreqs[i] * m_simuParams.volumicMass * 
-  //      m_planeModeInputImpedance(i)) << "  "
-  //    << arg(1i * 2. * M_PI * m_tfFreqs[i] * m_simuParams.volumicMass * 
-  //      m_planeModeInputImpedance(i)) << endl;
-  //}
-  //prop.close();
-
-  //end = std::chrono::system_clock::now();
-  //elapsed_seconds = end - startTot;
-  //int hours(floor(elapsed_seconds.count() / 3600.));
-  //int minutes(floor((elapsed_seconds.count() - hours * 3600.) / 60.));
-  //double seconds(elapsed_seconds.count() - (double)hours * 3600. -
-  //  (double)minutes * 60.);
-  //log << "\nTransfer function time "
-  //  << hours << " h " << minutes << " m " << seconds << " s" << endl;
-
-  //log.close();
-
-  //progressDialog->Update(VocalTract::NUM_CENTERLINE_POINTS);
-
-  //// destroy progress dialog
-  //progressDialog->Destroy();
-  //progressDialog = NULL;
 }
 
 // ****************************************************************************
@@ -5826,7 +5417,7 @@ complex<double> Acoustic3dSimulation::interpolateTransferFunction(double freq, i
   , enum tfType type)
 {
   complex<double> interpolatedTF;
-  double freqSteps((double)SAMPLING_RATE/2./(double)m_numFreq);
+  double freqSteps((double)SAMPLING_RATE/2./(double)m_numFreqPicture);
   double tf[2];
   int idxFreqs[2];
   int maxIdxFreq(m_tfFreqs.size() - 1);
@@ -5925,7 +5516,7 @@ void Acoustic3dSimulation::interpolateAcousticField(Vec &coordX, Vec &coordY, Ma
   int nx(coordX.size());
   int ny(coordY.size());
   int iMin, jMin;
-  double dx(1. / (double)m_simuParams.fieldResolution);
+  double dx(1. / (double)m_simuParams.fieldResolutionPicture);
 
   field.resize(ny, nx);
 
