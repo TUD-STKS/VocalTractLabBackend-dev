@@ -351,6 +351,9 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   case ADMITTANCE_1:
     log << "ADMITTANCE_1" << endl;
     break;
+  case ZERO_PRESSURE:
+    log << "ZERO_PRESSURE" << endl;
+    break;
   }
   log << endl;
 
@@ -2459,6 +2462,11 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
     radAdmit.setZero(mn, mn);
     radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(
       pow(m_crossSections[lastSec]->scaleOut(), 2), 0.));
+    radImped = radAdmit.inverse();
+    break;
+  case ZERO_PRESSURE:
+    radAdmit.setZero(mn, mn);
+    radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(1e15, 0.));
     radImped = radAdmit.inverse();
     break;
   }

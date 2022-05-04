@@ -25,7 +25,8 @@ enum openEndBoundaryCond {
   RADIATION,
   IFINITE_WAVGUIDE,
   HARD_WALL,
-  ADMITTANCE_1
+  ADMITTANCE_1,
+  ZERO_PRESSURE
 };
 
 enum contourInterpolationMethod {
