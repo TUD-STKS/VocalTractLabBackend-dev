@@ -4372,26 +4372,65 @@ bool Acoustic3dSimulation::setTFPointsFromCsvFile(string fileName)
   log << "Start transfer function points extraction" << endl;
 
   ifstream inputFile(fileName);
-  double x, y, z;
-  char separator;
+  double coord[3];
+  char separator(';');
+  string line, coordStr;
+  int cnt;
 
   if (!inputFile.is_open())
   {
     log << "Cannot open " << fileName << endl;
+    return(false);
   }
   else
   {
     m_simuParams.tfPoint.clear();
-    while (inputFile >> x >> separator >> y >> separator >> z >> separator)
+
+    while (getline(inputFile, line))
     {
-      log << x << "  " << y << "  " << z << endl;
-      m_simuParams.tfPoint.push_back(Point_3(x, y, z));
+      stringstream coordLine(line);
+      cnt = 0;
+      while (getline(coordLine, coordStr, separator) && (cnt < 3))
+      {
+        if (coordStr.size() > 0)
+        {
+          try
+          {
+            coord[cnt] = stod(coordStr);
+            cnt++;
+          }
+          catch (const std::invalid_argument& ia) {
+            log << ia.what() << endl;
+          }
+        }
+      }
+      if (cnt < 3)
+      {
+        log << "Error: Fail to read coordinates" << endl;
+      }
+      else
+      {
+        m_simuParams.tfPoint.push_back(Point_3(coord[0], coord[1], coord[2]));
+      }
+    }
+
+    if (m_simuParams.tfPoint.size() > 0)
+    {
+      log << "Points extracted: " << endl;
+      for (auto it : m_simuParams.tfPoint)
+      {
+        log << it.x() << "  " << it.y() << "  " << it.z() << endl;
+      }
+
+      return(true);
+    }
+    else
+    {
+      return(false);
     }
   }
 
   log.close();
-
-  return(true);
 }
 
 // ****************************************************************************
