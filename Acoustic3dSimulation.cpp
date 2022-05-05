@@ -153,8 +153,6 @@ Acoustic3dSimulation::Acoustic3dSimulation()
 
   // for acoustic field computation
   m_simuParams.freqField = 5000.;
-  //m_simuParams.bboxField[0] = Point(-5., -10.);
-  //m_simuParams.bboxField[1] = Point(10., 5.);
   m_simuParams.fieldResolution = 30;
   m_simuParams.fieldResolutionPicture = 30;
   m_simuParams.computeRadiatedField = false;
@@ -435,10 +433,10 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   log << "Spatial resolution for field picture: " 
     << m_simuParams.fieldResolutionPicture << " points per cm" << endl;
   log << "Bounding box:" << endl;
-  log << "min x " << m_simuParams.bboxField[0].x() << endl;
-  log << "max x " << m_simuParams.bboxField[1].x() << endl;
-  log << "min y " << m_simuParams.bboxField[0].y() << endl;
-  log << "max y " << m_simuParams.bboxField[1].y() << endl;
+  log << "min x " << m_simuParams.bbox[0].x() << endl;
+  log << "max x " << m_simuParams.bbox[1].x() << endl;
+  log << "min y " << m_simuParams.bbox[0].y() << endl;
+  log << "max y " << m_simuParams.bbox[1].y() << endl;
   log << "Compute radiated field ";
   if (m_simuParams.computeRadiatedField)
   {
@@ -2311,8 +2309,8 @@ bool Acoustic3dSimulation::findSegmentContainingPoint(Point queryPt, int& idxSeg
 
 void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
 {
-  double lx(m_simuParams.bboxField[1].x() - m_simuParams.bboxField[0].x());
-  double ly(m_simuParams.bboxField[1].y() - m_simuParams.bboxField[0].y());
+  double lx(m_simuParams.bbox[1].x() - m_simuParams.bbox[0].x());
+  double ly(m_simuParams.bbox[1].y() - m_simuParams.bbox[0].y());
   int nPtx(round(lx * (double)m_simuParams.fieldResolution));
   int nPty(round(ly * (double)m_simuParams.fieldResolution));
   int cnt(0);
@@ -2326,6 +2324,9 @@ void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
 
   // set the field resolution of the field picture as the one used for the computation
   m_simuParams.fieldResolutionPicture = m_simuParams.fieldResolution;
+
+  // save the bounding box corresponding to this field computation
+  for (int i(0); i < 2; i++) { m_simuParams.bboxLastFieldComputed[i] = m_simuParams.bbox[i]; }
 
   field.resize(nPty, nPtx);
   m_maxAmpField = 0.;
@@ -2343,8 +2344,8 @@ void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
   //<< queryPt << endl;
 
       // generate cartesian coordinates point to search
-      queryPt = Point_3(lx * (double)i / (double)(nPtx - 1) + m_simuParams.bboxField[0].x(), 0.,
-        ly * (double)j / (double)(nPty - 1) + m_simuParams.bboxField[0].y());
+      queryPt = Point_3(lx * (double)i / (double)(nPtx - 1) + m_simuParams.bbox[0].x(), 0.,
+        ly * (double)j / (double)(nPty - 1) + m_simuParams.bbox[0].y());
 
       //log << "Query point coordinate computed " << queryPt << endl;
 
@@ -2724,19 +2725,7 @@ void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
 
   solveWaveProblem(tract, freq, false, elapsed_seconds, &timeExp);
 
-  //******************************************************
-  // Extract acoustic field
-  //******************************************************
-
-  ofstream ofs;
-
-  //Eigen::MatrixXcd field;
   acousticFieldInPlane(m_field);
-  ofs.open("field.txt");
-  stringstream txtField;
-  txtField << m_field.cwiseAbs();     
-  ofs << regex_replace(txtField.str(), regex("-nan\\(ind\\)"), "nan");
-  ofs.close();
 
   auto end = std::chrono::system_clock::now();
   elapsed_seconds = end - start;
@@ -5346,8 +5335,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     }
   }
 
-  m_simuParams.bboxField[0] = Point(bboxXZ.first.x, bboxXZ.first.y);
-  m_simuParams.bboxField[1] = Point(bboxXZ.second.x, bboxXZ.second.y);
+  m_simuParams.bbox[0] = Point(bboxXZ.first.x, bboxXZ.first.y);
+  m_simuParams.bbox[1] = Point(bboxXZ.second.x, bboxXZ.second.y);
 
   //***************************************************************
   // Export data
@@ -5488,22 +5477,22 @@ double Acoustic3dSimulation::interpolateAcousticField(Point querryPt)
   double field;
 
   // check if the point is inside the bounding box
-  if ((querryPt.x() > m_simuParams.bboxField[0].x()) &&
-    (querryPt.x() < m_simuParams.bboxField[1].x()) &&
-    (querryPt.y() > m_simuParams.bboxField[0].y()) &&
-    (querryPt.y() < m_simuParams.bboxField[1].y()))
+  if ((querryPt.x() > m_simuParams.bbox[0].x()) &&
+    (querryPt.x() < m_simuParams.bbox[1].x()) &&
+    (querryPt.y() > m_simuParams.bbox[0].y()) &&
+    (querryPt.y() < m_simuParams.bbox[1].y()))
   {
     // find the neighboring points
     double dx(1. / (double)m_simuParams.fieldResolution);
 
     int iMin(min((int)m_field.rows() - 2,
-      (int)floor((querryPt.y() - m_simuParams.bboxField[0].y()) / dx)));
+      (int)floor((querryPt.y() - m_simuParams.bbox[0].y()) / dx)));
     int iMax(min((int)m_field.rows() - 1,
-      (int)ceil((querryPt.y() - m_simuParams.bboxField[0].y()) / dx)));
+      (int)ceil((querryPt.y() - m_simuParams.bbox[0].y()) / dx)));
     int jMin(min((int)m_field.cols() - 2,
-      (int)floor((querryPt.x() - m_simuParams.bboxField[0].x()) / dx)));
+      (int)floor((querryPt.x() - m_simuParams.bbox[0].x()) / dx)));
     int jMax(min((int)m_field.cols() - 1,
-      (int)ceil((querryPt.x() - m_simuParams.bboxField[0].x()) / dx)));
+      (int)ceil((querryPt.x() - m_simuParams.bbox[0].x()) / dx)));
 
     field = abs((m_field(iMin, jMin) + m_field(iMin, jMax)
       + m_field(iMax, jMin) + m_field(iMax, jMax)) / 4.);
@@ -5532,15 +5521,15 @@ void Acoustic3dSimulation::interpolateAcousticField(Vec &coordX, Vec &coordY, Ma
   {
     for (int j(0); j < nx; j++)
     {
-      if ((coordX(j) > m_simuParams.bboxField[0].x()) &&
-        (coordX(j) < m_simuParams.bboxField[1].x()) &&
-        (coordY(i) > m_simuParams.bboxField[0].y()) &&
-        (coordY(i) < m_simuParams.bboxField[1].y()))
+      if ((coordX(j) > m_simuParams.bboxLastFieldComputed[0].x()) &&
+        (coordX(j) < m_simuParams.bboxLastFieldComputed[1].x()) &&
+        (coordY(i) > m_simuParams.bboxLastFieldComputed[0].y()) &&
+        (coordY(i) < m_simuParams.bboxLastFieldComputed[1].y()))
       {
         iMin = min((int)m_field.rows() - 2,
-          (int)floor((coordY(i) - m_simuParams.bboxField[0].y()) / dx));
+          (int)floor((coordY(i) - m_simuParams.bboxLastFieldComputed[0].y()) / dx));
         jMin = min((int)m_field.cols() - 2,
-          (int)floor((coordX(j) - m_simuParams.bboxField[0].x()) / dx));
+          (int)floor((coordX(j) - m_simuParams.bboxLastFieldComputed[0].x()) / dx));
 
         field(i, j) = abs((m_field(iMin, jMin) + m_field(iMin, jMin + 1)
           + m_field(iMin + 1, jMin) + m_field(iMin + 1, jMin + 1)) / 4.);

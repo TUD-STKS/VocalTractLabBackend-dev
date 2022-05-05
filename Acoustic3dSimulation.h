@@ -157,10 +157,10 @@ public:
   pair<Point2D, Point2D> bboxSagittalPlane() const 
   { 
     pair<Point2D, Point2D> bbox;
-    bbox.first = Point2D(m_simuParams.bboxField[0].x(),
-      m_simuParams.bboxField[0].y());
-    bbox.second = Point2D(m_simuParams.bboxField[1].x(),
-      m_simuParams.bboxField[1].y());
+    bbox.first = Point2D(m_simuParams.bbox[0].x(),
+      m_simuParams.bbox[0].y());
+    bbox.second = Point2D(m_simuParams.bbox[1].x(),
+      m_simuParams.bbox[1].y());
     return bbox;
   }
   int numCrossSections(){ return m_crossSections.size(); }
