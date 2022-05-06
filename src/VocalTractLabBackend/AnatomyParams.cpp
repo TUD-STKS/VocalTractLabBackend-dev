@@ -19,8 +19,8 @@
 //
 // ****************************************************************************
 
-#include "AnatomyParams.h"
-#include "Dsp.h"
+#include "VocalTractLabBackend/AnatomyParams.h"
+#include "VocalTractLabBackend/Dsp.h"
 
 VocalTract *AnatomyParams::referenceVocalTract = new VocalTract();
 

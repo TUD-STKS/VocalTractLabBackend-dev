@@ -19,7 +19,7 @@
 //
 // ****************************************************************************
 
-#include "Sampa.h"
+#include "VocalTractLabBackend/Sampa.h"
 
 const string Sampa::PHONEME[NUM_PHONEMES] =
 {

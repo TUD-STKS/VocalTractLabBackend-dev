@@ -19,7 +19,7 @@
 //
 // ****************************************************************************
 
-#include "Signal.h"
+#include "VocalTractLabBackend/Signal.h"
 #include <cstdlib>
 #include <cstdio>
 #include <cmath>

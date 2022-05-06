@@ -19,7 +19,7 @@
 //
 // ****************************************************************************
 
-#include "Splines.h"
+#include "VocalTractLabBackend/Splines.h"
 #include <cstdio>
 #include <cmath>
 

@@ -19,7 +19,7 @@
 //
 // ****************************************************************************
 
-#include "Surface.h"
+#include "VocalTractLabBackend/Surface.h"
 #include <cmath>
 #include <iostream>
 #include <fstream>

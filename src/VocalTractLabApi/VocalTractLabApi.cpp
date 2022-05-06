@@ -20,22 +20,22 @@
 // ****************************************************************************
 
 #include "VocalTractLabApi.h"
-#include "Dsp.h"
-#include "AudioFile.h"
-#include "Synthesizer.h"
-#include "SegmentSequence.h"
+#include "VocalTractLabBackend/Dsp.h"
+#include "VocalTractLabBackend/AudioFile.h"
+#include "VocalTractLabBackend/Synthesizer.h"
+#include "VocalTractLabBackend/SegmentSequence.h"
 
-#include "GeometricGlottis.h"
-#include "TwoMassModel.h"
-#include "TriangularGlottis.h"
+#include "VocalTractLabBackend/GeometricGlottis.h"
+#include "VocalTractLabBackend/TwoMassModel.h"
+#include "VocalTractLabBackend/TriangularGlottis.h"
 
-#include "VocalTract.h"
-#include "TdsModel.h"
-#include "GesturalScore.h"
+#include "VocalTractLabBackend/VocalTract.h"
+#include "VocalTractLabBackend/TdsModel.h"
+#include "VocalTractLabBackend/GesturalScore.h"
 
-#include "Speaker.h"
+#include "VocalTractLabBackend/Speaker.h"
 
-#include "TlModel.h"
+#include "VocalTractLabBackend/TlModel.h"
 
 #include <iostream>
 #include <fstream>

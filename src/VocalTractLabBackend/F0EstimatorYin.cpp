@@ -19,10 +19,10 @@
 //
 // ****************************************************************************
 
-#include "F0EstimatorYin.h"
+#include "VocalTractLabBackend/F0EstimatorYin.h"
 #include <limits>
 #include <cmath>
-#include "Constants.h"
+#include "VocalTractLabBackend/Constants.h"
 
 // Static constants.
 

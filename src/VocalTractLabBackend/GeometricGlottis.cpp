@@ -19,8 +19,8 @@
 //
 // ****************************************************************************
 
-#include "GeometricGlottis.h"
-#include "Constants.h"
+#include "VocalTractLabBackend/GeometricGlottis.h"
+#include "VocalTractLabBackend/Constants.h"
 #include <cmath>
 #include <iostream>
 

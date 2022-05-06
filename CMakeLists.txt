@@ -48,7 +48,7 @@ set(BackendSources
 project("VocalTractLabApi")
 add_library(VocalTractLabApi SHARED)
 target_include_directories (VocalTractLabApi PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/VocalTractLabApi)
-target_include_directories (VocalTractLabApi PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/VocalTractLabBackend)
+target_include_directories (VocalTractLabApi PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_sources(VocalTractLabApi PRIVATE ${BackendSources} 
 src/VocalTractLabApi/VocalTractLabApi.cpp 
 src/VocalTractLabApi/VocalTractLabApi.def)
@@ -57,7 +57,6 @@ src/VocalTractLabApi/VocalTractLabApi.def)
 project("VocalTractLabBackend")
 add_library(VocalTractLabBackend STATIC)
 target_include_directories (VocalTractLabBackend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_include_directories (VocalTractLabBackend PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/VocalTractLabBackend)
 target_sources(VocalTractLabBackend PUBLIC ${BackendSources})
 
 

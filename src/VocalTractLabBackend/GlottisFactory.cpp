@@ -19,11 +19,11 @@
 //
 // ****************************************************************************
 
-#include "GlottisFactory.h"
+#include "VocalTractLabBackend/GlottisFactory.h"
 
-#include "GeometricGlottis.h"
-#include "TriangularGlottis.h"
-#include "TwoMassModel.h"
+#include "VocalTractLabBackend/GeometricGlottis.h"
+#include "VocalTractLabBackend/TriangularGlottis.h"
+#include "VocalTractLabBackend/TwoMassModel.h"
 
 #include <string>
 

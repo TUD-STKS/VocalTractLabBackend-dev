@@ -19,7 +19,7 @@
 //
 // ****************************************************************************
 
-#include "TimeFunction.h"
+#include "VocalTractLabBackend/TimeFunction.h"
 #include <cstdio>
 
 

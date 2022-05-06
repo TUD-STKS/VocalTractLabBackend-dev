@@ -19,7 +19,7 @@
 //
 // ****************************************************************************
 
-#include "ImpulseExcitation.h"
+#include "VocalTractLabBackend/ImpulseExcitation.h"
 
 static const int DURATION_SAMPLES = SAMPLING_RATE / 2;    // Half a second
 
