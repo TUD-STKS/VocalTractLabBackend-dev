@@ -19,8 +19,8 @@
 //
 // ****************************************************************************
 
-#include "TwoMassModel.h"
-#include "Constants.h"
+#include "VocalTractLabBackend/TwoMassModel.h"
+#include "VocalTractLabBackend/Constants.h"
 #include <cmath>
 
 // ****************************************************************************

@@ -19,7 +19,7 @@
 //
 // ****************************************************************************
 
-#include "Dsp.h"
+#include "VocalTractLabBackend/Dsp.h"
 #include <cmath>
 
 // Reference frequency for the conversion between Hz and st.

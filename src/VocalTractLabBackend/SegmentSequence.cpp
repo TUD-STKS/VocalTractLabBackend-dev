@@ -19,7 +19,7 @@
 //
 // ****************************************************************************
 
-#include "SegmentSequence.h"
+#include "VocalTractLabBackend/SegmentSequence.h"
 
 #include <fstream>
 #include <iostream>

@@ -19,14 +19,14 @@
 //
 // ****************************************************************************
 
-#include "Speaker.h"
+#include "VocalTractLabBackend/Speaker.h"
 
 #include <fstream>
 #include <sstream>
 
-#include "GlottisFactory.h"
-#include "XmlHelper.h"
-#include "XmlNode.h"
+#include "VocalTractLabBackend/GlottisFactory.h"
+#include "VocalTractLabBackend/XmlHelper.h"
+#include "VocalTractLabBackend/XmlNode.h"
 
 
 Speaker::Speaker(VocalTract* vocalTract, const std::vector<Glottis*>& glottisModels, size_t selectedGlottis) :

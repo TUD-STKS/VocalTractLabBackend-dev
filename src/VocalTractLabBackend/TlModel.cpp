@@ -19,7 +19,7 @@
 //
 // ****************************************************************************
 
-#include "TlModel.h"
+#include "VocalTractLabBackend/TlModel.h"
 #include <cmath>
 
 const double TlModel::MIN_AREA_CM2  = 0.01e-2; // = 0.01 mm^2

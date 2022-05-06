@@ -19,10 +19,10 @@
 //
 // ****************************************************************************
 
-#include "VocalTract.h"
-#include "Dsp.h"
-#include "Geometry.h"
-#include "XmlHelper.h"
+#include "VocalTractLabBackend/VocalTract.h"
+#include "VocalTractLabBackend/Dsp.h"
+#include "VocalTractLabBackend/Geometry.h"
+#include "VocalTractLabBackend/XmlHelper.h"
 
 #include <iomanip>
 #include <iostream>

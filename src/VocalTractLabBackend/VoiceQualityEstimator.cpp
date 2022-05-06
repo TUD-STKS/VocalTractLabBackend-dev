@@ -19,8 +19,8 @@
 //
 // ****************************************************************************
 
-#include "VoiceQualityEstimator.h"
-#include "Constants.h"
+#include "VocalTractLabBackend/VoiceQualityEstimator.h"
+#include "VocalTractLabBackend/Constants.h"
 #include <cstdio>
 
 const double VoiceQualityEstimator::SLICE_STEP_S = 0.01;    // = 10 ms

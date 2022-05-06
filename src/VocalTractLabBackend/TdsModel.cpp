@@ -19,7 +19,7 @@
 //
 // ****************************************************************************
 
-#include "TdsModel.h"
+#include "VocalTractLabBackend/TdsModel.h"
 #include <fstream>
 #include <iomanip>
 #include <cstdlib>

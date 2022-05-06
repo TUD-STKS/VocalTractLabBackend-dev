@@ -19,7 +19,7 @@
 //
 // ****************************************************************************
 
-#include "XmlNode.h"
+#include "VocalTractLabBackend/XmlNode.h"
 #include <sstream>
 #include <iostream>
 #include <fstream>
