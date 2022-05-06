@@ -680,14 +680,6 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   // solve eigen problem
   Eigen::GeneralizedSelfAdjointEigenSolver<Matrix> eigenSolver(stiffness, mass);
 
-  //end = std::chrono::system_clock::now();
-  //elapsed_seconds = end - start;
-  // Eigensolver time 
-  //log << 3 << "\t";
-  //log << elapsed_seconds.count() << "\t";
-
-  //start = std::chrono::system_clock::now();
-
   //log << "eigen problem solved" << endl;
   //log << eigenSolver.eigenvalues().size() << " eigenvalues" << endl;
 

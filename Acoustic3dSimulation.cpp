@@ -2330,6 +2330,7 @@ void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
 
   field.resize(nPty, nPtx);
   m_maxAmpField = 0.;
+  m_minAmpField = 100.;
 
   for (int i(0); i < nPtx; i++)
   {
@@ -2351,8 +2352,9 @@ void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
 
       field(j, i) = acousticField(queryPt);
 
-      // compute the maximal amplitude of the field
+      // compute the minimal and maximal amplitude of the field
       m_maxAmpField = max(m_maxAmpField, abs(field(j, i)));
+      m_minAmpField = min(m_minAmpField, abs(field(j, i)));
 
       //log << "Field computed" << endl;
     }
@@ -2388,6 +2390,13 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
 
   if (m_simuParams.needToComputeModesAndJunctions)
   {
+    // set mode number to 0 to make sure that it is defined by the maximal cutoff 
+    // frequency when modes are computed
+    for (int i(0); i < m_crossSections.size(); i++)
+    {
+      m_crossSections[i]->setModesNumber(0);
+    }
+
     // compute modes
     start = std::chrono::system_clock::now();
     computeMeshAndModes();
@@ -2523,17 +2532,6 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
 
   generateLogFileHeader(false);
   ofstream log("log.txt", ofstream::app);
-
-  // if the modes need to be recomputed,
-  // set mode number to 0 to make sure that it is defined by the maximal cutoff 
-  // frequency when modes are computed
-  if (m_simuParams.needToComputeModesAndJunctions)
-  {
-    for (int i(0); i < m_crossSections.size(); i++)
-    {
-      m_crossSections[i]->setModesNumber(0);
-    }
-  }
 
   // compute the coordinates of the transfer function point
   tfPoint = movePointFromExitLandmarkToGeoLandmark(m_simuParams.tfPoint);
@@ -5288,55 +5286,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   // Compute the XZ sagittal plane bounding box
   //***************************************************************
 
-  pair<Point2D, Point2D> bboxXZ;
-
-  // initialize bounding box
-  bboxXZ.first = Point2D(0., 0.);
-  bboxXZ.second = Point2D(0., 0.);
-
-  // lambda expression to update the bounding box
-  auto updateBbox = [&]()
-  {
-    bboxXZ.first.x = min(bboxXZ.first.x, pt.x());
-    bboxXZ.first.y = min(bboxXZ.first.y, pt.y());
-    bboxXZ.second.x = max(bboxXZ.second.x, pt.x());
-    bboxXZ.second.y = max(bboxXZ.second.y, pt.y());
-  };
-  
-  for (int i(0); i < m_crossSections.size(); i++)
-  {
-    if (m_crossSections[i]->contour().size() > 0)
-    {
-      auto bbox = m_crossSections[i]->contour().bbox();
-
-      // pt in min
-      Transformation translateMinIn(CGAL::TRANSLATION,
-        m_crossSections[i]->scaleIn() * bbox.ymin() * m_crossSections[i]->normalIn());
-      pt = translateMinIn(m_crossSections[i]->ctrLinePtIn());
-      updateBbox();
-
-      // pt in max
-      Transformation translateMaxIn(CGAL::TRANSLATION,
-        m_crossSections[i]->scaleIn()* bbox.ymax()* m_crossSections[i]->normalIn());
-      pt = translateMaxIn(m_crossSections[i]->ctrLinePtIn());
-      updateBbox();
-
-      // pt out min
-      Transformation translateMinOut(CGAL::TRANSLATION,
-        m_crossSections[i]->scaleOut()* bbox.ymin()* m_crossSections[i]->normalOut());
-      pt = translateMinOut(m_crossSections[i]->ctrLinePtOut());
-      updateBbox();
-
-      // pt out max
-      Transformation translateMaxOut(CGAL::TRANSLATION,
-        m_crossSections[i]->scaleOut() * bbox.ymax() * m_crossSections[i]->normalOut());
-      pt = translateMaxOut(m_crossSections[i]->ctrLinePtOut());
-      updateBbox();
-    }
-  }
-
-  m_simuParams.bbox[0] = Point(bboxXZ.first.x, bboxXZ.first.y);
-  m_simuParams.bbox[1] = Point(bboxXZ.second.x, bboxXZ.second.y);
+  updateBoundingBox();
 
   //***************************************************************
   // Export data
@@ -5387,6 +5337,72 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
   return true;
   log.close();
+}
+
+//*************************************************************************
+// Update the bounding box in the sagittal plane (X, Z)
+
+void Acoustic3dSimulation::updateBoundingBox()
+{
+  pair<Point2D, Point2D> bboxXZ;
+  Point pt;
+
+  // initialize bounding box
+  bboxXZ.first = Point2D(0., 0.);
+  bboxXZ.second = Point2D(0., 0.);
+
+  // lambda expression to update the bounding box
+  auto updateBbox = [&]()
+  {
+    bboxXZ.first.x = min(bboxXZ.first.x, pt.x());
+    bboxXZ.first.y = min(bboxXZ.first.y, pt.y());
+    bboxXZ.second.x = max(bboxXZ.second.x, pt.x());
+    bboxXZ.second.y = max(bboxXZ.second.y, pt.y());
+  };
+
+  for (int i(0); i < m_crossSections.size(); i++)
+  {
+    if (m_crossSections[i]->contour().size() > 0)
+    {
+      auto bbox = m_crossSections[i]->contour().bbox();
+
+      // pt in min
+      Transformation translateMinIn(CGAL::TRANSLATION,
+        m_crossSections[i]->scaleIn() * bbox.ymin() * m_crossSections[i]->normalIn());
+      pt = translateMinIn(m_crossSections[i]->ctrLinePtIn());
+      updateBbox();
+
+      // pt in max
+      Transformation translateMaxIn(CGAL::TRANSLATION,
+        m_crossSections[i]->scaleIn() * bbox.ymax() * m_crossSections[i]->normalIn());
+      pt = translateMaxIn(m_crossSections[i]->ctrLinePtIn());
+      updateBbox();
+
+      // pt out min
+      Transformation translateMinOut(CGAL::TRANSLATION,
+        m_crossSections[i]->scaleOut() * bbox.ymin() * m_crossSections[i]->normalOut());
+      pt = translateMinOut(m_crossSections[i]->ctrLinePtOut());
+      updateBbox();
+
+      // pt out max
+      Transformation translateMaxOut(CGAL::TRANSLATION,
+        m_crossSections[i]->scaleOut() * bbox.ymax() * m_crossSections[i]->normalOut());
+      pt = translateMaxOut(m_crossSections[i]->ctrLinePtOut());
+      updateBbox();
+    }
+  }
+
+  m_simuParams.bbox[0] = Point(bboxXZ.first.x, bboxXZ.first.y);
+  m_simuParams.bbox[1] = Point(bboxXZ.second.x, bboxXZ.second.y);
+}
+
+//*************************************************************************
+// Set the bounding box to sepcified values
+
+void Acoustic3dSimulation::setBoundingBox(pair<Point2D, Point2D> &bbox)
+{
+  m_simuParams.bbox[0] = Point(bbox.first.x, bbox.first.y);
+  m_simuParams.bbox[1] = Point(bbox.second.x, bbox.second.y);
 }
 
 //*************************************************************************

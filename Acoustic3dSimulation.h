@@ -89,6 +89,8 @@ public:
     vector<Point2D>& centerLine, vector<Point2D>& normals, 
     vector<pair<double, double>>& scalingFactors, bool simplifyContours);
   bool createCrossSections(VocalTract* tract, bool createRadSection);
+  void updateBoundingBox();
+  void setBoundingBox(pair<Point2D, Point2D> &bbox);
   void importGeometry(VocalTract* tract);
 
   // For solving the wave problem 
@@ -167,6 +169,7 @@ public:
   openEndBoundaryCond mouthBoundaryCond() const {return m_mouthBoundaryCond;}
   int acousticFieldSize() const { return m_field.size(); }
   double maxAmpField() const { return m_maxAmpField; }
+  double minAmpField() const { return m_minAmpField; }
   double lastFreqComputed() const { return m_lastFreqComputed; }
 
 // **************************************************************************
@@ -217,6 +220,7 @@ private:
   Eigen::MatrixXcd m_noiseSourceTF;
   Eigen::MatrixXcd m_field;
   double m_maxAmpField;
+  double m_minAmpField;
   Eigen::VectorXcd m_planeModeInputImpedance;
 
 // **************************************************************************
