@@ -19,7 +19,7 @@
 //
 // ****************************************************************************
 
-#include "Tube.h"
+#include "VocalTractLabBackend/Tube.h"
 #include <iostream>
 #include <cstdio>
 #include <cmath>
