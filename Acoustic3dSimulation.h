@@ -63,6 +63,7 @@ public:
     int secNoiseSource, int secConstriction,
     int expSpectrumLgth, struct simulationParameters simuParams,
     enum openEndBoundaryCond cond);
+  void setIdxSecNoiseSource(int idx) { m_idxSecNoiseSource = idx; }
   void generateLogFileHeader(bool cleanLog);
 
   void setGeometryImported(bool isImported) {

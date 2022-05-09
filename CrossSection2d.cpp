@@ -1707,9 +1707,9 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
   complex<double> wallAdmittance;
   Eigen::VectorXcd bndSpecAdm(Eigen::VectorXcd::Zero(mn));
 
-  //ofstream log("log.txt", ofstream::app);
-  //log << "Start propagate magnus, numX " << numX << endl;
-  //log << "mn " << mn << endl;
+  ofstream log("log.txt", ofstream::app);
+  log << "Start propagate magnus, numX " << numX << endl;
+  log << "mn " << mn << endl;
 
   if (m_length == 0.)
   {
@@ -1807,8 +1807,8 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         l0 = scaling(tau);
         dl0 = - Ydir() * scalingDerivative(tau);
 
-        //log << "tau " << tau << endl;
-        //log << "l " << l0 << " dl " << dl0 << endl;
+        log << "tau " << tau << endl;
+        log << "l " << l0 << " dl " << dl0 << endl;
 
         // build matrix K2
         K2.setZero(mn, mn);
@@ -1829,6 +1829,9 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         start = std::chrono::system_clock::now();
 
         omega = (dX * omega).exp();
+
+        log << "dX " << dX << endl;
+        log << "Omega:\n" << omega << endl;
 
         end = std::chrono::system_clock::now();
         *time += end - start;
@@ -1957,7 +1960,7 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
   //log << "Time matrix omega " << 100.*matricesMag.count() / tot.count() << endl;
   //log << "time propa " << 100.*propag.count() / tot.count() << endl;
   }
-  //log.close();
+  log.close();
 }
 
 // **************************************************************************

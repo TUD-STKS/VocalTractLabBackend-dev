@@ -156,6 +156,8 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_simuParams.fieldResolution = 30;
   m_simuParams.fieldResolutionPicture = 30;
   m_simuParams.computeRadiatedField = false;
+  m_maxAmpField = -1.;
+  m_minAmpField = -1.;
 
   m_numFreq = 1 << (m_spectrumLgthExponent - 1);
   m_numFreqPicture = m_numFreq;
@@ -2433,6 +2435,11 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
     log << "Time radiation impedance: " << elapsed_seconds.count() << endl;
   }
 
+  log << "Matrix C:\n" << m_crossSections.back()->getMatrixC() << endl;
+  log << "Matrix D:\n" << m_crossSections.back()->getMatrixD() << endl;
+  log << "Matrix E:\n" << m_crossSections.back()->getMatrixE() << endl;
+  log << "Matrix KR2:\n" << m_crossSections.back()->getMatrixKR2(0) << endl;
+
   //******************************************************
   // Set sources parameters
   //******************************************************
@@ -2484,12 +2491,19 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
   // propagate impedance and admittance
   propagateImpedAdmit(radImped, radAdmit, freq, lastSec, 0, timeExp);
 
+  log << "Zout:\n" << m_crossSections.back()->Zout() << endl;
+  log << "Zin:\n" << m_crossSections.back()->Zin() << endl;
+
   // create input velocity, for a constant input velocity q = -j * w * rho * v 
   inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass
     * pow(m_crossSections[0]->scaleIn(), 3)
     * m_crossSections[0]->area()
     ;
   inputPressure = m_crossSections[0]->Zin() * inputVelocity;
+
+  log << "Zin:\n" << m_crossSections[0]->Zin() << endl;
+  log << "inputVelocity:\n" << inputVelocity << endl;
+  log << "inputPressure:\n" << inputPressure << endl;
 
   // propagate velocity and pressure
   propagateVelocityPress(inputVelocity, inputPressure, freq, 0, lastSec, timeExp);
