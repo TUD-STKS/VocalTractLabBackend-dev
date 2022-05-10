@@ -683,7 +683,7 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   //log << "eigen problem solved" << endl;
   //log << eigenSolver.eigenvalues().size() << " eigenvalues" << endl;
 
-
+  m_eigenFreqs.clear();
   if (m_modesNumber == 0)
   // extract the eigenfrequencies lower than the maximal
   // cut-on frequency and determine the number of modes
@@ -1707,9 +1707,9 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
   complex<double> wallAdmittance;
   Eigen::VectorXcd bndSpecAdm(Eigen::VectorXcd::Zero(mn));
 
-  ofstream log("log.txt", ofstream::app);
-  log << "Start propagate magnus, numX " << numX << endl;
-  log << "mn " << mn << endl;
+  //ofstream log("log.txt", ofstream::app);
+  //log << "Start propagate magnus, numX " << numX << endl;
+  //log << "mn " << mn << " curv " << curv << endl;
 
   if (m_length == 0.)
   {
@@ -1771,11 +1771,9 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
 
     // compute matrix KR2
     Eigen::MatrixXcd KR2(Eigen::MatrixXcd::Zero(mn, mn));
-    Eigen::MatrixXcd DR(Eigen::MatrixXcd::Zero(mn, mn));
     for (int s(0); s < m_KR2.size(); s++)
     {
       KR2 += m_KR2[s] * bndSpecAdm.asDiagonal() + wallAdmittance * m_KR2[s];
-      DR += m_DR[s] * bndSpecAdm.asDiagonal() + wallAdmittance * m_DR[s];
     }
 
     // track time
@@ -1807,8 +1805,8 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         l0 = scaling(tau);
         dl0 = - Ydir() * scalingDerivative(tau);
 
-        log << "tau " << tau << endl;
-        log << "l " << l0 << " dl " << dl0 << endl;
+        //log << "tau " << tau << " k " << k << endl;
+        //log << "l " << l0 << " dl " << dl0 << endl;
 
         // build matrix K2
         K2.setZero(mn, mn);
@@ -1822,16 +1820,12 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         omega << ((dl0 / l0)* m_E),
           (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
           (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN
-            //-1i*k*l0*l0*DR
             )),
           (-(dl0 / l0) * m_E.transpose());
 
         start = std::chrono::system_clock::now();
 
         omega = (dX * omega).exp();
-
-        log << "dX " << dX << endl;
-        log << "Omega:\n" << omega << endl;
 
         end = std::chrono::system_clock::now();
         *time += end - start;
@@ -1960,7 +1954,7 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
   //log << "Time matrix omega " << 100.*matricesMag.count() / tot.count() << endl;
   //log << "time propa " << 100.*propag.count() / tot.count() << endl;
   }
-  log.close();
+  //log.close();
 }
 
 // **************************************************************************

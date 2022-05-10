@@ -259,7 +259,7 @@ public:
   Eigen::MatrixXcd Yin() const;
   Eigen::MatrixXcd Yout() const;
   vector<Eigen::MatrixXcd> Q() const { return m_axialVelocity; }
-  Eigen::MatrixXcd Qin() const;
+  Eigen::MatrixXcd Qin() const; 
   Eigen::MatrixXcd Qout() const;
   vector<Eigen::MatrixXcd> P() const { return m_acPressure; }
   Eigen::MatrixXcd Pin() const;
