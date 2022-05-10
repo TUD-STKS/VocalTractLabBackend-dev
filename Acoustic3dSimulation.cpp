@@ -493,7 +493,6 @@ void Acoustic3dSimulation::computeMeshAndModes()
 
   //ofstream mesh;
   ofstream log;
-  CDT cdt;
   log.open("log.txt", ofstream::app);
   //log << "Start computing modes" << endl;
 
@@ -511,25 +510,6 @@ void Acoustic3dSimulation::computeMeshAndModes()
     log << "Sec " << i << " mesh, nb vertices: "
       << m_crossSections[i]->numberOfVertices()
       << " time: " << elapsed_seconds.count() << " s ";
-
-    //// export a specific mesh as text file
-    //if (i == 210)
-    //{
-    //  mesh.open("mesh.txt");
-    //  cdt = m_crossSections[i]->triangulation();
-    //  for (auto it = cdt.faces_begin(); it != cdt.faces_end(); it++)
-    //  {
-    //    for (int v(0); v < 3; v++)
-    //    {
-    //      mesh << it->vertex(v)->point().x() << "  "
-    //        << it->vertex(v)->point().y() << endl;
-    //    }
-    //    mesh << it->vertex(0)->point().x() << "  "
-    //      << it->vertex(0)->point().y() << endl;
-    //    mesh << "nan  nan" << endl;
-    //  }
-    //  mesh.close();
-    //}
 
     start = std::chrono::system_clock::now();
     m_crossSections[i]->computeModes(m_simuParams);
@@ -556,6 +536,210 @@ void Acoustic3dSimulation::computeMeshAndModes()
   // destroy progress dialog
   progressDialog->Destroy();
   progressDialog = NULL;
+}
+
+// ****************************************************************************
+
+void Acoustic3dSimulation::computeMeshAndModes(int segIdx)
+{
+  ofstream log;
+  log.open("log.txt", ofstream::app);
+
+  // generate mesh
+  auto start = std::chrono::system_clock::now();
+  m_crossSections[segIdx]->setSpacing(sqrt(m_crossSections[segIdx]->area()) / m_meshDensity);
+  m_crossSections[segIdx]->buildMesh();
+  auto end = std::chrono::system_clock::now();
+  auto elapsed_seconds = end - start;
+  log << "Sec " << segIdx << " mesh, nb vertices: "
+    << m_crossSections[segIdx]->numberOfVertices()
+    << " time: " << elapsed_seconds.count() << " s ";
+
+  // compute modes
+  start = std::chrono::system_clock::now();
+  m_crossSections[segIdx]->computeModes(m_simuParams);
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end - start;
+  log << m_crossSections[segIdx]->numberOfModes()
+    << " modes computed, time: "
+    << elapsed_seconds.count() << " s" << endl;
+
+  log.close();
+}
+
+// ****************************************************************************
+// Compute the junction matrices of a given segment
+
+void Acoustic3dSimulation::computeJunctionMatrices(int segIdx)
+{
+  int nModes, nModesNext;
+  vector<Matrix> matrixF;
+  Polygon_2 contour, nextContour, intersecCont;
+  double scaling[2];
+  int nextSec;
+  Vector ctlShift;
+  int idxMinArea;
+  Pwh_list_2 intersections;
+  double spacing;
+  vector<Point> pts;
+  vector<double> areaFaces;
+  CDT cdt;
+  Matrix interpolation1, interpolation2;
+  double quadPtWeight = 1. / 3.;
+
+  if (m_crossSections[segIdx]->numNextSec() > 0)
+  {
+    nModes = m_crossSections[segIdx]->numberOfModes();
+
+    matrixF.clear();
+
+    // get the contour of the current cross-section
+    contour.clear();
+    scaling[0] = m_crossSections[segIdx]->scaleOut();
+    Transformation scale(CGAL::SCALING, scaling[0]);
+
+    // The centerline at the end of the segment can be different from the one 
+    // at the beginning of the next segment
+    nextSec = m_crossSections[segIdx]->nextSec(0);
+    ctlShift = Vector(m_crossSections[nextSec]->ctrLinePtIn(),
+      m_crossSections[segIdx]->ctrLinePtOut());
+    ctlShift = Vector(0., ctlShift * m_crossSections[segIdx]->normalOut());
+    Transformation translate(CGAL::TRANSLATION, ctlShift);
+
+    contour = transform(translate, transform(scale, m_crossSections[segIdx]->contour()));
+
+    // loop over the folowing connected cross-sections
+    for (int ns(0); ns < m_crossSections[segIdx]->numNextSec(); ns++)
+    {
+      nextSec = m_crossSections[segIdx]->nextSec(ns);
+      nModesNext = m_crossSections[nextSec]->numberOfModes();
+
+      Matrix F(Matrix::Zero(nModes, nModesNext));
+
+      // get the next contour
+      nextContour.clear();
+      scaling[1] = m_crossSections[nextSec]->scaleIn();
+      Transformation scale(CGAL::SCALING, scaling[1]);
+      nextContour = transform(scale, m_crossSections[nextSec]->contour());
+      if (contour.area() >= nextContour.area())
+      {
+        idxMinArea = 1;
+      }
+      else
+      {
+        idxMinArea = 0;
+      }
+      nextContour = m_crossSections[nextSec]->contour();
+
+      //////////////////////////////////////////////////////////////
+      // Compute the intersections of the contours
+      //////////////////////////////////////////////////////////////
+
+      // compute the intersection between the contours of the current
+      intersections.clear();
+      if ((typeid(*m_crossSections[nextSec]) == typeid(CrossSection2dRadiation))
+        || m_crossSections[segIdx]->isJunction())
+      {
+        intersections.push_back(Polygon_with_holes_2(contour));
+      }
+      else if (m_crossSections[nextSec]->isJunction())
+      {
+        intersections.push_back(Polygon_with_holes_2(nextContour));
+      }
+      else
+      {
+        if (!similarContours(contour, nextContour, MINIMAL_DISTANCE_DIFF_POLYGONS))
+        {
+          CGAL::intersection(contour, nextContour, std::back_inserter(intersections));
+        }
+        else
+        {
+          intersections.push_back(Polygon_with_holes_2(nextContour));
+        }
+      }
+
+      spacing = min(scaling[0] * m_crossSections[segIdx]->spacing(),
+        m_crossSections[nextSec]->spacing());
+
+      if (intersections.size() > 0)
+      {
+
+        // loop over the intersection contours
+        for (auto it = intersections.begin(); it != intersections.end(); ++it)
+        {
+          //////////////////////////////////////////////////////////////
+          // Mesh the intersection surfaces and generate integration points
+          //////////////////////////////////////////////////////////////
+
+          // mesh the intersection contours
+          intersecCont.clear();
+          pts.clear();
+          areaFaces.clear();
+          cdt.clear();
+          intersecCont = it->outer_boundary();
+          cdt.insert_constraint(intersecCont.begin(), intersecCont.end(), true);
+          CGAL::refine_Delaunay_mesh_2(cdt, Criteria(0.125, spacing));
+
+          // remove the faces which lies outside of the contour
+          for (auto itF = cdt.finite_faces_begin();
+            itF != cdt.finite_faces_end(); ++itF)
+          {
+            if (!itF->is_in_domain())
+            {
+              cdt.delete_face(itF);
+            }
+          }
+
+          gaussPointsFromMesh(pts, areaFaces, cdt);
+
+          //////////////////////////////////////////////////////////////
+          // Interpolate modes
+          //////////////////////////////////////////////////////////////
+
+          // interpolate the modes of the first cross-section
+          interpolation1 = m_crossSections[segIdx]->interpolateModes(pts
+            , 1. / scaling[0], -ctlShift
+          );
+
+          // interpolate the modes of the next cross-section
+          interpolation2 = m_crossSections[nextSec]->interpolateModes(pts
+            , 1. / scaling[1]
+          );
+
+          //////////////////////////////////////////////////////////////
+          // Compute scatering matrix F
+          //////////////////////////////////////////////////////////////
+
+          // loop over faces to integrate the modes product
+          for (int f(0); f < areaFaces.size(); f++)
+          {
+            if (areaFaces[f] != 0)
+            {
+              // loop over modes of the first cross-section
+              for (int m(0); m < nModes; m++)
+              {
+                // loop over modes of the next cross-section
+                for (int n(0); n < nModesNext; n++)
+                {
+                  // loop over the Gauss integration points
+                  for (int g(0); g < 3; g++)
+                  {
+                    F(m, n) += areaFaces[f] * interpolation1(f * 3 + g, m) *
+                      interpolation2(f * 3 + g, n) * quadPtWeight
+                      /// pow(scaling[idxMinArea], 2)
+                      / scaling[0] / scaling[1]
+                      ;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      matrixF.push_back(F);
+    }
+    m_crossSections[segIdx]->setMatrixF(matrixF);
+  }
 }
 
 // ****************************************************************************
@@ -2401,14 +2585,22 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
 
     // compute modes
     start = std::chrono::system_clock::now();
-    computeMeshAndModes();
+    for (int i(0); i < m_crossSections.size(); i++)
+    {
+      computeMeshAndModes(i);
+    }
     end = std::chrono::system_clock::now();
     elapsed_seconds = end - start;
     log << "Time mesh and modes: " << elapsed_seconds.count() << endl;
 
     // compute junction matrices
     start = std::chrono::system_clock::now();
-    computeJunctionMatrices(false);
+    for (int i(0); i < m_crossSections.size(); i++)
+    {
+      computeJunctionMatrices(i);
+      log << "Junction segment " << i << " computed" << endl;
+    }
+    //computeJunctionMatrices(false);
     end = std::chrono::system_clock::now();
     elapsed_seconds = end - start;
     log << "Time junction matrices: " << elapsed_seconds.count() << endl;
@@ -2504,13 +2696,43 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
 }
 
 // **************************************************************************
+// Precompute parameters for transfer function computation
+
+void Acoustic3dSimulation::precomputationsForTf()
+{
+  m_freqSteps = (double)SAMPLING_RATE / 2. / (double)m_numFreq;
+  m_numFreqComputed = (int)ceil(m_simuParams.maxComputedFreq / m_freqSteps);
+
+  // copy the number of frequencies for display
+  m_numFreqPicture = m_numFreq;
+
+  // activate computation of radiated field since in most of the 
+  // cases the reception point of the transfer functions is outside
+  m_simuParams.computeRadiatedField = true;
+
+  generateLogFileHeader(false);
+
+  // compute the coordinates of the transfer function point
+  m_tfPoints = movePointFromExitLandmarkToGeoLandmark(m_simuParams.tfPoint);
+
+  // resize the frequency vector
+  m_tfFreqs.clear();
+  m_tfFreqs.reserve(m_numFreqComputed);
+
+  // resize the transfer function matrix
+  m_glottalSourceTF.resize(m_numFreqComputed, m_simuParams.tfPoint.size());
+  m_noiseSourceTF.resize(m_numFreqComputed, m_simuParams.tfPoint.size());
+
+  // resize the plane mode input impedance vector
+  m_planeModeInputImpedance.resize(m_numFreqComputed);
+}
+
+// **************************************************************************
 // Compute the transfer function(s)
 
 void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
 {
-  double freq, freqSteps((double)SAMPLING_RATE / 2. / (double)m_numFreq);
-  int numFreqComputed((int)ceil(m_simuParams.maxComputedFreq / freqSteps));
-  vector<Point_3> tfPoint;
+  double freq;
   Eigen::VectorXcd pressure;
 
   // for secondary sound source
@@ -2525,37 +2747,16 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
   auto end = std::chrono::system_clock::now();
   std::chrono::duration<double> timePropa(0.), timeComputeField(0.), timeExp(0.), time;
 
-  // copy the number of frequencies for display
-  m_numFreqPicture = m_numFreq;
+  precomputationsForTf();
 
-  // activate computation of radiated field since in most of the 
-  // cases the reception point of the transfer functions is outside
-  m_simuParams.computeRadiatedField = true;
-
-  generateLogFileHeader(false);
   ofstream log("log.txt", ofstream::app);
 
-  // compute the coordinates of the transfer function point
-  tfPoint = movePointFromExitLandmarkToGeoLandmark(m_simuParams.tfPoint);
-  
-
-  // resize the frequency vector
-  m_tfFreqs.clear();
-  m_tfFreqs.reserve(numFreqComputed);
-
-  // resize the transfer function matrix
-  m_glottalSourceTF.resize(numFreqComputed, m_simuParams.tfPoint.size());
-  m_noiseSourceTF.resize(numFreqComputed, m_simuParams.tfPoint.size());
-
-  // resize the plane mode input impedance vector
-  m_planeModeInputImpedance.resize(numFreqComputed);
-
   // loop over frequencies
-  for (int i(0); i < numFreqComputed; i++)
+  for (int i(0); i < m_numFreqComputed; i++)
   {
-    freq = max(0.1, (double)i * freqSteps);
+    freq = max(0.1, (double)i * m_freqSteps);
     m_tfFreqs.push_back(freq);
-    log << "frequency " << i + 1 << "/" << numFreqComputed << " f = " << freq
+    log << "frequency " << i + 1 << "/" << m_numFreqComputed << " f = " << freq
       << " Hz" << endl;
 
     solveWaveProblem(tract, freq, true, timePropa, &timeExp);
@@ -2566,7 +2767,7 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
 
     start = std::chrono::system_clock::now();
 
-    pressure = acousticField(tfPoint);
+    pressure = acousticField(m_tfPoints);
     m_glottalSourceTF.row(i) = pressure;
     spectrum.setValue(i, pressure(0));
 
@@ -2659,7 +2860,7 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
       propagateVelocityPress(prevVelo, prevPress, freq,
         min(m_idxSecNoiseSource + 1, lastSec), lastSec, &time);
 
-      pressure = acousticField(tfPoint);
+      pressure = acousticField(m_tfPoints);
       m_noiseSourceTF.row(i) = pressure;
       spectrumNoise.setValue(i, pressure(0));
     }
@@ -2681,7 +2882,7 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
   // Export plane mode input impedance
   ofstream prop;
   prop.open("zin.txt");
-  for (int i(0); i < numFreqComputed; i++)
+  for (int i(0); i < m_numFreqComputed; i++)
   {
     prop << m_tfFreqs[i] << "  "
       << abs(1i * 2. * M_PI * m_tfFreqs[i] * m_simuParams.volumicMass *
@@ -5563,7 +5764,7 @@ void Acoustic3dSimulation::interpolateAcousticField(Vec &coordX, Vec &coordY, Ma
 //*************************************************************************
 // Export the geometry extracted as CSV file
 
-void Acoustic3dSimulation::exportGeoInCsv(string fileName)
+bool Acoustic3dSimulation::exportGeoInCsv(string fileName)
 {
   ofstream of(fileName);
   stringstream strX, strY;
@@ -5573,156 +5774,157 @@ void Acoustic3dSimulation::exportGeoInCsv(string fileName)
   double theta, thetaN;
 
   //ofstream log("log.txt", ofstream::app);
-
-  for (int i(0); i < m_crossSections.size(); i++)
+  if (of.is_open())
   {
-    if (m_crossSections[i]->length() > 0.)
+    for (int i(0); i < m_crossSections.size(); i++)
     {
-      //**********************************************************
-      // contour in
+      if (m_crossSections[i]->length() > 0.)
+      {
+        //**********************************************************
+        // contour in
 
-      if (i == 0)
-      {
-        Pt = Point(m_crossSections[i]->ctrLinePt().x,
-          m_crossSections[i]->ctrLinePt().y);
-        N = Vector(m_crossSections[i]->normal().x,
-          m_crossSections[i]->normal().y);
-      }
-      else
-      {
-        Pt = Point(m_crossSections[i]->ctrLinePt().x,
-          m_crossSections[i]->ctrLinePt().y);
-        N = Vector(m_crossSections[i]->normal().x,
-          m_crossSections[i]->normal().y);
-        theta = abs(m_crossSections[i]->circleArcAngle())/2.;
-        Transformation rotate(CGAL::ROTATION, sin(M_PI / 2. - theta),
-          cos(M_PI / 2. - theta));
-        Transformation translate(CGAL::TRANSLATION,
-          2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N));
-        //log << "Radius " << abs(m_crossSections[i]->curvRadius()) << endl;
-        //log << "theta " << theta << endl;
-        //log << "Rotated N " << rotate(N) << endl;
-        //log << "Vector translate " <<
-        //  2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N) << endl;
-        //log << "Pt before " << Pt << endl;
-        Pt = translate(Pt);
-        if (signbit(m_crossSections[i]->curvRadius()))
+        if (i == 0)
         {
-          thetaN = 2. * theta;
+          Pt = Point(m_crossSections[i]->ctrLinePt().x,
+            m_crossSections[i]->ctrLinePt().y);
+          N = Vector(m_crossSections[i]->normal().x,
+            m_crossSections[i]->normal().y);
         }
         else
         {
-          thetaN = -2. * theta;
+          Pt = Point(m_crossSections[i]->ctrLinePt().x,
+            m_crossSections[i]->ctrLinePt().y);
+          N = Vector(m_crossSections[i]->normal().x,
+            m_crossSections[i]->normal().y);
+          theta = abs(m_crossSections[i]->circleArcAngle()) / 2.;
+          Transformation rotate(CGAL::ROTATION, sin(M_PI / 2. - theta),
+            cos(M_PI / 2. - theta));
+          Transformation translate(CGAL::TRANSLATION,
+            2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N));
+          Pt = translate(Pt);
+          if (signbit(m_crossSections[i]->curvRadius()))
+          {
+            thetaN = 2. * theta;
+          }
+          else
+          {
+            thetaN = -2. * theta;
+          }
+          Transformation rotateN(CGAL::ROTATION, sin(thetaN), cos(thetaN));
+          //log << "Pt after " << Pt << endl;
+          N = rotateN(N);
         }
-        Transformation rotateN(CGAL::ROTATION, sin(thetaN), cos(thetaN));
-        //log << "Pt after " << Pt << endl;
-        N = rotateN(N);
-      }
 
-      // write centerline point coordinates
-      strX << Pt.x() << separator;
-      strY << Pt.y() << separator;
+        // write centerline point coordinates
+        strX << Pt.x() << separator;
+        strY << Pt.y() << separator;
 
-      // write normal coordinates
-      strX << N.x() << separator;
-      strY << N.y() << separator;
+        // write normal coordinates
+        strX << N.x() << separator;
+        strY << N.y() << separator;
 
-      // write contour
-      for (auto pt : m_crossSections[i]->contour())
-      {
-        strX << m_crossSections[i]->scaleIn() * pt.x() << separator;
-        strY << m_crossSections[i]->scaleIn() * pt.y() << separator;
-      }
+        // write contour
+        for (auto pt : m_crossSections[i]->contour())
+        {
+          strX << m_crossSections[i]->scaleIn() * pt.x() << separator;
+          strY << m_crossSections[i]->scaleIn() * pt.y() << separator;
+        }
 
-      of << strX.str() << endl << strY.str() << endl;
+        of << strX.str() << endl << strY.str() << endl;
 
-      strX.str("");
-      strX.clear();
-      strY.str("");
-      strY.clear();
+        strX.str("");
+        strX.clear();
+        strY.str("");
+        strY.clear();
 
-      //********************************************************
-      // contour out
+        //********************************************************
+        // contour out
 
-      if (i == 0)
-      {
-        Pt = Point(m_crossSections[i]->ctrLinePt().x,
-          m_crossSections[i]->ctrLinePt().y);
-        N = Vector(m_crossSections[i]->normal().x,
-          m_crossSections[i]->normal().y);
-        theta = abs(m_crossSections[i]->circleArcAngle()) / 2.;
-        Transformation rotate(CGAL::ROTATION, sin(-M_PI / 2. + theta),
-          cos(-M_PI / 2. + theta));
-        Transformation translate(CGAL::TRANSLATION,
-          2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N));
-        //log << "Radius " << abs(m_crossSections[i]->curvRadius()) << endl;
-        //log << "theta " << theta << endl;
-        //log << "Rotated N " << rotate(N) << endl;
-        //log << "Vector translate " <<
-        //  2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N) << endl;
-        //log << "Pt before " << Pt << endl;
-        //Pt = translate(Pt);
-        //log << "Pt after " << Pt << endl;
-        Transformation rotateN(CGAL::ROTATION, sin(2. * theta), cos(2. * theta));
-        N = rotateN(N);
+        if (i == 0)
+        {
+          Pt = Point(m_crossSections[i]->ctrLinePt().x,
+            m_crossSections[i]->ctrLinePt().y);
+          N = Vector(m_crossSections[i]->normal().x,
+            m_crossSections[i]->normal().y);
+          theta = abs(m_crossSections[i]->circleArcAngle()) / 2.;
+          Transformation rotate(CGAL::ROTATION, sin(-M_PI / 2. + theta),
+            cos(-M_PI / 2. + theta));
+          Transformation translate(CGAL::TRANSLATION,
+            2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N));
+          //log << "Radius " << abs(m_crossSections[i]->curvRadius()) << endl;
+          //log << "theta " << theta << endl;
+          //log << "Rotated N " << rotate(N) << endl;
+          //log << "Vector translate " <<
+          //  2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N) << endl;
+          //log << "Pt before " << Pt << endl;
+          //Pt = translate(Pt);
+          //log << "Pt after " << Pt << endl;
+          Transformation rotateN(CGAL::ROTATION, sin(2. * theta), cos(2. * theta));
+          N = rotateN(N);
+        }
+        else
+        {
+          Pt = Point(m_crossSections[i]->ctrLinePt().x,
+            m_crossSections[i]->ctrLinePt().y);
+          N = Vector(m_crossSections[i]->normal().x,
+            m_crossSections[i]->normal().y);
+        }
+
+        // write centerline point coordinates
+        strX << Pt.x() << separator;
+        strY << Pt.y() << separator;
+
+        // write normal coordinates
+        strX << N.x() << separator;
+        strY << N.y() << separator;
+
+        // write contour
+        for (auto pt : m_crossSections[i]->contour())
+        {
+          strX << m_crossSections[i]->scaleOut() * pt.x() << separator;
+          strY << m_crossSections[i]->scaleOut() * pt.y() << separator;
+        }
+
+        of << strX.str() << endl << strY.str() << endl;
+
+        strX.str("");
+        strX.clear();
+        strY.str("");
+        strY.clear();
       }
       else
       {
-        Pt = Point(m_crossSections[i]->ctrLinePt().x,
-          m_crossSections[i]->ctrLinePt().y);
-        N = Vector(m_crossSections[i]->normal().x,
-          m_crossSections[i]->normal().y);
+        // export junction cross-section
+
+        // write centerline point coordinates
+        strX << m_crossSections[i]->ctrLinePt().x << separator;
+        strY << m_crossSections[i]->ctrLinePt().y << separator;
+
+        // write normal coordinates
+        strX << m_crossSections[i]->normal().x << separator;
+        strY << m_crossSections[i]->normal().y << separator;
+
+        // write contour
+        for (auto pt : m_crossSections[i]->contour())
+        {
+          strX << pt.x() << separator;
+          strY << pt.y() << separator;
+        }
+
+        of << strX.str() << endl << strY.str() << endl;
+
+        strX.str("");
+        strX.clear();
+        strY.str("");
+        strY.clear();
       }
-
-      // write centerline point coordinates
-      strX << Pt.x() << separator;
-      strY << Pt.y() << separator;
-
-      // write normal coordinates
-      strX << N.x() << separator;
-      strY << N.y() << separator;
-
-      // write contour
-      for (auto pt : m_crossSections[i]->contour())
-      {
-        strX << m_crossSections[i]->scaleOut() * pt.x() << separator;
-        strY << m_crossSections[i]->scaleOut() * pt.y() << separator;
-      }
-
-      of << strX.str() << endl << strY.str() << endl;
-
-      strX.str("");
-      strX.clear();
-      strY.str("");
-      strY.clear();
     }
-    else
-    {
-      // export junction cross-section
-
-      // write centerline point coordinates
-      strX << m_crossSections[i]->ctrLinePt().x << separator;
-      strY << m_crossSections[i]->ctrLinePt().y << separator;
-
-      // write normal coordinates
-      strX << m_crossSections[i]->normal().x << separator;
-      strY << m_crossSections[i]->normal().y << separator;
-
-      // write contour
-      for (auto pt : m_crossSections[i]->contour())
-      {
-        strX << pt.x() << separator;
-        strY << pt.y() << separator;
-      }
-
-      of << strX.str() << endl << strY.str() << endl;
-
-      strX.str("");
-      strX.clear();
-      strY.str("");
-      strY.clear();
-    }
+    return(true);
   }
+  else
+  {
+  return(false);
+ }
   of.close();
   //log.close();
 }

@@ -96,6 +96,8 @@ public:
 
   // For solving the wave problem 
   void computeMeshAndModes();
+  void computeMeshAndModes(int segIdx);
+  void computeJunctionMatrices(int segIdx);
   void computeJunctionMatrices(bool computeG);
   void requestModesAndJunctionComputation() { m_simuParams.needToComputeModesAndJunctions = true; }
   void propagateImpedAdmitBranch(vector< Eigen::MatrixXcd> Q0, double freq,
@@ -122,6 +124,7 @@ public:
   bool findSegmentContainingPoint(Point queryPt, int &idxSeg);
   Eigen::VectorXcd acousticField(vector<Point_3> queryPt);
   void acousticFieldInPlane(Eigen::MatrixXcd& field);
+  void precomputationsForTf();
   void solveWaveProblem(VocalTract* tract, double freq, bool precomputeRadImped,
     std::chrono::duration<double>& time, std::chrono::duration<double> *timeExp);
   void computeTransferFunction(VocalTract* tract);
@@ -134,7 +137,7 @@ public:
   complex<double> interpolateTransferFunction(double freq, int idxPt, enum tfType type);
   double interpolateAcousticField(Point querryPt);
   void interpolateAcousticField(Vec &coordX, Vec &coordY, Matrix &field);
-  void exportGeoInCsv(string fileName);
+  bool exportGeoInCsv(string fileName);
   bool exportTransferFucntions(string fileName, enum tfType type);
   bool exportAcousticField(string fileName);
 
@@ -166,7 +169,7 @@ public:
       m_simuParams.bbox[1].y());
     return bbox;
   }
-  int numCrossSections(){ return m_crossSections.size(); }
+  int numberOfSegments(){ return m_crossSections.size(); }
   openEndBoundaryCond mouthBoundaryCond() const {return m_mouthBoundaryCond;}
   int acousticFieldSize() const { return m_field.size(); }
   double maxAmpField() const { return m_maxAmpField; }
@@ -209,12 +212,17 @@ private:
   openEndBoundaryCond m_mouthBoundaryCond;
   vector<vector<vector<vector<double>>>> m_radiationMatrixInterp;
   vector<double> m_radiationFreqs;
+  double m_freqSteps;
+  int m_numFreqComputed;
   vector<double> m_tfFreqs;
+  // transfer function points in the landmark of the geometry
+  // (it is easier to give the coordinates of the transfer function points in the
+  // the landmark of the exit segment, but one need their coordinate in the landmark 
+  // of the geometry for the computation of the acoustic field)
+  vector<Point_3> m_tfPoints;
 
   // maximal bounding box of the cross-sections (for displaying mesh and modes)
   pair<Point2D, Point2D> m_maxCSBoundingBox;
-  // for displaying segments and acoustic field
-  //pair<Point2D, Point2D> m_bboxXZ;
 
   // simulation outputs
   Eigen::MatrixXcd m_glottalSourceTF;
