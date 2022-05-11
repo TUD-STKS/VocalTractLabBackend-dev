@@ -100,6 +100,11 @@ public:
   void computeJunctionMatrices(int segIdx);
   void computeJunctionMatrices(bool computeG);
   void requestModesAndJunctionComputation() { m_simuParams.needToComputeModesAndJunctions = true; }
+  void setNeedToComputeModesAndJunctions(bool val) { m_simuParams.needToComputeModesAndJunctions = val; }
+  void preComputeRadiationMatrices(int nbRadFreqs, int idxRadSec);
+  void initCoefInterpRadiationMatrices(int nbRadFreqs, int idxRadSec);
+  void addRadMatToInterpolate(int nbRadFreqs, int idxRadSec, int idxRadFreq);
+  void computeInterpCoefRadMat(int nbRadFreqs, int idxRadSec);
   void propagateImpedAdmitBranch(vector< Eigen::MatrixXcd> Q0, double freq,
     vector<int> startSections, vector<int> endSections, double direction);
   void propagateImpedAdmit(Eigen::MatrixXcd& startImped, Eigen::MatrixXcd& startAdmit, 
@@ -123,10 +128,19 @@ public:
   complex<double> acousticField(Point_3 queryPt);
   bool findSegmentContainingPoint(Point queryPt, int &idxSeg);
   Eigen::VectorXcd acousticField(vector<Point_3> queryPt);
-  void acousticFieldInPlane(Eigen::MatrixXcd& field);
+  void prepareAcousticFieldComputation();
+  void acousticFieldInLine(int idxLine);
+  void acousticFieldInPlane();
   void precomputationsForTf();
   void solveWaveProblem(VocalTract* tract, double freq, bool precomputeRadImped,
     std::chrono::duration<double>& time, std::chrono::duration<double> *timeExp);
+  void solveWaveProblem(VocalTract* tract, double freq,
+    std::chrono::duration<double>& time, std::chrono::duration<double>* timeExp);
+  void solveWaveProblemNoiseSrc(bool &needToExtractMatrixF, Matrix& F, double freq,
+    std::chrono::duration<double>* time);
+  void computeGlottalTf(int idxFreq);
+  void computeNoiseSrcTf(int idxFreq);
+  void generateSpectraNegativeFreqs();
   void computeTransferFunction(VocalTract* tract);
   void computeAcousticField(VocalTract* tract);
   void coneConcatenationSimulation(string fileName);
@@ -169,11 +183,14 @@ public:
       m_simuParams.bbox[1].y());
     return bbox;
   }
-  int numberOfSegments(){ return m_crossSections.size(); }
+  int numberOfSegments() const { return m_crossSections.size(); }
+  bool radImpedPrecomputed() const { return m_simuParams.radImpedPrecomputed; }
   openEndBoundaryCond mouthBoundaryCond() const {return m_mouthBoundaryCond;}
   int acousticFieldSize() const { return m_field.size(); }
   double maxAmpField() const { return m_maxAmpField; }
   double minAmpField() const { return m_minAmpField; }
+  int numFreqComputed() const { return m_numFreqComputed; }
+  double freqSteps() const { return m_freqSteps; }
   double lastFreqComputed() const { return m_lastFreqComputed; }
 
 // **************************************************************************
@@ -221,6 +238,12 @@ private:
   // of the geometry for the computation of the acoustic field)
   vector<Point_3> m_tfPoints;
 
+  // parameters for field computation
+  double m_lx;
+  double m_ly;
+  int m_nPtx;
+  int m_nPty;
+
   // maximal bounding box of the cross-sections (for displaying mesh and modes)
   pair<Point2D, Point2D> m_maxCSBoundingBox;
 
@@ -249,7 +272,7 @@ private:
     Point2D N1, Point2D N2, double& radius, double& angle, double& shift);
   
   // for radiation impedance 
-  void preComputeRadiationMatrices(int nbRadFreqs, int idxRadSec);
+  
   void interpolateRadiationImpedance(Eigen::MatrixXcd& imped, double freq, int idxRadSec); 
   void interpolateRadiationAdmittance(Eigen::MatrixXcd& admit, double freq, int idxRadSec);
   void radiationImpedance(Eigen::MatrixXcd& imped, double freq, double gridDensity, int idxRadSec);

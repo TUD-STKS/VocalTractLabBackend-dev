@@ -2491,59 +2491,64 @@ bool Acoustic3dSimulation::findSegmentContainingPoint(Point queryPt, int& idxSeg
 }
 
 // **************************************************************************
-// Extract the internal acoustic field in a plane
+// set the variables for the computation of acoustic field
 
-void Acoustic3dSimulation::acousticFieldInPlane(Eigen::MatrixXcd& field)
+void Acoustic3dSimulation::prepareAcousticFieldComputation()
 {
-  double lx(m_simuParams.bbox[1].x() - m_simuParams.bbox[0].x());
-  double ly(m_simuParams.bbox[1].y() - m_simuParams.bbox[0].y());
-  int nPtx(round(lx * (double)m_simuParams.fieldResolution));
-  int nPty(round(ly * (double)m_simuParams.fieldResolution));
-  int cnt(0);
-  int numSec(m_crossSections.size());
-  Point_3 queryPt, outPt;
-  bool ptFound;
-
-  ofstream log("log.txt", ofstream::app);
-
-  //log << "lx " << lx << " ly " << ly << endl;
-
   // set the field resolution of the field picture as the one used for the computation
   m_simuParams.fieldResolutionPicture = m_simuParams.fieldResolution;
 
   // save the bounding box corresponding to this field computation
   for (int i(0); i < 2; i++) { m_simuParams.bboxLastFieldComputed[i] = m_simuParams.bbox[i]; }
 
-  field.resize(nPty, nPtx);
+  m_lx = m_simuParams.bbox[1].x() - m_simuParams.bbox[0].x();
+  m_ly = m_simuParams.bbox[1].y() - m_simuParams.bbox[0].y();
+  m_nPtx = round(m_lx * (double)m_simuParams.fieldResolution);
+  m_nPty = round(m_ly * (double)m_simuParams.fieldResolution);
+
+  m_field.resize(m_nPty, m_nPtx);
   m_maxAmpField = 0.;
   m_minAmpField = 100.;
+}
 
-  for (int i(0); i < nPtx; i++)
+// **************************************************************************
+// Extract the acoustic field of a line of a matrix of points
+
+void Acoustic3dSimulation::acousticFieldInLine(int idxLine)
+{
+  Point_3 queryPt;
+
+  for (int j(0); j < m_nPty; j++)
   {
-    log << 100 * cnt / nPtx / nPty << " % of field points computed" << endl;
-    //log << "Point " << cnt << " out of " << nPtx * nPty << "  "
-    //  << queryPt << endl;
-    for (int j(0); j < nPty; j++)
-    {
-      cnt++;
+    // generate cartesian coordinates point to search
+    queryPt = Point_3(m_lx * (double)idxLine / (double)(m_nPtx - 1) + m_simuParams.bbox[0].x(), 0.,
+      m_ly * (double)j / (double)(m_nPty - 1) + m_simuParams.bbox[0].y());
 
-      //log << "Point " << cnt << " out of " << nPtx * nPty << "  "
-  //<< queryPt << endl;
+    m_field(j, idxLine) = acousticField(queryPt);
 
-      // generate cartesian coordinates point to search
-      queryPt = Point_3(lx * (double)i / (double)(nPtx - 1) + m_simuParams.bbox[0].x(), 0.,
-        ly * (double)j / (double)(nPty - 1) + m_simuParams.bbox[0].y());
+    // compute the minimal and maximal amplitude of the field
+    m_maxAmpField = max(m_maxAmpField, abs(m_field(j, idxLine)));
+    m_minAmpField = min(m_minAmpField, abs(m_field(j, idxLine)));
+  }
+}
 
-      //log << "Query point coordinate computed " << queryPt << endl;
+// **************************************************************************
+// Extract the acoustic field in a plane
 
-      field(j, i) = acousticField(queryPt);
+void Acoustic3dSimulation::acousticFieldInPlane()
+{
+  int cnt(0);
 
-      // compute the minimal and maximal amplitude of the field
-      m_maxAmpField = max(m_maxAmpField, abs(field(j, i)));
-      m_minAmpField = min(m_minAmpField, abs(field(j, i)));
+  ofstream log("log.txt", ofstream::app);
 
-      //log << "Field computed" << endl;
-    }
+  prepareAcousticFieldComputation();
+
+  for (int i(0); i < m_nPtx; i++)
+  {
+    acousticFieldInLine(i);
+    cnt += m_nPty;
+
+    log << 100 * cnt / m_nPtx / m_nPty << " % of field points computed" << endl;
   }
 
   log.close();
@@ -2558,12 +2563,8 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
 {
   int numSec(m_crossSections.size()); 
   int lastSec(numSec - 1);
-  int mn;
-
-  m_lastFreqComputed = freq;
 
   ofstream log("log.txt", ofstream::app);
-  ofstream ofs;
 
   // for time tracking
   auto start = std::chrono::system_clock::now();
@@ -2628,10 +2629,29 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
   }
 
   //******************************************************
+
+  solveWaveProblem(tract, freq, time, timeExp);
+
+  log.close();
+}
+
+// **************************************************************************
+
+void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
+  std::chrono::duration<double>& time, std::chrono::duration<double>* timeExp)
+{
+  int numSec(m_crossSections.size());
+  int lastSec(numSec - 1);
+  int mn;
+
+  m_lastFreqComputed = freq;
+  m_tfFreqs.push_back(freq);
+
+  //******************************************************
   // Set sources parameters
   //******************************************************
 
-  start = std::chrono::system_clock::now();
+  auto start = std::chrono::system_clock::now();
 
   // FIXME: update the values of m_idxSecNoiseSource and m_idxConstriction
   // in the 3D simu properties dialog when they are changed
@@ -2689,10 +2709,8 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
   propagateVelocityPress(inputVelocity, inputPressure, freq, 0, lastSec, timeExp);
 
   // count time for propagation
-  end = std::chrono::system_clock::now();
+  auto end = std::chrono::system_clock::now();
   time += end - start;
-
-  log.close();
 }
 
 // **************************************************************************
@@ -2728,18 +2746,142 @@ void Acoustic3dSimulation::precomputationsForTf()
 }
 
 // **************************************************************************
+
+void Acoustic3dSimulation::solveWaveProblemNoiseSrc(bool &needToExtractMatrixF, Matrix &F,
+  double freq, std::chrono::duration<double>* time)
+{
+  //Matrix F;
+  Eigen::MatrixXcd inputPressureNoise, upStreamImpAdm, radImped, radAdmit,
+    prevPress, prevVelo;
+  int lastSec(m_crossSections.size() - 1);
+
+  ofstream log("log.txt", ofstream::app);
+
+
+  if (m_idxSecNoiseSource < lastSec)
+  {
+    if (needToExtractMatrixF)
+    {
+      // extract the junction matrix of the noise source section
+      F = m_crossSections[m_idxSecNoiseSource]->getMatrixF()[0];
+
+      needToExtractMatrixF = false;
+      log << "Matrix F extracted" << endl;
+    }
+
+    // generate mode amplitude matrices for the secondary source
+    inputPressureNoise.setZero(
+      m_crossSections[m_idxSecNoiseSource]->numberOfModes(), 1);
+    inputPressureNoise(0, 0) = complex<double>(1., 0.);
+
+    // save the input impedance of the upstream part
+    // if the section expends
+    if ((pow(m_crossSections[m_idxSecNoiseSource + 1]->scaleIn(), 2) *
+      m_crossSections[m_idxSecNoiseSource + 1]->area()) >
+      (pow(m_crossSections[m_idxSecNoiseSource]->scaleOut(), 2) *
+        m_crossSections[m_idxSecNoiseSource]->area()))
+    {
+      upStreamImpAdm = m_crossSections[m_idxSecNoiseSource]->Zout();
+    }
+    // if the section contracts
+    else
+    {
+      upStreamImpAdm = m_crossSections[m_idxSecNoiseSource]->Yout();
+    }
+
+    // set glottis boundary condition
+    switch (m_glottisBoundaryCond)
+    {
+    case HARD_WALL:
+      radImped.setZero();
+      radImped.diagonal().setConstant(100000.);
+      radAdmit.setZero();
+      radAdmit.diagonal().setConstant(1. / 100000.);
+      break;
+    case IFINITE_WAVGUIDE:
+      m_crossSections[0]->characteristicImpedance(radImped, freq, m_simuParams);
+      m_crossSections[0]->characteristicAdmittance(radAdmit, freq, m_simuParams);
+      break;
+    }
+
+    // propagate impedance and admittance from the glottis to the location
+    // of the second sound source
+    propagateImpedAdmit(radImped, radAdmit, freq, 0, m_idxSecNoiseSource, time);
+
+    // compute the pressure and the velocity at the entrance of the next section
+    // if the section expends
+    if ((pow(m_crossSections[m_idxSecNoiseSource + 1]->scaleIn(), 2) *
+      m_crossSections[m_idxSecNoiseSource + 1]->area()) >
+      (pow(m_crossSections[m_idxSecNoiseSource]->scaleOut(), 2) *
+        m_crossSections[m_idxSecNoiseSource]->area()))
+    {
+      prevVelo = (F.transpose()) * ((freq * upStreamImpAdm - freq *
+        m_crossSections[m_idxSecNoiseSource]->Zout()).householderQr()
+        .solve(inputPressureNoise));
+      prevPress = freq *
+        m_crossSections[m_idxSecNoiseSource + 1]->Zin() * prevVelo;
+    }
+    // if the section contracts
+    else
+    {
+      prevPress = (F.transpose()) * ((upStreamImpAdm -
+        m_crossSections[m_idxSecNoiseSource]->Yout()).householderQr()
+        .solve(-m_crossSections[m_idxSecNoiseSource]->Yout() *
+          inputPressureNoise));
+
+      prevVelo =
+        m_crossSections[m_idxSecNoiseSource + 1]->Yin() * prevPress;
+    }
+
+    // propagate the pressure and the velocity in the upstream part
+    propagateVelocityPress(prevVelo, prevPress, freq,
+      min(m_idxSecNoiseSource + 1, lastSec), lastSec, time);
+  }
+  log.close();
+}
+
+// **************************************************************************
+
+void Acoustic3dSimulation::computeGlottalTf(int idxFreq)
+{
+  m_glottalSourceTF.row(idxFreq) = acousticField(m_tfPoints);
+  spectrum.setValue(idxFreq, m_glottalSourceTF(idxFreq, 0));
+}
+
+// **************************************************************************
+
+void Acoustic3dSimulation::computeNoiseSrcTf(int idxFreq)
+{
+  m_noiseSourceTF.row(idxFreq) = acousticField(m_tfPoints);
+  spectrumNoise.setValue(idxFreq, m_noiseSourceTF(idxFreq, 0));
+}
+
+// **************************************************************************
+
+void Acoustic3dSimulation::generateSpectraNegativeFreqs()
+{
+  for (int i(m_numFreq); i < 2 * m_numFreq; i++)
+  {
+    spectrum.re[i] = spectrum.re[2 * m_numFreq - i - 1];
+    spectrum.im[i] = -spectrum.im[2 * m_numFreq - i - 1];
+    spectrumNoise.re[i] = spectrumNoise.re[2 * m_numFreq - i - 1];
+    spectrumNoise.im[i] = -spectrumNoise.im[2 * m_numFreq - i - 1];
+    spectrumConst.re[i] = spectrumConst.re[2 * m_numFreq - i - 1];
+    spectrumConst.im[i] = -spectrumConst.im[2 * m_numFreq - i - 1];
+  }
+}
+
+// **************************************************************************
 // Compute the transfer function(s)
 
 void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
 {
   double freq;
-  Eigen::VectorXcd pressure;
-
-  // for secondary sound source
-  Eigen::MatrixXcd upStreamImpAdm, radImped, radAdmit, prevVelo, 
-    inputPressureNoise, prevPress;
   Matrix F;
+
   bool needToExtractMatrixF(true);
+
+  ofstream log("log.txt", ofstream::app);
 
   // for time tracking
   auto startTot = std::chrono::system_clock::now();
@@ -2749,13 +2891,10 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
 
   precomputationsForTf();
 
-  ofstream log("log.txt", ofstream::app);
-
   // loop over frequencies
   for (int i(0); i < m_numFreqComputed; i++)
   {
     freq = max(0.1, (double)i * m_freqSteps);
-    m_tfFreqs.push_back(freq);
     log << "frequency " << i + 1 << "/" << m_numFreqComputed << " f = " << freq
       << " Hz" << endl;
 
@@ -2767,9 +2906,7 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
 
     start = std::chrono::system_clock::now();
 
-    pressure = acousticField(m_tfPoints);
-    m_glottalSourceTF.row(i) = pressure;
-    spectrum.setValue(i, pressure(0));
+    computeGlottalTf(i);
 
     end = std::chrono::system_clock::now();
     timeComputeField += end - start;
@@ -2778,106 +2915,18 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
     //  Compute transfer function of the noise source
     //*****************************************************************************
 
-    int lastSec(m_crossSections.size() - 1);
+    solveWaveProblemNoiseSrc(needToExtractMatrixF, F, freq, &time);
 
-    if (m_idxSecNoiseSource < lastSec)
+    if (m_idxSecNoiseSource < m_crossSections.size() - 1)
     {
-      if (needToExtractMatrixF)
-      {
-        // extract the junction matrix of the noise source section
-        F = m_crossSections[m_idxSecNoiseSource]->getMatrixF()[0];
-
-        // generate mode amplitude matrices for the secondary source
-        inputPressureNoise.setZero(
-          m_crossSections[m_idxSecNoiseSource]->numberOfModes(), 1);
-        inputPressureNoise(0, 0) = complex<double>(1., 0.);
-        needToExtractMatrixF = false;
-        log << "Noise source parameters set" << endl;
-      }
-
-
-      // save the input impedance of the upstream part
-      // if the section expends
-      if ((pow(m_crossSections[m_idxSecNoiseSource + 1]->scaleIn(), 2) *
-        m_crossSections[m_idxSecNoiseSource + 1]->area()) >
-        (pow(m_crossSections[m_idxSecNoiseSource]->scaleOut(), 2) *
-          m_crossSections[m_idxSecNoiseSource]->area()))
-      {
-        upStreamImpAdm = m_crossSections[m_idxSecNoiseSource]->Zout();
-      }
-      // if the section contracts
-      else
-      {
-        upStreamImpAdm = m_crossSections[m_idxSecNoiseSource]->Yout();
-      }
-
-      // set glottis boundary condition
-
-      switch (m_glottisBoundaryCond)
-      {
-      case HARD_WALL:
-        radImped.setZero();
-        radImped.diagonal().setConstant(100000.);
-        radAdmit.setZero();
-        radAdmit.diagonal().setConstant(1. / 100000.);
-        break;
-      case IFINITE_WAVGUIDE:
-        m_crossSections[0]->characteristicImpedance(radImped, freq, m_simuParams);
-        m_crossSections[0]->characteristicAdmittance(radAdmit, freq, m_simuParams);
-        break;
-      }
-
-      // propagate impedance and admittance from the glottis to the location
-      // of the second sound source
-      propagateImpedAdmit(radImped, radAdmit, freq, 0, m_idxSecNoiseSource, &time);
-
-      // compute the pressure and the velocity at the entrance of the next section
-      // if the section expends
-      if ((pow(m_crossSections[m_idxSecNoiseSource + 1]->scaleIn(), 2) *
-        m_crossSections[m_idxSecNoiseSource + 1]->area()) >
-        (pow(m_crossSections[m_idxSecNoiseSource]->scaleOut(), 2) *
-          m_crossSections[m_idxSecNoiseSource]->area()))
-      {
-        prevVelo = (F.transpose()) * ((freq * upStreamImpAdm - freq *
-          m_crossSections[m_idxSecNoiseSource]->Zout()).householderQr()
-          .solve(inputPressureNoise));
-        prevPress = freq *
-          m_crossSections[m_idxSecNoiseSource + 1]->Zin() * prevVelo;
-      }
-      // if the section contracts
-      else
-      {
-        prevPress = (F.transpose()) * ((upStreamImpAdm -
-          m_crossSections[m_idxSecNoiseSource]->Yout()).householderQr()
-          .solve(-m_crossSections[m_idxSecNoiseSource]->Yout() *
-            inputPressureNoise));
-
-        prevVelo =
-          m_crossSections[m_idxSecNoiseSource + 1]->Yin() * prevPress;
-      }
-
-      // propagate the pressure and the velocity in the upstream part
-      propagateVelocityPress(prevVelo, prevPress, freq,
-        min(m_idxSecNoiseSource + 1, lastSec), lastSec, &time);
-
-      pressure = acousticField(m_tfPoints);
-      m_noiseSourceTF.row(i) = pressure;
-      spectrumNoise.setValue(i, pressure(0));
+      computeNoiseSrcTf(i);
     }
   }
 
   log << "\nTime propagation: " << timePropa.count() << endl;
 
   // generate spectra values for negative frequencies
-  for (int i(m_numFreq); i < 2 * m_numFreq; i++)
-  {
-    spectrum.re[i] = spectrum.re[2 * m_numFreq - i - 1];
-    spectrum.im[i] = -spectrum.im[2 * m_numFreq - i - 1];
-    spectrumNoise.re[i] = spectrumNoise.re[2 * m_numFreq - i - 1];
-    spectrumNoise.im[i] = -spectrumNoise.im[2 * m_numFreq - i - 1];
-    spectrumConst.re[i] = spectrumConst.re[2 * m_numFreq - i - 1];
-    spectrumConst.im[i] = -spectrumConst.im[2 * m_numFreq - i - 1];
-  }
+  generateSpectraNegativeFreqs();
 
   // Export plane mode input impedance
   ofstream prop;
@@ -2926,7 +2975,7 @@ void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
 
   solveWaveProblem(tract, freq, false, elapsed_seconds, &timeExp);
 
-  acousticFieldInPlane(m_field);
+  acousticFieldInPlane();
 
   auto end = std::chrono::system_clock::now();
   elapsed_seconds = end - start;
@@ -3939,8 +3988,8 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
     }
 
     ofs2.open("field.txt");
-    acousticFieldInPlane(field);
-    txtField << field.cwiseAbs();
+    acousticFieldInPlane();
+    txtField << m_field.cwiseAbs();
     ofs2 << regex_replace(txtField.str(), regex("-nan\\(ind\\)"), "nan");
     ofs2.close();
 
@@ -5996,22 +6045,25 @@ bool Acoustic3dSimulation::exportAcousticField(string fileName)
 
 void Acoustic3dSimulation::preComputeRadiationMatrices(int nbRadFreqs, int idxRadSec) {
 
-  int numSec(m_crossSections.size());
+  // initialize coefficient structures
+  initCoefInterpRadiationMatrices(nbRadFreqs, idxRadSec);
+
+  // loop over a few frequencies
+  for (int i(0); i < nbRadFreqs; i++)
+  {
+    addRadMatToInterpolate(nbRadFreqs, idxRadSec, i);
+  }
+
+  computeInterpCoefRadMat(nbRadFreqs, idxRadSec);
+}
+
+//*************************************************************************
+
+void Acoustic3dSimulation::initCoefInterpRadiationMatrices(int nbRadFreqs, int idxRadSec)
+{
   int mn(m_crossSections[idxRadSec]->numberOfModes());
-  double freq;
-  double radFreqSteps((double)SAMPLING_RATE / 2. / (double)(nbRadFreqs - 1));
-  vector<double> stepRadFreqs;
   m_radiationFreqs.clear();
   m_radiationFreqs.reserve(nbRadFreqs);
-  stepRadFreqs.reserve(nbRadFreqs - 1);
-  Matrix A(Matrix::Zero(nbRadFreqs - 2, nbRadFreqs - 2)), imped(mn, mn);
-  Eigen::VectorXd R(Eigen::VectorXd::Zero(nbRadFreqs - 2)), B;
-  Eigen::MatrixXcd radImped(mn,mn), radAdmit(mn,mn);
-  vector<double>* a, * b, * c, * d;
-
-  ofstream log("log.txt", ofstream::app);
-  log << "Start precompute radiation impedance" << endl;
-  //ofstream prop;
 
   // initialize coefficient structures
   //        a       |        b       |        c       |       d       
@@ -6032,54 +6084,66 @@ void Acoustic3dSimulation::preComputeRadiationMatrices(int nbRadFreqs, int idxRa
       }
     }
   }
+}
 
-  //prop.open("rad.txt");
+//*************************************************************************
 
-  // loop over a few frequencies
-  for (int i(0); i < nbRadFreqs; i++)
+void Acoustic3dSimulation::addRadMatToInterpolate(int nbRadFreqs, int idxRadSec, int idxRadFreq)
+{
+  double radFreqSteps((double)SAMPLING_RATE / 2. / (double)(nbRadFreqs - 1));
+  double freq(max(500., (double)idxRadFreq * radFreqSteps));
+  int mn(m_crossSections[idxRadSec]->numberOfModes());
+  Eigen::MatrixXcd radImped(mn, mn), radAdmit(mn, mn);
+
+  ofstream log("log.txt", ofstream::app);
+
+  m_radiationFreqs.push_back(freq);
+
+  //// Compute radiation impedance matrix at this frequency
+//m_crossSections[numSec - 1]->characteristicImpedance(radImped,
+//  freq, m_soundSpeed, m_volumicMass, 0);
+//m_crossSections[numSec - 1]->characteristicAdmittance(radAdmit,
+//  freq, m_soundSpeed, m_volumicMass, 0);
+//propagateImpedAdmit(radImped, radAdmit, freq, numSec - 1, numSec - 2, m_method);
+
+//radImped = m_crossSections[numSec - 2]->endImpedance();
+//radAdmit = m_crossSections[numSec - 2]->endAdmittance();
+
+  radiationImpedance(radImped, freq, 15., idxRadSec);
+  radAdmit = radImped.inverse();
+
+  // Create first spline coefficient
+  for (int m(0); m < mn; m++)
   {
-    freq = max(500., (double)i * radFreqSteps);
-    m_radiationFreqs.push_back(freq);
-
-    //// Compute radiation impedance matrix at this frequency
-    //m_crossSections[numSec - 1]->characteristicImpedance(radImped,
-    //  freq, m_soundSpeed, m_volumicMass, 0);
-    //m_crossSections[numSec - 1]->characteristicAdmittance(radAdmit,
-    //  freq, m_soundSpeed, m_volumicMass, 0);
-    //propagateImpedAdmit(radImped, radAdmit, freq, numSec - 1, numSec - 2, m_method);
-
-    //radImped = m_crossSections[numSec - 2]->endImpedance();
-    //radAdmit = m_crossSections[numSec - 2]->endAdmittance();
-
-    radiationImpedance(radImped, freq, 15., idxRadSec);
-    radAdmit = radImped.inverse();
-
-    //prop << radAdmit.imag() << endl;
-
-    // Create first spline coefficient
-    for (int m(0); m < mn; m++)
+    for (int n(0); n < mn; n++)
     {
-      for (int n(0); n < mn; n++)
-      {
-        m_radiationMatrixInterp[0][m][n].push_back(radImped(m, n).real());
-        m_radiationMatrixInterp[1][m][n].push_back(radImped(m, n).imag());
-        m_radiationMatrixInterp[2][m][n].push_back(radAdmit(m, n).real());
-        m_radiationMatrixInterp[3][m][n].push_back(radAdmit(m, n).imag());
-      }
+      m_radiationMatrixInterp[0][m][n].push_back(radImped(m, n).real());
+      m_radiationMatrixInterp[1][m][n].push_back(radImped(m, n).imag());
+      m_radiationMatrixInterp[2][m][n].push_back(radAdmit(m, n).real());
+      m_radiationMatrixInterp[3][m][n].push_back(radAdmit(m, n).imag());
     }
-
-    log << "Freq " << freq << " Hz " << i << " over " << nbRadFreqs << endl;
   }
-  //prop.close();
-  //prop.open("fRad.txt");
-  // compute frequency steps
+
+  log << "Freq " << freq << " Hz " << idxRadFreq + 1 << " over " << nbRadFreqs << endl;
+
+  log.close();
+}
+
+//*************************************************************************
+
+void Acoustic3dSimulation::computeInterpCoefRadMat(int nbRadFreqs, int idxRadSec)
+{
+  vector<double> stepRadFreqs;
+  stepRadFreqs.reserve(nbRadFreqs - 1);
+  int mn(m_crossSections[idxRadSec]->numberOfModes());
+  vector<double>* a, * b, * c, * d;
+  Matrix A(Matrix::Zero(nbRadFreqs - 2, nbRadFreqs - 2)), imped(mn, mn);
+  Eigen::VectorXd R(Eigen::VectorXd::Zero(nbRadFreqs - 2)), B;
+
   for (int i(0); i < nbRadFreqs - 1; i++)
   {
-    //prop << m_radiationFreqs[i] << endl;
     stepRadFreqs.push_back(m_radiationFreqs[i + 1] - m_radiationFreqs[i]);
   }
-  //prop << m_radiationFreqs.back() << endl;
-  //prop.close();
 
   // compute the spline coefficients
   for (int m(0); m < 4; m++)
@@ -6140,7 +6204,6 @@ void Acoustic3dSimulation::preComputeRadiationMatrices(int nbRadFreqs, int idxRa
     }
   }
   m_simuParams.radImpedPrecomputed = true;
-  log.close();
 }
 
 //*************************************************************************
