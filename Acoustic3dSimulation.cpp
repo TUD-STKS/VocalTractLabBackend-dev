@@ -121,7 +121,6 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_meshDensity(5.),
   m_spectrumLgthExponent(10),
   m_idxSecNoiseSource(46), // for /sh/ 212, for vowels 46
-  m_idxConstriction(40),
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
   m_mouthBoundaryCond(RADIATION),
   m_contInterpMeth(AREA)
@@ -244,12 +243,11 @@ Acoustic3dSimulation *Acoustic3dSimulation::getInstance()
 // Set computation parameters
 
 void Acoustic3dSimulation::setSimulationParameters(double meshDensity,
-  int secNoiseSource, int secConstriction, int expSpectrumLgth, 
+  int secNoiseSource, int expSpectrumLgth, 
   struct simulationParameters simuParams, enum openEndBoundaryCond cond)
 {
   m_meshDensity = meshDensity;
   m_idxSecNoiseSource = secNoiseSource;
-  m_idxConstriction = secConstriction;
   m_spectrumLgthExponent = expSpectrumLgth;
   m_mouthBoundaryCond = cond;
   m_simuParams = simuParams;
@@ -414,7 +412,6 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
 
   log << "TRANSFER FUNCTION COMPUTATION PARAMETERS:" << endl;
   log << "Index of noise source section: " << m_idxSecNoiseSource << endl;
-  log << "Index of constriction section: " << m_idxConstriction << endl;
   log << "Maximal computed frequency: " << m_simuParams.maxComputedFreq
     << " Hz" << endl;
   log << "Spectrum exponent " << m_spectrumLgthExponent << endl;
@@ -2457,6 +2454,7 @@ void Acoustic3dSimulation::prepareAcousticFieldComputation()
   m_nPty = round(m_ly * (double)m_simuParams.fieldResolution);
 
   m_field.resize(m_nPty, m_nPtx);
+  m_field.setConstant(NAN);
   m_maxAmpField = 0.;
   m_minAmpField = 100.;
 }
@@ -2595,7 +2593,6 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
   int mn;
 
   m_lastFreqComputed = freq;
-  m_tfFreqs.push_back(freq);
 
   //******************************************************
   // Set sources parameters
@@ -2603,17 +2600,12 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
 
   auto start = std::chrono::system_clock::now();
 
-  // FIXME: update the values of m_idxSecNoiseSource and m_idxConstriction
+  // FIXME: update the values of m_idxSecNoiseSource
   // in the 3D simu properties dialog when they are changed
   // check if the noise source index is within the indexes range
   if (m_idxSecNoiseSource >= numSec)
   {
     m_idxSecNoiseSource = numSec - 1;
-  }
-  // check if the constriction location is within the indexes range
-  if (m_idxConstriction >= numSec)
-  {
-    m_idxConstriction = numSec - 1;
   }
 
   // generate mode amplitude source matrices
@@ -2792,10 +2784,11 @@ void Acoustic3dSimulation::solveWaveProblemNoiseSrc(bool &needToExtractMatrixF, 
 
 // **************************************************************************
 
-void Acoustic3dSimulation::computeGlottalTf(int idxFreq)
+void Acoustic3dSimulation::computeGlottalTf(int idxFreq, double freq)
 {
   m_glottalSourceTF.row(idxFreq) = acousticField(m_tfPoints);
   spectrum.setValue(idxFreq, m_glottalSourceTF(idxFreq, 0));
+  m_tfFreqs.push_back(freq);
 }
 
 // **************************************************************************
@@ -2856,7 +2849,7 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
 
     start = std::chrono::system_clock::now();
 
-    computeGlottalTf(i);
+    computeGlottalTf(i, freq);
 
     end = std::chrono::system_clock::now();
     timeComputeField += end - start;

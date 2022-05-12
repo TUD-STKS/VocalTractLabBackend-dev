@@ -57,8 +57,7 @@ public:
   static Acoustic3dSimulation *getInstance();
 
   void setBoundarySpecificAdmittance();
-  void setSimulationParameters(double meshDensity,
-    int secNoiseSource, int secConstriction,
+  void setSimulationParameters(double meshDensity, int secNoiseSource,
     int expSpectrumLgth, struct simulationParameters simuParams,
     enum openEndBoundaryCond cond);
   void setIdxSecNoiseSource(int idx) { m_idxSecNoiseSource = idx; }
@@ -136,7 +135,7 @@ public:
     std::chrono::duration<double>& time, std::chrono::duration<double>* timeExp);
   void solveWaveProblemNoiseSrc(bool &needToExtractMatrixF, Matrix& F, double freq,
     std::chrono::duration<double>* time);
-  void computeGlottalTf(int idxFreq);
+  void computeGlottalTf(int idxFreq, double freq);
   void computeNoiseSrcTf(int idxFreq);
   void generateSpectraNegativeFreqs();
   void computeTransferFunction(VocalTract* tract);
@@ -170,7 +169,6 @@ public:
   propagationMethod method() const { return m_simuParams.propMethod; }
   int spectrumLgthExponent() const { return m_spectrumLgthExponent; }
   int idxSecNoiseSource() const { return m_idxSecNoiseSource; }
-  int idxConstriction() const { return m_idxConstriction; }
   pair<Point2D, Point2D> maxCSBoundingBox() const { return m_maxCSBoundingBox; }
   pair<Point2D, Point2D> bboxSagittalPlane() const 
   { 
@@ -223,7 +221,6 @@ private:
   int m_numFreqPicture;
   double m_lastFreqComputed;
   int m_idxSecNoiseSource;
-  int m_idxConstriction;
   openEndBoundaryCond m_glottisBoundaryCond;
   openEndBoundaryCond m_mouthBoundaryCond;
   vector<vector<vector<vector<double>>>> m_radiationMatrixInterp;
