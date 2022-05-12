@@ -5,8 +5,6 @@
 #include "VocalTract.h"
 #include "Signal.h"
 #include <vector>
-#include <wx/wx.h>
-#include <wx/progdlg.h>
 
 // for CGAL
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
@@ -187,6 +185,8 @@ public:
   bool radImpedPrecomputed() const { return m_simuParams.radImpedPrecomputed; }
   openEndBoundaryCond mouthBoundaryCond() const {return m_mouthBoundaryCond;}
   int acousticFieldSize() const { return m_field.size(); }
+  int numPtXField() const { return m_nPtx; }
+  int numPtYField() const { return m_nPty; }
   double maxAmpField() const { return m_maxAmpField; }
   double minAmpField() const { return m_minAmpField; }
   int numFreqComputed() const { return m_numFreqComputed; }
@@ -208,7 +208,6 @@ private:
 
   static Acoustic3dSimulation *instance;
 
-  wxGenericProgressDialog *progressDialog;
   vector<unique_ptr<CrossSection2d>> m_crossSections;
 
   struct simulationParameters m_simuParams;

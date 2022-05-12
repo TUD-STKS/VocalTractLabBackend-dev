@@ -485,12 +485,6 @@ void Acoustic3dSimulation::addCrossSectionRadiation(Point2D ctrLinePt, Point2D n
 // create the meshes and compute the propagation modes
 void Acoustic3dSimulation::computeMeshAndModes()
 {
-  // Create the progress dialog
-  progressDialog = new wxGenericProgressDialog("Modes computation progress",
-    "Wait until the modes computation finished or press [Cancel]",
-    m_crossSections.size(), NULL,
-    wxPD_CAN_ABORT | wxPD_AUTO_HIDE | wxPD_ELAPSED_TIME);
-
   //ofstream mesh;
   ofstream log;
   log.open("log.txt", ofstream::app);
@@ -518,24 +512,9 @@ void Acoustic3dSimulation::computeMeshAndModes()
     log << m_crossSections[i]->numberOfModes() 
       << " modes computed, time: "
       << elapsed_seconds.count() << " s" << endl;
-
-    // stop simulation if [Cancel] is pressed
-    if (progressDialog->Update(i) == false)
-    {
-      progressDialog->Destroy();
-      progressDialog = NULL;
-
-      return;
-    }
   }
 
   log.close();
-
-  progressDialog->Update(VocalTract::NUM_CENTERLINE_POINTS);
-
-  // destroy progress dialog
-  progressDialog->Destroy();
-  progressDialog = NULL;
 }
 
 // ****************************************************************************
@@ -749,7 +728,7 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
   Polygon_2 contour, nextContour, intersecCont, prevContour;
   Pwh_list_2 intersections, differences;
   vector<Point> pts;
-  vector<double> areaFaces, areaInt;
+  vector<double> areaFaces;
   CDT cdt;
   double spacing, scaling[2], areaDiff;
   Vector u, v, ctlShift;
@@ -768,12 +747,6 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
   vector<Point> seeds;
   seeds.push_back(Point(0., 0.));
 
-  // Create the progress dialog
-  progressDialog = new wxGenericProgressDialog("Junction matrices computation progress",
-    "Wait until the junction matrices computation finished or press [Cancel]",
-    m_crossSections.size(), NULL,
-    wxPD_CAN_ABORT | wxPD_AUTO_HIDE | wxPD_ELAPSED_TIME);
-
   //ofstream log;
   //log.open("log.txt", ofstream::app);
   //log << "Start computing junction matrices" << endl;
@@ -788,7 +761,6 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
       nModes = m_crossSections[i]->numberOfModes();
 
       matrixF.clear();
-      areaInt.clear();
 
       // get the contour of the current cross-section
       contour.clear();
@@ -831,7 +803,6 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
         //  << " next sec " << nextSec << " nModesNext " << nModesNext << endl;
 
         Matrix F(Matrix::Zero(nModes, nModesNext));
-        areaInt.push_back(0.);
 
         // get the next contour
         nextContour.clear();
@@ -926,10 +897,6 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
           // loop over the intersection contours
           for (auto it = intersections.begin(); it != intersections.end(); ++it)
           {
-            // add the area of the intersection contour to the total 
-            // area of the intersection between both sections
-            areaInt.back() += it->outer_boundary().area();
-
             //////////////////////////////////////////////////////////////
             // Mesh the intersection surfaces and generate integration points
             //////////////////////////////////////////////////////////////
@@ -1037,7 +1004,6 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
 
         matrixF.push_back(F);
       }
-      m_crossSections[i]->setIntersectionsArea(areaInt);
       m_crossSections[i]->setMatrixF(matrixF);
     }
 
@@ -1302,23 +1268,8 @@ void Acoustic3dSimulation::computeJunctionMatrices(bool computeG)
         m_crossSections[i]->setMatrixGstart(Gs);
       }
     }
-
-    if (progressDialog->Update(i) == false)
-    {
-      progressDialog->Destroy();
-      progressDialog = NULL;
-
-      return;
-    }
-
   }
   //log.close();
-
-  progressDialog->Update(VocalTract::NUM_CENTERLINE_POINTS);
-
-  // destroy progress dialog
-  progressDialog->Destroy();
-  progressDialog = NULL;
 }
 
 // **************************************************************************
@@ -1660,7 +1611,6 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
   Eigen::MatrixXcd prevImped;
   Eigen::MatrixXcd prevAdmit;
   vector<Matrix> F;
-  //vector<double> areaInt;
   Matrix G;
   int numSec(m_crossSections.size()), nI, nPs;
   int prevSec;

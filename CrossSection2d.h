@@ -133,7 +133,6 @@ public:
   // scatering  matrices 
   virtual void setMatrixF(vector<Matrix> & F) { ; }
   virtual void setMatrixE(Matrix & E) {;}
-  virtual void setIntersectionsArea(vector<double> areaInt) { ; }
   virtual void setMatrixGstart(Matrix Gs) { ; }
   virtual void setMatrixGend(Matrix Ge) { ; }
 
@@ -312,7 +311,6 @@ public:
   void setMatrixF(vector<Matrix> & F) { m_F = F; }
   void setMatrixE(Matrix & E) {m_E = E;}
   // Set the area of the intersection with the following contour
-  void setIntersectionsArea(vector<double> areaInt) { m_intersectionsArea = areaInt; }
   void setMatrixGstart(Matrix & Gs){ m_Gstart = Gs; }
   void setMatrixGend(Matrix Ge) {m_Gend = Ge;}
   void characteristicImpedance(Eigen::MatrixXcd& characImped, 
