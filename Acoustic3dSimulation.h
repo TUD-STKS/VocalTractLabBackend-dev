@@ -137,7 +137,7 @@ public:
     std::chrono::duration<double>* time);
   void computeGlottalTf(int idxFreq, double freq);
   void computeNoiseSrcTf(int idxFreq);
-  void generateSpectraNegativeFreqs();
+  void generateSpectraForSynthesis(int tfIdx);
   void computeTransferFunction(VocalTract* tract);
   void computeAcousticField(VocalTract* tract);
   void coneConcatenationSimulation(string fileName);

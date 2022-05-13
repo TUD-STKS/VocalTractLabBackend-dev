@@ -120,7 +120,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   : m_geometryImported(false),
   m_meshDensity(5.),
   m_spectrumLgthExponent(10),
-  m_idxSecNoiseSource(46), // for /sh/ 212, for vowels 46
+  m_idxSecNoiseSource(25), // for /sh/ 212, for vowels 25
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
   m_mouthBoundaryCond(RADIATION),
   m_contInterpMeth(AREA)
@@ -2787,7 +2787,6 @@ void Acoustic3dSimulation::solveWaveProblemNoiseSrc(bool &needToExtractMatrixF, 
 void Acoustic3dSimulation::computeGlottalTf(int idxFreq, double freq)
 {
   m_glottalSourceTF.row(idxFreq) = acousticField(m_tfPoints);
-  spectrum.setValue(idxFreq, m_glottalSourceTF(idxFreq, 0));
   m_tfFreqs.push_back(freq);
 }
 
@@ -2796,13 +2795,18 @@ void Acoustic3dSimulation::computeGlottalTf(int idxFreq, double freq)
 void Acoustic3dSimulation::computeNoiseSrcTf(int idxFreq)
 {
   m_noiseSourceTF.row(idxFreq) = acousticField(m_tfPoints);
-  spectrumNoise.setValue(idxFreq, m_noiseSourceTF(idxFreq, 0));
 }
 
 // **************************************************************************
 
-void Acoustic3dSimulation::generateSpectraNegativeFreqs()
+void Acoustic3dSimulation::generateSpectraForSynthesis(int tfIdx)
 {
+  for (int i(0); i < m_numFreqComputed; i++)
+  {
+    spectrum.setValue(i, m_glottalSourceTF(i, tfIdx));
+    spectrumNoise.setValue(i, m_noiseSourceTF(i, tfIdx));
+  }
+
   for (int i(m_numFreq); i < 2 * m_numFreq; i++)
   {
     spectrum.re[i] = spectrum.re[2 * m_numFreq - i - 1];
@@ -2869,7 +2873,7 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
   log << "\nTime propagation: " << timePropa.count() << endl;
 
   // generate spectra values for negative frequencies
-  generateSpectraNegativeFreqs();
+  generateSpectraForSynthesis(0);
 
   // Export plane mode input impedance
   ofstream prop;
