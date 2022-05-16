@@ -157,6 +157,7 @@ public:
 // accessors
 
   struct simulationParameters simuParams() const { return m_simuParams; }
+  struct simulationParameters oldSimuParams() const { return m_oldSimuParams; }
   bool isGeometryImported() const { return m_geometryImported; }
   int sectionNumber() const;
   double soundSpeed() const;
@@ -209,6 +210,7 @@ private:
   vector<unique_ptr<CrossSection2d>> m_crossSections;
 
   struct simulationParameters m_simuParams;
+  struct simulationParameters m_oldSimuParams;
 
   // simulation parameters
   bool m_geometryImported;

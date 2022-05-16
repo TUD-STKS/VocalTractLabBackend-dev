@@ -3222,8 +3222,12 @@ Vector CrossSection2dFEM::normalOut() const
 //******************************************************
 double CrossSection2dFEM::length() const { 
   if (abs(m_circleArcAngle) < MINIMAL_DISTANCE)
-  {return(m_length);}
-  else {return(abs(m_circleArcAngle) * abs(m_curvatureRadius));}            
+  {
+    return(m_length); 
+  }
+  else {
+    return(abs(m_circleArcAngle) * abs(m_curvatureRadius));
+  }
  }
 vector<double> CrossSection2dFEM::intersectionsArea() const { return m_intersectionsArea; }
 double CrossSection2dFEM::spacing() const { return m_spacing; }
