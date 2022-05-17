@@ -4115,55 +4115,42 @@ vector<Point_3> Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(vec
 
 Point_3 Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(Point_3 pt)
 {
-  ofstream log("log.txt", ofstream::app);
-
+  Point ptVertPlane(pt.x(), pt.z());
   Vector endNormal(m_crossSections.back()->normalOut());
   Vector vertical(Vector(0., 1.));
-  Vector ctlVec(m_crossSections.back()->ctrLinePtOut(),
-    m_crossSections.back()->ctrLinePtIn());
-  log << "ctlVec " << ctlVec << endl;
-
-  double angle, angleCtl;
-
-  log << "curvRadius " << m_crossSections.back()->curvRadius() << endl;
-  log << "circleArcAngle " << m_crossSections.back()->circleArcAngle() << endl;
-  log << "curvRadius() * circleArcAngle "
-    << m_crossSections.back()->curvRadius() * m_crossSections.back()->circleArcAngle()
-    << endl;
-
+  double angle;// angleCtlNorm;
   double circleArcAngle(m_crossSections.back()->circleArcAngle());
 
-  // rotate the point to compensate inclination of the end normal
+  
   angle = fmod(atan2(endNormal.y(), endNormal.x()) -
     atan2(vertical.y(), vertical.x()) + 2. * M_PI, 2. * M_PI);
-  log << "angle " << angle << endl;
-
-  angleCtl = fmod(atan2(ctlVec.y(), ctlVec.x()) -
-    atan2(endNormal.y(), endNormal.x()) + 2. * M_PI, 2. * M_PI);
-  log << "angleCtl " << angleCtl << endl;
-
-  if (signbit(m_crossSections.back()->curvRadius() * circleArcAngle))
-  {
-     angle -= M_PI;
-  }
-  //else
-  //{
-  //  angle = fmod(atan2(endNormal.y(), endNormal.x()) -
-  //    atan2(vertical.y(), vertical.x()) + 2. * M_PI, 2. * M_PI);
-  //}
-  Point ptVertPlane(pt.x(), pt.z());
-
   
-  log << "endNormal " << endNormal << endl;
-  log << "vertical " << vertical << endl;
-  log << "Angle " << angle << " ptVertPlane " << ptVertPlane << endl;
+  if (circleArcAngle > MINIMAL_DISTANCE)
+  {
+    if (signbit(m_crossSections.back()->curvRadius() * circleArcAngle))
+    {
+      angle -= M_PI;
+    }
+  }
+  else
+  {
+    Vector ctlVec(m_crossSections.back()->ctrLinePtOut(),
+      m_crossSections.back()->ctrLinePtIn());
+    double angleCtlNorm = fmod(atan2(ctlVec.y(), ctlVec.x()) -
+      atan2(endNormal.y(), endNormal.x()) + 2. * M_PI, 2. * M_PI);
+    Vector ptVec(ptVertPlane, m_crossSections.back()->ctrLinePtOut());
+    double anglePtNorm = fmod(atan2(ptVec.y(), ptVec.x()) -
+      atan2(endNormal.y(), endNormal.x()) + 2. * M_PI, 2. * M_PI);
 
+    if (!signbit((angleCtlNorm - M_PI) * anglePtNorm))
+    {
+      angle -= M_PI;
+    }
+  }
+
+  // rotate the point to compensate inclination of the end normal
   Transformation rotate(CGAL::ROTATION, sin(angle), cos(angle));
   ptVertPlane = rotate(ptVertPlane);
-
-  log << "After rotation " << ptVertPlane << endl;
-  
-  log.close();
 
   // shift the point to compensate the origin of the end landmark
   return(Point_3(
@@ -4757,6 +4744,8 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
   char separator(';');
   Cost cost;                // for contour simplification
   int idxCont(0);
+  Point2D ctlPt, normalVec;
+  pair<double, double> scalings;
 
   ofstream log("log.txt", ofstream::app);
   //log << "Start geometry importation" << endl;
@@ -4782,30 +4771,50 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
       stringstream lineX(line);
 
       // extract the line corresponding to the y components
-      getline(geoFile, line);
+      if (!getline(geoFile, line)) { break; };
       stringstream lineY(line);
 
       // extract the centerline point
-      getline(lineX, coordX, separator);
-      getline(lineY, coordY, separator);
-      centerLine.push_back(Point2D(stod(coordX), stod(coordY)));
+      if (!getline(lineX, coordX, separator)) { break; };
+      if (!getline(lineY, coordY, separator)) { break; };
+      ctlPt.x = stod(coordX);
+      ctlPt.y = stod(coordY);
 
       // extract the normal to the centerline
-      getline(lineX, coordX, separator);
-      getline(lineY, coordY, separator);
-      normals.push_back(Point2D(stod(coordX), stod(coordY)));
+      if (!getline(lineX, coordX, separator)) { break; };
+      if (!getline(lineY, coordY, separator)) { break; };
+      normalVec.x = stod(coordX);
+      normalVec.y = stod(coordY);
 
       // extract the scaling factors
-      getline(lineX, coordX, separator);
-      getline(lineY, coordY, separator);
-      scalingFactors.push_back(pair<double, double>(stod(coordX), stod(coordY)));
+      if (!getline(lineX, coordX, separator)) { break; };
+      if (!getline(lineY, coordY, separator)) { break; };
+      scalings.first = stod(coordX);
+      scalings.second = stod(coordY);
 
       // extract contour
       while (getline(lineX, coordX, separator) && (coordX.length() > 0))
       {
-        getline(lineY, coordY, separator);
+        if (!getline(lineY, coordY, separator)) { break; };
         tmpCont.back().push_back(Point(stod(coordX), stod(coordY)));
       }
+      
+      // check if there is at least 3 points in each contour
+      bool abort(false);
+      for (int i(0); i < tmpCont.size(); i++)
+      {
+        if (tmpCont[i].size() < 3) 
+        {
+          abort = true;
+          break; 
+        }
+      }
+      if (abort) { break; }
+
+      // if nothing failed before, add the centerline, normal and scaling factors
+      centerLine.push_back(ctlPt);
+      normals.push_back(normalVec);
+      scalingFactors.push_back(scalings);
 
       // remove the last point if it is identical to the first point
       auto itFirst = tmpCont.back().vertices_begin();
@@ -4870,7 +4879,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   if (m_geometryImported)
   {
     if ( !extractContoursFromCsvFile(contours, surfaceIdx, centerLine, 
-      normals, vecScalingFactors, false))
+      normals, vecScalingFactors, true))
     {
       return false;
     }
@@ -5820,47 +5829,16 @@ bool Acoustic3dSimulation::exportGeoInCsv(string fileName)
   Vector N;
   double theta, thetaN;
 
-  //ofstream log("log.txt", ofstream::app);
   if (of.is_open())
   {
     for (int i(0); i < m_crossSections.size(); i++)
     {
-      if (m_crossSections[i]->length() > 0.)
+      if (!m_crossSections[i]->isJunction())
       {
-        //**********************************************************
-        // contour in
-
-        if (i == 0)
-        {
-          Pt = Point(m_crossSections[i]->ctrLinePt().x,
-            m_crossSections[i]->ctrLinePt().y);
-          N = Vector(m_crossSections[i]->normal().x,
-            m_crossSections[i]->normal().y);
-        }
-        else
-        {
-          Pt = Point(m_crossSections[i]->ctrLinePt().x,
-            m_crossSections[i]->ctrLinePt().y);
-          N = Vector(m_crossSections[i]->normal().x,
-            m_crossSections[i]->normal().y);
-          theta = abs(m_crossSections[i]->circleArcAngle()) / 2.;
-          Transformation rotate(CGAL::ROTATION, sin(M_PI / 2. - theta),
-            cos(M_PI / 2. - theta));
-          Transformation translate(CGAL::TRANSLATION,
-            2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N));
-          Pt = translate(Pt);
-          if (signbit(m_crossSections[i]->curvRadius()))
-          {
-            thetaN = 2. * theta;
-          }
-          else
-          {
-            thetaN = -2. * theta;
-          }
-          Transformation rotateN(CGAL::ROTATION, sin(thetaN), cos(thetaN));
-          //log << "Pt after " << Pt << endl;
-          N = rotateN(N);
-        }
+        Pt = Point(m_crossSections[i]->ctrLinePt().x,
+          m_crossSections[i]->ctrLinePt().y);
+        N = Vector(m_crossSections[i]->normal().x,
+          m_crossSections[i]->normal().y);
 
         // write centerline point coordinates
         strX << Pt.x() << separator;
@@ -5869,93 +5847,16 @@ bool Acoustic3dSimulation::exportGeoInCsv(string fileName)
         // write normal coordinates
         strX << N.x() << separator;
         strY << N.y() << separator;
+
+        // write scaling factors
+        strX << m_crossSections[i]->scaleIn() << separator;
+        strY << m_crossSections[i]->scaleOut() << separator;
 
         // write contour
         for (auto pt : m_crossSections[i]->contour())
         {
           strX << m_crossSections[i]->scaleIn() * pt.x() << separator;
           strY << m_crossSections[i]->scaleIn() * pt.y() << separator;
-        }
-
-        of << strX.str() << endl << strY.str() << endl;
-
-        strX.str("");
-        strX.clear();
-        strY.str("");
-        strY.clear();
-
-        //********************************************************
-        // contour out
-
-        if (i == 0)
-        {
-          Pt = Point(m_crossSections[i]->ctrLinePt().x,
-            m_crossSections[i]->ctrLinePt().y);
-          N = Vector(m_crossSections[i]->normal().x,
-            m_crossSections[i]->normal().y);
-          theta = abs(m_crossSections[i]->circleArcAngle()) / 2.;
-          Transformation rotate(CGAL::ROTATION, sin(-M_PI / 2. + theta),
-            cos(-M_PI / 2. + theta));
-          Transformation translate(CGAL::TRANSLATION,
-            2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N));
-          //log << "Radius " << abs(m_crossSections[i]->curvRadius()) << endl;
-          //log << "theta " << theta << endl;
-          //log << "Rotated N " << rotate(N) << endl;
-          //log << "Vector translate " <<
-          //  2. * abs(m_crossSections[i]->curvRadius()) * sin(theta) * rotate(N) << endl;
-          //log << "Pt before " << Pt << endl;
-          //Pt = translate(Pt);
-          //log << "Pt after " << Pt << endl;
-          Transformation rotateN(CGAL::ROTATION, sin(2. * theta), cos(2. * theta));
-          N = rotateN(N);
-        }
-        else
-        {
-          Pt = Point(m_crossSections[i]->ctrLinePt().x,
-            m_crossSections[i]->ctrLinePt().y);
-          N = Vector(m_crossSections[i]->normal().x,
-            m_crossSections[i]->normal().y);
-        }
-
-        // write centerline point coordinates
-        strX << Pt.x() << separator;
-        strY << Pt.y() << separator;
-
-        // write normal coordinates
-        strX << N.x() << separator;
-        strY << N.y() << separator;
-
-        // write contour
-        for (auto pt : m_crossSections[i]->contour())
-        {
-          strX << m_crossSections[i]->scaleOut() * pt.x() << separator;
-          strY << m_crossSections[i]->scaleOut() * pt.y() << separator;
-        }
-
-        of << strX.str() << endl << strY.str() << endl;
-
-        strX.str("");
-        strX.clear();
-        strY.str("");
-        strY.clear();
-      }
-      else
-      {
-        // export junction cross-section
-
-        // write centerline point coordinates
-        strX << m_crossSections[i]->ctrLinePt().x << separator;
-        strY << m_crossSections[i]->ctrLinePt().y << separator;
-
-        // write normal coordinates
-        strX << m_crossSections[i]->normal().x << separator;
-        strY << m_crossSections[i]->normal().y << separator;
-
-        // write contour
-        for (auto pt : m_crossSections[i]->contour())
-        {
-          strX << pt.x() << separator;
-          strY << pt.y() << separator;
         }
 
         of << strX.str() << endl << strY.str() << endl;
@@ -5973,7 +5874,6 @@ bool Acoustic3dSimulation::exportGeoInCsv(string fileName)
   return(false);
  }
   of.close();
-  //log.close();
 }
 
 //*************************************************************************
