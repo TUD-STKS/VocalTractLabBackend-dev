@@ -4918,7 +4918,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       m_maxCSBoundingBox.second.y);
   }
 
-  //log << "Bounding box extracted" << endl;
+  log << "Bounding box extracted" << endl;
 
   //*********************************************************
   // Create lambda expression to compute the scaling factors
@@ -4945,6 +4945,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
         bboxes[idx2][3] / bboxes[idx1][3]);
     }
   };
+
+  //**********************************************************************
 
   // variables for cross-section creation
   double prevCurvRadius, curvRadius, prevAngle, angle, shift, area, length, radius;
@@ -5058,8 +5060,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     centerLine[lastCtl - 1].y = pt.y();
   }
 
-  //log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
-  //  << N.x() << "  " << N.y() << endl;
+  log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
+    << N.x() << "  " << N.y() << endl;
 
   //*******************************************
   // Create the cross-sections
@@ -5071,6 +5073,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   // compute the curvatur parameters of the first cross-section
   getCurvatureAngleShift(centerLine[0], centerLine[1], normals[0], normals[1],
     prevCurvRadius, prevAngle, shift);
+
+  log << "getCurvatureAngleShift " << prevCurvRadius << "  " << prevAngle << endl;
 
   //// shift the contours
   //Transformation translate(CGAL::TRANSLATION, Vector(0., shift));
@@ -5100,10 +5104,12 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     }
   }
 
+  log << "nbCont " << nbCont << endl;
+
   // create the cross-sections
   for (int i(1); i < nbCont; i++)
   {
-    //log << "\ni= " << i << endl;
+    log << "\ni= " << i << endl;
 
     //**********************************
     // Create previous cross-sections
@@ -5828,17 +5834,30 @@ bool Acoustic3dSimulation::exportGeoInCsv(string fileName)
   Point Pt;
   Vector N;
   double theta, thetaN;
+  int lastSeg(m_crossSections.size() - 1);
 
   if (of.is_open())
   {
-    for (int i(0); i < m_crossSections.size(); i++)
+    for (int i(0); i <= lastSeg; i++)
     {
+      // the junction segments are
+      // skipped since they are added in the geometry creation process
       if (!m_crossSections[i]->isJunction())
       {
-        Pt = Point(m_crossSections[i]->ctrLinePt().x,
-          m_crossSections[i]->ctrLinePt().y);
-        N = Vector(m_crossSections[i]->normal().x,
-          m_crossSections[i]->normal().y);
+        // for the last segment, the centerline point and normal
+        // are taken at the exit
+        if (i == lastSeg)
+        {
+          Pt = m_crossSections[i]->ctrLinePtOut();
+          N = m_crossSections[i]->normalOut();
+        }
+        else
+        {
+          Pt = Point(m_crossSections[i]->ctrLinePt().x,
+            m_crossSections[i]->ctrLinePt().y);
+          N = Vector(m_crossSections[i]->normal().x,
+            m_crossSections[i]->normal().y);
+        }
 
         // write centerline point coordinates
         strX << Pt.x() << separator;
