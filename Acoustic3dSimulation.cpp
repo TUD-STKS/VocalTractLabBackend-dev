@@ -2740,15 +2740,20 @@ void Acoustic3dSimulation::solveWaveProblemNoiseSrc(bool &needToExtractMatrixF, 
     switch (m_glottisBoundaryCond)
     {
     case HARD_WALL:
-      radImped.setZero();
+    {
+      int mn(m_crossSections[0]->numberOfModes());
+      radImped.setZero(mn, mn);
       radImped.diagonal().setConstant(100000.);
-      radAdmit.setZero();
+      radAdmit.setZero(mn, mn);
       radAdmit.diagonal().setConstant(1. / 100000.);
       break;
+    }
     case IFINITE_WAVGUIDE:
+    {
       m_crossSections[0]->characteristicImpedance(radImped, freq, m_simuParams);
       m_crossSections[0]->characteristicAdmittance(radAdmit, freq, m_simuParams);
       break;
+    }
     }
 
     // propagate impedance and admittance from the glottis to the location
@@ -2762,7 +2767,7 @@ void Acoustic3dSimulation::solveWaveProblemNoiseSrc(bool &needToExtractMatrixF, 
       (pow(m_crossSections[m_idxSecNoiseSource]->scaleOut(), 2) *
         m_crossSections[m_idxSecNoiseSource]->area()))
     {
-      prevVelo = (F.transpose()) * ((freq * upStreamImpAdm - freq *
+      prevVelo = (F.transpose()) * ((freq * upStreamImpAdm + freq *
         m_crossSections[m_idxSecNoiseSource]->Zout()).householderQr()
         .solve(inputPressureNoise));
       prevPress = freq *
@@ -2771,7 +2776,7 @@ void Acoustic3dSimulation::solveWaveProblemNoiseSrc(bool &needToExtractMatrixF, 
     // if the section contracts
     else
     {
-      prevPress = (F.transpose()) * ((upStreamImpAdm -
+      prevPress = (F.transpose()) * ((upStreamImpAdm +
         m_crossSections[m_idxSecNoiseSource]->Yout()).householderQr()
         .solve(-m_crossSections[m_idxSecNoiseSource]->Yout() *
           inputPressureNoise));
