@@ -123,7 +123,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_idxSecNoiseSource(25), // for /sh/ 212, for vowels 25
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
   m_mouthBoundaryCond(RADIATION),
-  m_contInterpMeth(AREA)
+  m_contInterpMeth(BOUNDING_BOX)
 {
   m_simuParams.temperature = 31.4266; // for 350 m/s
   //m_simuParams.temperature = 21.0735; // for 344 m/s 
@@ -4911,6 +4911,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       bboxes.back()[1] = max(bboxes.back()[1], cont.bbox().xmax());
       bboxes.back()[2] = min(bboxes.back()[2], cont.bbox().ymin());
       bboxes.back()[3] = max(bboxes.back()[3], cont.bbox().ymax());
+
     }
 
     m_maxCSBoundingBox.first.x = min(bboxes.back()[0],
@@ -4931,24 +4932,49 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
   auto getScalingFactor = [bboxes](int idx1, int idx2)
   {
+    ofstream log("log.txt", ofstream::app);
+
+    log << "idx1 " << idx1 << " idx2 " << idx2 << endl;
+    log << "bbox1 " << bboxes[idx1][0] << "  "
+      << bboxes[idx1][1] << "  "
+      << bboxes[idx1][2] << "  "
+      << bboxes[idx1][3] << endl;
+    log << "bbox2 " << bboxes[idx2][0] << "  "
+      << bboxes[idx2][1] << "  "
+      << bboxes[idx2][2] << "  "
+      << bboxes[idx2][3] << endl;
+
+    double scaling;
     double meanX((abs(bboxes[idx1][0]) + abs(bboxes[idx1][1])
       + abs(bboxes[idx2][0]) + abs(bboxes[idx2][1])));
+    log << "meanX " << meanX << endl;
+
     double meanY((abs(bboxes[idx1][2]) + abs(bboxes[idx1][3])
       + abs(bboxes[idx2][2]) + abs(bboxes[idx2][3])));
+    log << "meanY " << meanY << endl;
+
 
     // a factor 0.999 is added to avoid that points of successive
     // contours end being exactly the same which cause 
     // CGAL::intersection to seg fault
     if (meanX > meanY)
     {
-      return 0.999*min(bboxes[idx2][0] / bboxes[idx1][0],
+      scaling = min(bboxes[idx2][0] / bboxes[idx1][0],
         bboxes[idx2][1] / bboxes[idx1][1]);
+      //return 0.999 * min(bboxes[idx2][0] / bboxes[idx1][0],
+      //  bboxes[idx2][1] / bboxes[idx1][1]);
     }
     else
     {
-      return 0.999*min(bboxes[idx2][2] / bboxes[idx1][2],
+      scaling = min(bboxes[idx2][2] / bboxes[idx1][2],
         bboxes[idx2][3] / bboxes[idx1][3]);
+      //return 0.999 * min(bboxes[idx2][2] / bboxes[idx1][2],
+      //  bboxes[idx2][3] / bboxes[idx1][3]);
     }
+    log << "scaling " << scaling << endl;
+
+    log.close();
+    return(scaling);
   };
 
   //**********************************************************************
