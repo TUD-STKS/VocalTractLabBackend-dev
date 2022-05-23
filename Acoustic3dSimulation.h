@@ -59,7 +59,7 @@ public:
   void setBoundarySpecificAdmittance();
   void setSimulationParameters(double meshDensity, int secNoiseSource,
     int expSpectrumLgth, struct simulationParameters simuParams,
-    enum openEndBoundaryCond cond);
+    enum openEndBoundaryCond cond, enum contourInterpolationMethod scalingMethod);
   void setIdxSecNoiseSource(int idx) { m_idxSecNoiseSource = idx; }
   void generateLogFileHeader(bool cleanLog);
 
@@ -158,6 +158,7 @@ public:
 
   struct simulationParameters simuParams() const { return m_simuParams; }
   struct simulationParameters oldSimuParams() const { return m_oldSimuParams; }
+  enum contourInterpolationMethod contInterpMeth() const {return m_contInterpMeth;}
   bool isGeometryImported() const { return m_geometryImported; }
   int sectionNumber() const;
   double soundSpeed() const;
@@ -260,6 +261,8 @@ private:
 private:
 
   Acoustic3dSimulation();
+  Point ctrLinePtOut(Point ctrLinePtIn, Vector normalIn, double circleArcAngle, 
+    double curvatureRadius, double length);
   void createContour(double inputUpProf[VocalTract::NUM_PROFILE_SAMPLES],
     double inputLoProf[VocalTract::NUM_PROFILE_SAMPLES], 
     int upperProfileSurface[VocalTract::NUM_PROFILE_SAMPLES],
