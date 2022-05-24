@@ -5026,7 +5026,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
         (bboxes[idx2][3] + shift) / bboxes[idx1][3]);
     }
 
-    scaling = min(scalingArea, scaling);
+    scaling = 0.999 * min(scalingArea, scaling);
 
     return(scaling);
   };
@@ -5445,10 +5445,9 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
               // compute the intersections of both contours
               intersections.clear();
-              //log << "Before compute intersection" << endl;
+              log << "Before compute intersection" << endl;
               CGAL::intersection(prevCont, cont, back_inserter(intersections));
-
-              //log << intersections.size() << " intersections computed" << endl;
+              log << intersections.size() << " intersections computed" << endl;
 
               // loop over the intersection polygons created
               for (auto pol = intersections.begin();
