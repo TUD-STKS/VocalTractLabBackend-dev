@@ -5430,17 +5430,19 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
                 //  << centerLine[i].y << endl;
                 //log << "Normal in " << normals[i].x << "  "
                 //  << normals[i].y << endl;
-                ofstream os("cont.txt");
-                for (auto pt : cont) { os << pt.x() << "  " << pt.y() << endl; }
-                os.close();
+
+                //ofstream os("cont.txt");
+                //for (auto pt : cont) { os << pt.x() << "  " << pt.y() << endl; }
+                //os.close();
+
                 //log << "Extract prev contour " << i - 1 << endl;
                 //log << "Center line point in" << centerLine[i-1].x << "  "
                 //  << centerLine[i-1].y << endl;
                 //log << "Center line point out " << m_crossSections.back()->ctrLinePtOut() << endl;
-                os.open("pcont.txt");
-                //log << "Normal out " << m_crossSections.back()->normalOut() << endl;
-                for (auto pt : prevCont) { os << pt.x() << "  " << pt.y() << endl; }
-                os.close();
+
+                //os.open("pcont.txt");
+                //for (auto pt : prevCont) { os << pt.x() << "  " << pt.y() << endl; }
+                //os.close();
               //}
 
               // compute the intersections of both contours
@@ -5762,6 +5764,9 @@ void Acoustic3dSimulation::importGeometry(VocalTract* tract)
 {
   ofstream log("log.txt", ofstream::app);
 
+  auto start = std::chrono::system_clock::now();
+
+
   if (createCrossSections(tract, false))
   {
     log << "Geometry successfully imported" << endl;
@@ -5770,6 +5775,11 @@ void Acoustic3dSimulation::importGeometry(VocalTract* tract)
   {
     log << "Importation failed" << endl;
   }
+
+  auto end = std::chrono::system_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end - start;
+
+  log << "Time import geometry " << elapsed_seconds.count() << endl;
 
   log.close();
 }
