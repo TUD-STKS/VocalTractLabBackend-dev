@@ -2359,7 +2359,7 @@ complex<double> Acoustic3dSimulation::acousticField(Point_3 queryPt)
   // check if the point is in the radiation domain
   vec = Vector(endCenterLine, Point(queryPt.x(), queryPt.z()));
   // for straight segments
-  if (m_crossSections.back()->circleArcAngle() <= MINIMAL_DISTANCE)
+  if (abs(m_crossSections.back()->circleArcAngle()) <= MINIMAL_DISTANCE)
   {
     double length(m_crossSections.back()->ctrLinePtOut().x()
         - m_crossSections.back()->ctrLinePtIn().x());
@@ -2395,10 +2395,8 @@ complex<double> Acoustic3dSimulation::acousticField(Point_3 queryPt)
     {
       if (m_crossSections[s]->getCoordinateFromCartesianPt(queryPt, outPt, false))
       {
-        //log << "Pt found " << outPt << endl;
         ptFound = true;
         field = m_crossSections[s]->interiorField(outPt, m_simuParams, PRESSURE);
-        //log << "field computed" << endl;
         break;
       }
     }
@@ -4963,21 +4961,20 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
     }
 
-    // recenter the centerline
-    shiftVec = Vector(0., -(bboxes.back()[2] + bboxes.back()[3]) / 2.);
-    Transformation translate(CGAL::TRANSLATION, shiftVec);
-    for (int j(0); j < contours[i].size(); j++)
+    // recenter the centerline for curved geometries
+    if (m_simuParams.curved)
     {
-      contours[i][j] = transform(translate, contours[i][j]);
+      shiftVec = Vector(0., -(bboxes.back()[2] + bboxes.back()[3]) / 2.);
+      Transformation translate(CGAL::TRANSLATION, shiftVec);
+      for (int j(0); j < contours[i].size(); j++)
+      {
+        contours[i][j] = transform(translate, contours[i][j]);
+      }
+      centerLine[i].x -= shiftVec.y() * normals[i].x;
+      centerLine[i].y -= shiftVec.y() * normals[i].y;
+      bboxes.back()[2] += shiftVec.y();
+      bboxes.back()[3] += shiftVec.y();
     }
-    centerLine[i].x -= shiftVec.y() * normals[i].x;
-    centerLine[i].y -= shiftVec.y() * normals[i].y;
-    log << "bboxes.back()[2] " << bboxes.back()[2]
-      << " bboxes.back()[3] " << bboxes.back()[3] << endl;
-    bboxes.back()[2] += shiftVec.y();
-    bboxes.back()[3] += shiftVec.y();
-    log << "bboxes.back()[2] " << bboxes.back()[2]
-      << " bboxes.back()[3] " << bboxes.back()[3] << endl;
 
     m_maxCSBoundingBox.first.x = min(bboxes.back()[0],
       m_maxCSBoundingBox.first.x);
@@ -5645,48 +5642,48 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   // Export data
   //***************************************************************
 
-  // print cross-sections parameters in log file
-  for (int i(0); i < m_crossSections.size(); i++)
-  {
-    log << "Section " << i << endl;
-    log << *m_crossSections[i] << endl;
-  }
+  //// print cross-sections parameters in log file
+  //for (int i(0); i < m_crossSections.size(); i++)
+  //{
+  //  log << "Section " << i << endl;
+  //  log << *m_crossSections[i] << endl;
+  //}
 
-  ofs.open("sec.txt");
-  // extract parameters of the sections
-  for (int s(0); s < m_crossSections.size(); s++)
-  {
-    if (m_crossSections[s]->length() > 0.)
-    {
-      // entrance features
-      ofs << m_crossSections[s]->ctrLinePt().x << "  "
-        << m_crossSections[s]->ctrLinePt().y << "  "
-        << m_crossSections[s]->normal().x << "  "
-        << m_crossSections[s]->normal().y << "  "
-        << m_crossSections[s]->curvRadius() << "  "
-        << m_crossSections[s]->circleArcAngle() << endl;
+  //ofs.open("sec.txt");
+  //// extract parameters of the sections
+  //for (int s(0); s < m_crossSections.size(); s++)
+  //{
+  //  if (m_crossSections[s]->length() > 0.)
+  //  {
+  //    // entrance features
+  //    ofs << m_crossSections[s]->ctrLinePt().x << "  "
+  //      << m_crossSections[s]->ctrLinePt().y << "  "
+  //      << m_crossSections[s]->normal().x << "  "
+  //      << m_crossSections[s]->normal().y << "  "
+  //      << m_crossSections[s]->curvRadius() << "  "
+  //      << m_crossSections[s]->circleArcAngle() << endl;
 
-      // exist features
-      ofs << m_crossSections[s]->ctrLinePtOut().x() << "  "
-        << m_crossSections[s]->ctrLinePtOut().y() << "  "
-        << m_crossSections[s]->normalOut().x() << "  "
-        << m_crossSections[s]->normalOut().y() << "  "
-        << m_crossSections[s]->curvRadius() << "  "
-        << m_crossSections[s]->circleArcAngle() << endl;
-    }
-  }
-  ofs.close();
+  //    // exist features
+  //    ofs << m_crossSections[s]->ctrLinePtOut().x() << "  "
+  //      << m_crossSections[s]->ctrLinePtOut().y() << "  "
+  //      << m_crossSections[s]->normalOut().x() << "  "
+  //      << m_crossSections[s]->normalOut().y() << "  "
+  //      << m_crossSections[s]->curvRadius() << "  "
+  //      << m_crossSections[s]->circleArcAngle() << endl;
+  //  }
+  //}
+  //ofs.close();
 
-  // export the cross-section lengths
-  ofs.open("lengths.txt");
-  for (int i(0); i < m_crossSections.size(); i++)
-  {
-    if (m_crossSections[i]->length() != 0)
-    {
-      ofs << m_crossSections[i]->length() << endl;
-    }
-  }
-  ofs.close();
+  //// export the cross-section lengths
+  //ofs.open("lengths.txt");
+  //for (int i(0); i < m_crossSections.size(); i++)
+  //{
+  //  if (m_crossSections[i]->length() != 0)
+  //  {
+  //    ofs << m_crossSections[i]->length() << endl;
+  //  }
+  //}
+  //ofs.close();
 
   return true;
   log.close();
