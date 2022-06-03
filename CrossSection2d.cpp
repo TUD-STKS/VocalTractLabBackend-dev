@@ -2725,20 +2725,11 @@ void CrossSection2dFEM::propagatePressureVelocityStraight(Eigen::MatrixXcd V0,
   characteristicAdmittance(Yc, freq, simuParams);
 
   //ofstream log;
-  //ofstream VelR;
-  //ofstream VelI;
 
   if (m_length == 0.)
   {
     m_axialVelocity.push_back(V0);
     m_acPressure.push_back(P0);
-
-    //VelR.open("VelR.txt", ofstream::app);
-    //VelR << m_axialVelocity.back().real()(0, 0) << "  ";
-    //VelR.close();
-    //VelI.open("VelI.txt", ofstream::app);
-    //VelI << m_axialVelocity.back().imag()(0, 0) << "  ";
-    //VelI.close();
   }
   else
   {
@@ -2746,8 +2737,6 @@ void CrossSection2dFEM::propagatePressureVelocityStraight(Eigen::MatrixXcd V0,
     // initalise velocity
     m_axialVelocity.push_back(V0);
     m_acPressure.push_back(P0);
-
-      
 
     // compute propagation matrices
     // loop over modes
@@ -2776,16 +2765,10 @@ void CrossSection2dFEM::propagatePressureVelocityStraight(Eigen::MatrixXcd V0,
         solve(m_acPressure.back()));
       m_axialVelocity.push_back(m_admittance[0] * m_acPressure.back());
     }
-      
-
-    //VelR.open("VelR.txt", ofstream::app);
-    //VelR << m_axialVelocity.back().real()(0, 0) << "  ";
-    //VelR.close();
-    //VelI.open("VelI.txt", ofstream::app);
-    //VelI << m_axialVelocity.back().imag()(0, 0) << "  ";
-    //VelI.close();
   }
 }
+
+// **************************************************************************
 
 void CrossSection2dRadiation::propagatePressureVelocityStraight(
   Eigen::MatrixXcd V0,
@@ -3018,9 +3001,11 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
                 m_axialVelocity[i]);
           }
         }
+
         // interpolate the amplitudes
         Q = (pt.x() - x_0)*(m_acPressure[idx[1]] - m_acPressure[idx[0]])/dx 
         + m_acPressure[idx[0]];
+
       return((interpolateModes(pts) * Q)(0,0));
         break;
       case VELOCITY:
