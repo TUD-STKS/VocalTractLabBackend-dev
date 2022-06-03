@@ -42,7 +42,8 @@ enum testType {
 
 enum tfType {
   GLOTTAL,
-  NOISE
+  NOISE,
+  INPUT_IMPED
 };
 
 class Acoustic3dSimulation

@@ -6003,18 +6003,26 @@ bool Acoustic3dSimulation::exportTransferFucntions(string fileName, enum tfType 
   for (int i(0); i < m_tfFreqs.size(); i++)
   {
     ofs << m_tfFreqs[i] << "  ";
-    for (int p(0); p < m_simuParams.tfPoint.size(); p++)
+    if (type == INPUT_IMPED)
     {
-      switch (type)
+      ofs << abs(m_planeModeInputImpedance[i]) << "  "
+        << arg(m_planeModeInputImpedance[i]);
+    }
+    else
+    {
+      for (int p(0); p < m_simuParams.tfPoint.size(); p++)
       {
-      case GLOTTAL:
-        ofs << abs(m_glottalSourceTF(i, p)) << "  "
-          << arg(m_glottalSourceTF(i, p)) << "  ";
-        break;
-      case NOISE:
-        ofs << abs(m_noiseSourceTF(i, p)) << "  "
-          << arg(m_noiseSourceTF(i, p)) << "  ";
-        break;
+        switch (type)
+        {
+        case GLOTTAL:
+          ofs << abs(m_glottalSourceTF(i, p)) << "  "
+            << arg(m_glottalSourceTF(i, p)) << "  ";
+          break;
+        case NOISE:
+          ofs << abs(m_noiseSourceTF(i, p)) << "  "
+            << arg(m_noiseSourceTF(i, p)) << "  ";
+          break;
+        }
       }
     }
     ofs << endl;
