@@ -2797,6 +2797,7 @@ void Acoustic3dSimulation::solveWaveProblemNoiseSrc(bool &needToExtractMatrixF, 
 void Acoustic3dSimulation::computeGlottalTf(int idxFreq, double freq)
 {
   m_glottalSourceTF.row(idxFreq) = acousticField(m_tfPoints);
+  m_planeModeInputImpedance(idxFreq) = m_crossSections[0]->Zin()(0, 0);
   m_tfFreqs.push_back(freq);
 }
 
