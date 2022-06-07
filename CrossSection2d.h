@@ -80,6 +80,7 @@ struct simulationParameters
 
   // for transfer function computation
   double maxComputedFreq;
+  int spectrumLgthExponent;
   vector<Point_3> tfPoint;
 
   // for acoustic field computation

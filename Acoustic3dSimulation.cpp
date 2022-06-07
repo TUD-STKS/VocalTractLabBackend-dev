@@ -119,7 +119,6 @@ Acoustic3dSimulation::Acoustic3dSimulation()
 // initialise the physical constants
   : m_geometryImported(false),
   m_meshDensity(5.),
-  m_spectrumLgthExponent(10),
   m_idxSecNoiseSource(25), // for /sh/ 212, for vowels 25
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
   m_mouthBoundaryCond(RADIATION),
@@ -147,7 +146,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
 
   // for transfer function computation
   m_simuParams.maxComputedFreq = 10000.; // (double)SAMPLING_RATE / 2.;
-  //m_simuParams.tfPoint = Point_3(3., 0., 0.);
+  m_simuParams.spectrumLgthExponent = 10;
   m_simuParams.tfPoint.push_back(Point_3(3., 0., 0.));
 
   // for acoustic field computation
@@ -161,7 +160,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_maxAmpField = -1.;
   m_minAmpField = -1.;
 
-  m_numFreq = 1 << (m_spectrumLgthExponent - 1);
+  m_numFreq = 1 << (m_simuParams.spectrumLgthExponent - 1);
   m_numFreqPicture = m_numFreq;
   spectrum.setNewLength(2 * m_numFreq);
   spectrumNoise.setNewLength(2 * m_numFreq);
@@ -246,21 +245,24 @@ Acoustic3dSimulation *Acoustic3dSimulation::getInstance()
 // Set computation parameters
 
 void Acoustic3dSimulation::setSimulationParameters(double meshDensity,
-  int secNoiseSource, int expSpectrumLgth, 
-  struct simulationParameters simuParams, enum openEndBoundaryCond cond,
-  enum contourInterpolationMethod scalingMethod)
+  int secNoiseSource, struct simulationParameters simuParams, 
+  enum openEndBoundaryCond cond, enum contourInterpolationMethod scalingMethod)
 {
   m_meshDensity = meshDensity;
   m_idxSecNoiseSource = secNoiseSource;
-  m_spectrumLgthExponent = expSpectrumLgth;
   m_mouthBoundaryCond = cond;
   m_contInterpMeth = scalingMethod;
   m_simuParams = simuParams;
 
-  m_numFreq = 1 << (m_spectrumLgthExponent - 1);
-  spectrum.reset(2 * m_numFreq);
-  spectrumNoise.reset(2 * m_numFreq);
-  spectrumConst.reset(2 * m_numFreq);
+  m_numFreq = 1 << (m_simuParams.spectrumLgthExponent - 1);
+
+  //if (m_simuParams.spectrumLgthExponent != m_oldSimuParams.spectrumLgthExponent)
+  //{
+  //  m_numFreq = 1 << (m_simuParams.spectrumLgthExponent - 1);
+  //  spectrum.reset(2 * m_numFreq);
+  //  spectrumNoise.reset(2 * m_numFreq);
+  //  spectrumConst.reset(2 * m_numFreq);
+  //}
 
   if (m_simuParams.freqDepLosses)
   {
@@ -419,9 +421,9 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   log << "Index of noise source section: " << m_idxSecNoiseSource << endl;
   log << "Maximal computed frequency: " << m_simuParams.maxComputedFreq
     << " Hz" << endl;
-  log << "Spectrum exponent " << m_spectrumLgthExponent << endl;
+  log << "Spectrum exponent " << m_simuParams.spectrumLgthExponent << endl;
   log << "Frequency steps: " 
-    << (double)SAMPLING_RATE / 2. / (double)(1 << (m_spectrumLgthExponent - 1)) 
+    << (double)SAMPLING_RATE / 2. / (double)(1 << (m_simuParams.spectrumLgthExponent - 1))
     << " Hz" << endl;
   log << "Number of simulated frequencies: " << numFreqComputed << endl;
   log << "Transfer function point (cm): " <<  endl;
@@ -474,6 +476,8 @@ void Acoustic3dSimulation::addCrossSectionFEM(double area,
     length, scalingFactors)));
 
 }
+
+// ****************************************************************************
 
 void Acoustic3dSimulation::addCrossSectionRadiation(Point2D ctrLinePt, Point2D normal,
   double radius, double PMLThickness)
@@ -1606,6 +1610,8 @@ void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd& startImped,
     time, direction);
 }
 
+// ****************************************************************************
+
 void Acoustic3dSimulation::propagateImpedAdmit(Eigen::MatrixXcd & startImped,
   Eigen::MatrixXcd & startAdmit, double freq, int startSection, int endSection,
   std::chrono::duration<double> *time, int direction)
@@ -1968,6 +1974,8 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd& startVelocit
     time, direction);
 }
 
+// ****************************************************************************
+
 void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocity,
   Eigen::MatrixXcd& startPressure, double freq, int startSection, 
   int endSection, std::chrono::duration<double> *time, int direction)
@@ -2267,6 +2275,8 @@ void Acoustic3dSimulation::propagateVelocityPress(Eigen::MatrixXcd &startVelocit
   //log.close();
 }
 
+// ****************************************************************************
+
 void Acoustic3dSimulation::propagatePressure(Eigen::MatrixXcd startPress, double freq)
 {
   Eigen::MatrixXcd prevPress(startPress);
@@ -2337,6 +2347,8 @@ Eigen::VectorXcd Acoustic3dSimulation::acousticField(vector<Point_3> queryPt)
 
   return(field);
 }
+
+// ****************************************************************************
 
 complex<double> Acoustic3dSimulation::acousticField(Point_3 queryPt)
 {
@@ -2579,8 +2591,7 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
     log << "Time radiation impedance: " << elapsed_seconds.count() << endl;
   }
 
-  //******************************************************
-
+  // Actually solve the wave problem
   solveWaveProblem(tract, freq, time, timeExp);
 
   log.close();
@@ -2812,6 +2823,9 @@ void Acoustic3dSimulation::computeNoiseSrcTf(int idxFreq)
 
 void Acoustic3dSimulation::generateSpectraForSynthesis(int tfIdx)
 {
+  spectrum.reset(2 * m_numFreq);
+  spectrumNoise.reset(2 * m_numFreq);
+
   for (int i(0); i < m_numFreqComputed; i++)
   {
     spectrum.setValue(i, m_glottalSourceTF(i, tfIdx));
@@ -4315,7 +4329,6 @@ CrossSection2d * Acoustic3dSimulation::crossSection(int csIdx) const
   return m_crossSections[csIdx].get();
 }
 double Acoustic3dSimulation::meshDensity() const { return m_meshDensity; }
-//int Acoustic3dSimulation::modeNumber() const { return m_modeNumber; }
 double Acoustic3dSimulation::maxCutOnFreq() const { return m_simuParams.maxCutOnFreq; }
 int Acoustic3dSimulation::numIntegrationStep() const { return m_simuParams.numIntegrationStep; }
 

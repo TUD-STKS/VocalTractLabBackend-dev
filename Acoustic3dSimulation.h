@@ -59,7 +59,7 @@ public:
 
   void setBoundarySpecificAdmittance();
   void setSimulationParameters(double meshDensity, int secNoiseSource,
-    int expSpectrumLgth, struct simulationParameters simuParams,
+    struct simulationParameters simuParams,
     enum openEndBoundaryCond cond, enum contourInterpolationMethod scalingMethod);
   void setIdxSecNoiseSource(int idx) { m_idxSecNoiseSource = idx; }
   void generateLogFileHeader(bool cleanLog);
@@ -166,11 +166,11 @@ public:
   bool freqDepLosses() const { return m_simuParams.freqDepLosses; }
   CrossSection2d* crossSection(int csIdx) const;
   double meshDensity() const;
-  //int modeNumber() const;
   double maxCutOnFreq() const;
   int numIntegrationStep() const;
   propagationMethod method() const { return m_simuParams.propMethod; }
-  int spectrumLgthExponent() const { return m_spectrumLgthExponent; }
+  int spectrumLgthExponent() const { return m_simuParams.spectrumLgthExponent; }
+  int oldSpectrumLgthExponent() const { return m_oldSimuParams.spectrumLgthExponent; }
   int idxSecNoiseSource() const { return m_idxSecNoiseSource; }
   pair<Point2D, Point2D> maxCSBoundingBox() const { return m_maxCSBoundingBox; }
   pair<Point2D, Point2D> bboxSagittalPlane() const 
@@ -219,8 +219,7 @@ private:
   string m_geometryFile;
   contourInterpolationMethod m_contInterpMeth;
   double m_meshDensity;
-  // the number of frequencies is 2 ^ (m_spectrumLgthExponent - 1)
-  int m_spectrumLgthExponent;
+  // the number of frequencies is 2 ^ (spectrumLgthExponent - 1)
   int m_numFreq;
   int m_numFreqPicture;
   double m_lastFreqComputed;
