@@ -163,7 +163,7 @@ public:
   bool isGeometryImported() const { return m_geometryImported; }
   int sectionNumber() const;
   double soundSpeed() const;
-  bool freqDepLosses() const { return m_simuParams.freqDepLosses; }
+  bool viscoThermalLosses() const { return m_simuParams.viscoThermalLosses; }
   CrossSection2d* crossSection(int csIdx) const;
   double meshDensity() const;
   double maxCutOnFreq() const;

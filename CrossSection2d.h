@@ -67,10 +67,12 @@ struct simulationParameters
   double maxCutOnFreq;
   complex<double> viscousBndSpecAdm;
   complex<double> thermalBndSpecAdm;
-  bool freqDepLosses;
   enum propagationMethod propMethod;
   double percentageLosses;
+  bool viscoThermalLosses;
   bool wallLosses;
+  bool constantWallImped;
+  complex<double> wallAdmit;
   bool curved;
   bool varyingArea;
   bool junctionLosses;

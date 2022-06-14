@@ -132,8 +132,10 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_simuParams.orderMagnusScheme = 2;
   m_simuParams.maxCutOnFreq = 20000.;
   m_simuParams.propMethod = MAGNUS;
-  m_simuParams.freqDepLosses = false;
-  m_simuParams.wallLosses = false;
+  m_simuParams.viscoThermalLosses = true;
+  m_simuParams.wallLosses = true;
+  m_simuParams.constantWallImped = false;
+  m_simuParams.wallAdmit = complex<double>(0.005, 0.);
   m_simuParams.sndSpeed = (sqrt(ADIABATIC_CONSTANT * STATIC_PRESSURE_CGS / m_simuParams.volumicMass));
   m_crossSections.reserve(2 * VocalTract::NUM_CENTERLINE_POINTS);
   m_simuParams.percentageLosses = 1.;
@@ -177,7 +179,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
 
 void Acoustic3dSimulation::setBoundarySpecificAdmittance()
 {
-  if (m_simuParams.freqDepLosses)
+  if (m_simuParams.viscoThermalLosses)
   {
     //********************************************
     // compute boundary specific admittances 
@@ -264,7 +266,7 @@ void Acoustic3dSimulation::setSimulationParameters(double meshDensity,
   //  spectrumConst.reset(2 * m_numFreq);
   //}
 
-  if (m_simuParams.freqDepLosses)
+  if (m_simuParams.viscoThermalLosses)
   {
     setBoundarySpecificAdmittance();
   }
@@ -308,17 +310,22 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
 
   log << "BOUNDARY CONDITIONS:" << endl;
   log << "Percentage losses " << m_simuParams.percentageLosses * 100. << " %" << endl;
-  log << "viscous boundary specific admittance " << m_simuParams.viscousBndSpecAdm
-    << " g.cm^-2 .s^-1" << endl;
-  log << "thermal boundary specific admittance " << m_simuParams.thermalBndSpecAdm
-    << " g.cm^-2 .s^-1" << endl;
-  if (m_simuParams.freqDepLosses)
+  if (m_simuParams.viscoThermalLosses)
   {
-    log << "Frequency dependant losses" << endl;
+    log << "Visco-thermal losses included" << endl;
+    log << "viscous boundary specific admittance " << m_simuParams.viscousBndSpecAdm
+      << " g.cm^-2 .s^-1" << endl;
+    log << "thermal boundary specific admittance " << m_simuParams.thermalBndSpecAdm
+      << " g.cm^-2 .s^-1" << endl;
   }
   if (m_simuParams.wallLosses)
   {
     log << "Wall losse included" << endl;
+  }
+  if (m_simuParams.constantWallImped)
+  {
+    log << "Constant wall admittance " << m_simuParams.wallAdmit
+      << " g.cm^-2 .s^-1" << endl;
   }
   log << "glottis boundary condition: ";
   switch (m_glottisBoundaryCond)
@@ -3755,7 +3762,7 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
       start = std::chrono::system_clock::now();
     
     // Set the proper simulation parameters
-    m_simuParams.freqDepLosses = false;
+    m_simuParams.viscoThermalLosses = false;
 //    m_simuParams.wallLosses = false;
       //m_simuParams.orderMagnusScheme = 4;
     //m_meshDensity = 15.;
@@ -5807,9 +5814,6 @@ complex<double> Acoustic3dSimulation::interpolateTransferFunction(double freq, i
   int idxFreqs[2];
   int maxIdxFreq(m_tfFreqs.size() - 1);
 
-  //ofstream log("log.txt", ofstream::app);
-  //log << "Start interpolateTransferFunction" << endl;
-
   Eigen::MatrixXcd *inputTf; 
   switch (type)
   {
@@ -5820,9 +5824,6 @@ complex<double> Acoustic3dSimulation::interpolateTransferFunction(double freq, i
     inputTf = &m_noiseSourceTF;
     break;
   }
-
-  //log << "inputTf->rows() " << inputTf->rows() << endl;
-  //log.close();
   
   // Check if a transfer function have been computed
   if (inputTf->rows() > 0)
@@ -6250,7 +6251,7 @@ void Acoustic3dSimulation::interpolateRadiationImpedance(Eigen::MatrixXcd& imped
   // find the index corresponding to the coefficient to use for this frequency
   int nbRadFreqs(m_radiationMatrixInterp[0][0][0].size());
   int idx(nbRadFreqs - 2);
-  while (m_radiationFreqs[idx] > freq) { idx--; }
+  while ((m_radiationFreqs[idx] > freq) && (idx > 0)) { idx--; }
   idx = max(0, idx);
 
   //log << "Idx coef " << idx << endl;
@@ -6288,7 +6289,7 @@ void Acoustic3dSimulation::interpolateRadiationAdmittance(Eigen::MatrixXcd& admi
   // find the index corresponding to the coefficient to use for this frequency
   int nbRadFreqs(m_radiationMatrixInterp[0][0][0].size());
   int idx(nbRadFreqs - 2);
-  while (m_radiationFreqs[idx] > freq) { idx--; }
+  while ((m_radiationFreqs[idx] > freq) && (idx > 0)) { idx--; }
   idx = max(0, idx);
 
   // get number of modes of the radiating section

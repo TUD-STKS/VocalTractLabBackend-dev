@@ -1595,10 +1595,12 @@ complex<double> CrossSection2dFEM::getWallAdmittance(
 void CrossSection2dFEM::getSpecificBndAdm(struct simulationParameters simuParams, double freq, 
   Eigen::VectorXcd& bndSpecAdm)
 {
-  //ofstream log("log.txt", ofstream::app);
-  if (simuParams.freqDepLosses)
+  ofstream log("log.txt", ofstream::app);
+
+  if (simuParams.viscoThermalLosses)
   {
-    bndSpecAdm = Eigen::MatrixXcd::Zero(m_modesNumber, m_modesNumber);
+    bndSpecAdm.resize(m_modesNumber);
+    bndSpecAdm.setZero();
     double k(2. * M_PI * freq / simuParams.sndSpeed);
     for (int m(0); m < m_modesNumber; m++)
     {
@@ -1607,13 +1609,19 @@ void CrossSection2dFEM::getSpecificBndAdm(struct simulationParameters simuParams
         simuParams.viscousBndSpecAdm + simuParams.thermalBndSpecAdm) * sqrt(freq));
     }
   }
+  else if (simuParams.constantWallImped)
+  {
+    bndSpecAdm.resize(m_modesNumber);
+    bndSpecAdm.setConstant(simuParams.percentageLosses * simuParams.wallAdmit);
+  }
   else
   {
-    bndSpecAdm.setConstant(simuParams.percentageLosses *
-      (simuParams.viscousBndSpecAdm + simuParams.thermalBndSpecAdm));
+    bndSpecAdm.resize(m_modesNumber);
+    bndSpecAdm.setZero();
   }
-  //log << "\n" << bndSpecAdm << endl;
-  //log.close();
+
+  log << "bndSpecAdm\n" << bndSpecAdm << endl;
+  log.close();
 }
 
 // **************************************************************************
