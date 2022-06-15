@@ -1595,8 +1595,6 @@ complex<double> CrossSection2dFEM::getWallAdmittance(
 void CrossSection2dFEM::getSpecificBndAdm(struct simulationParameters simuParams, double freq, 
   Eigen::VectorXcd& bndSpecAdm)
 {
-  ofstream log("log.txt", ofstream::app);
-
   if (simuParams.viscoThermalLosses)
   {
     bndSpecAdm.resize(m_modesNumber);
@@ -1619,9 +1617,6 @@ void CrossSection2dFEM::getSpecificBndAdm(struct simulationParameters simuParams
     bndSpecAdm.resize(m_modesNumber);
     bndSpecAdm.setZero();
   }
-
-  log << "bndSpecAdm\n" << bndSpecAdm << endl;
-  log.close();
 }
 
 // **************************************************************************
