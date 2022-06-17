@@ -4923,44 +4923,6 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
 }
 
 //*************************************************************************
-
-//double Acoustic3dSimulation::getScalingFactor(int idx1, int idx2, 
-//  vector<Point2D> & centerLine, vector<Point2D> normals, vector<array<double, 4>> bboxes,
-//  vector<double>)
-//{
-//  double scaling, shift;
-//
-//  // compute the distance between the center points of the 2 contours at the junctions
-//  Point ptOut(ctrLinePtOut(Point(centerLine[idx1].x, centerLine[idx1].y),
-//    Vector(normals[idx1].x, normals[idx1].y), prevAngle, prevCurvRadius, length));
-//  Vector vec(ptOut, Point(centerLine[idx2].x, centerLine[idx2].y));
-//  shift = -CGAL::scalar_product(vec, Vector(normals[idx2].x, normals[idx2].y));
-//
-//  double meanX((abs(bboxes[idx1][0]) + abs(bboxes[idx1][1])
-//    + abs(bboxes[idx2][0]) + abs(bboxes[idx2][1])));
-//
-//  double meanY((abs(bboxes[idx1][2]) + abs(bboxes[idx1][3])
-//    + abs(bboxes[idx2][2]) + abs(bboxes[idx2][3] + 2. * shift)));
-//
-//  double scalingArea(sqrt(max(MINIMAL_AREA, totAreas[idx2]) / totAreas[idx1]));
-//
-//  if (meanX > meanY)
-//  {
-//    scaling = min(bboxes[idx2][0] / bboxes[idx1][0],
-//      bboxes[idx2][1] / bboxes[idx1][1]);
-//  }
-//  else
-//  {
-//    scaling = min((bboxes[idx2][2] + shift) / bboxes[idx1][2],
-//      (bboxes[idx2][3] + shift) / bboxes[idx1][3]);
-//  }
-//
-//  scaling = 0.999 * min(scalingArea, scaling);
-//
-//  return(scaling);
-//}
-
-//*************************************************************************
 // Create cross-sections from VocalTractLab current geometry
 // adding intermediate 0 length section where 
 // one of the section is not exactely contained in the other
@@ -5351,12 +5313,6 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     getCurvatureAngleShift(centerLine[i], centerLine[i+1], normals[i], normals[i+1],
       curvRadius, angle, shift);
 
-    //// shift the contours
-    //Transformation translate(CGAL::TRANSLATION, Vector(0., shift));
-    //for (auto cont : contours[i]) {cont = transform(translate, cont);}
-
-    //log << "Contour shifted" << endl;
-
     // if the area is equal to the minimal area, the contours
     // are defined as the scaled previous contours
     //
@@ -5367,23 +5323,17 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     }
     if (area <= MINIMAL_AREA)
     {
-      // copy the previous contours scaling them so that they 
-      // have the minimal area
-
-      // compute the sum of the areas of all the contours 
-      // of the previous slice
-      area = 0.;
-      for (auto cont : contours[i-1]) { area += abs(cont.area()); }
-      scalingFactors[0] = MINIMAL_AREA / area;
-      Transformation scale(CGAL::SCALING, scalingFactors[0]);
+      // copy the previous contours 
+      contours[i] = contours[i-1];
+      surfaceIdx[i] = surfaceIdx[i-1];
       scalingFactors[0] = 1.;
       scalingFactors[1] = 1.;
 
-      // FIXME: check if the copy works as intended
-      contours[i] = contours[i-1];
-      surfaceIdx[i] = surfaceIdx[i-1];
       //scale the contours
-      for (auto cont : contours[i]){cont = transform(scale, cont);
+      Transformation scale(CGAL::SCALING, prevScalingFactors[1]);
+      for (int j(0); j < contours[i].size(); j++)
+      {
+        contours[i][j] = transform(scale, contours[i][j]);
       }
     }
 

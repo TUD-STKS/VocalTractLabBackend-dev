@@ -263,7 +263,6 @@ private:
   Acoustic3dSimulation();
   Point ctrLinePtOut(Point ctrLinePtIn, Vector normalIn, double circleArcAngle, 
     double curvatureRadius, double length);
-  //double getScalingFactor(int idx1, int idx2);
 
   void createContour(double inputUpProf[VocalTract::NUM_PROFILE_SAMPLES],
     double inputLoProf[VocalTract::NUM_PROFILE_SAMPLES], 
