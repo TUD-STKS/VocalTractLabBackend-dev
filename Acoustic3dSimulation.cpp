@@ -5187,12 +5187,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   getCurvatureAngleShift(centerLine[0], centerLine[1], normals[0], normals[1],
     prevCurvRadius, prevAngle, shift);
 
-  log << "getCurvatureAngleShift " << prevCurvRadius << "  " << prevAngle << endl;
-
-  //// shift the contours
-  //Transformation translate(CGAL::TRANSLATION, Vector(0., shift));
-  //for (auto cont : contours[0]){cont = transform(translate, cont);}
-  // FIXME: one should shift also the ccenterline point probably
+  //log << "getCurvatureAngleShift " << prevCurvRadius << "  " << prevAngle << endl;
 
   // initialize the previous section index list
   for (int c(0); c < contours[0].size(); c++){prevSections.push_back(tmpPrevSection);}
@@ -5328,6 +5323,15 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       surfaceIdx[i] = surfaceIdx[i-1];
       scalingFactors[0] = 1.;
       scalingFactors[1] = 1.;
+
+      // compute the distance between the center points of the 2 centerline points at the junctions
+      Point ptOut(ctrLinePtOut(Point(centerLine[i - 1].x, centerLine[i - 1].y),
+        Vector(normals[i - 1].x, normals[i - 1].y), prevAngle, prevCurvRadius, length));
+      Vector vec(ptOut, Point(centerLine[i].x, centerLine[i].y));
+
+      // shift the centerline point
+      centerLine[i].x -= vec.x(); 
+      centerLine[i].y -= vec.y(); 
 
       //scale the contours
       Transformation scale(CGAL::SCALING, prevScalingFactors[1]);
