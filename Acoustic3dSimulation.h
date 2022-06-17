@@ -263,12 +263,15 @@ private:
   Acoustic3dSimulation();
   Point ctrLinePtOut(Point ctrLinePtIn, Vector normalIn, double circleArcAngle, 
     double curvatureRadius, double length);
+  //double getScalingFactor(int idx1, int idx2);
+
   void createContour(double inputUpProf[VocalTract::NUM_PROFILE_SAMPLES],
     double inputLoProf[VocalTract::NUM_PROFILE_SAMPLES], 
     int upperProfileSurface[VocalTract::NUM_PROFILE_SAMPLES],
     int lowerProfileSurface[VocalTract::NUM_PROFILE_SAMPLES],
     vector<double> &areas, vector<double> &spacing,
     vector< Polygon_2> &contours, vector<vector<int>> &surfacesIdx);
+
   void getCurvatureAngleShift(Point2D P1, Point2D P2,
     Point2D N1, Point2D N2, double& radius, double& angle, double& shift);
   

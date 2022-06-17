@@ -4923,6 +4923,44 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
 }
 
 //*************************************************************************
+
+//double Acoustic3dSimulation::getScalingFactor(int idx1, int idx2, 
+//  vector<Point2D> & centerLine, vector<Point2D> normals, vector<array<double, 4>> bboxes,
+//  vector<double>)
+//{
+//  double scaling, shift;
+//
+//  // compute the distance between the center points of the 2 contours at the junctions
+//  Point ptOut(ctrLinePtOut(Point(centerLine[idx1].x, centerLine[idx1].y),
+//    Vector(normals[idx1].x, normals[idx1].y), prevAngle, prevCurvRadius, length));
+//  Vector vec(ptOut, Point(centerLine[idx2].x, centerLine[idx2].y));
+//  shift = -CGAL::scalar_product(vec, Vector(normals[idx2].x, normals[idx2].y));
+//
+//  double meanX((abs(bboxes[idx1][0]) + abs(bboxes[idx1][1])
+//    + abs(bboxes[idx2][0]) + abs(bboxes[idx2][1])));
+//
+//  double meanY((abs(bboxes[idx1][2]) + abs(bboxes[idx1][3])
+//    + abs(bboxes[idx2][2]) + abs(bboxes[idx2][3] + 2. * shift)));
+//
+//  double scalingArea(sqrt(max(MINIMAL_AREA, totAreas[idx2]) / totAreas[idx1]));
+//
+//  if (meanX > meanY)
+//  {
+//    scaling = min(bboxes[idx2][0] / bboxes[idx1][0],
+//      bboxes[idx2][1] / bboxes[idx1][1]);
+//  }
+//  else
+//  {
+//    scaling = min((bboxes[idx2][2] + shift) / bboxes[idx1][2],
+//      (bboxes[idx2][3] + shift) / bboxes[idx1][3]);
+//  }
+//
+//  scaling = 0.999 * min(scalingArea, scaling);
+//
+//  return(scaling);
+//}
+
+//*************************************************************************
 // Create cross-sections from VocalTractLab current geometry
 // adding intermediate 0 length section where 
 // one of the section is not exactely contained in the other
@@ -4930,6 +4968,8 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
 bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   bool createRadSection)
 {
+  const double MINIMAL_AREA(0.15);
+
   //*******************************************
   // Extract the contours and the centerline
   //*******************************************
@@ -5007,7 +5047,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       m_maxCSBoundingBox.second.y);
   }
 
-  log << "Bounding box extracted" << endl;
+  //log << "Bounding box extracted" << endl;
 
   //*********************************************************
   // Create lambda expression to compute the scaling factors
@@ -5018,33 +5058,43 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   auto getScalingFactor = [&](int idx1, int idx2)
   {
     double scaling, shift;
+    array<double, 4> bb1(bboxes[idx1]), bb2(bboxes[idx2]);
 
-    // compute the distance between the center points of the 2 contours at the junctions
-    Point ptOut(ctrLinePtOut(Point(centerLine[idx1].x, centerLine[idx1].y),
-      Vector(normals[idx1].x, normals[idx1].y), prevAngle, prevCurvRadius, length));
-    Vector vec(ptOut, Point(centerLine[idx2].x, centerLine[idx2].y));
-    shift = -CGAL::scalar_product(vec, Vector(normals[idx2].x, normals[idx2].y));
+    double scalingArea(sqrt(max(MINIMAL_AREA, totAreas[idx2])
+      / max(MINIMAL_AREA, totAreas[idx1])));
 
-    double meanX((abs(bboxes[idx1][0]) + abs(bboxes[idx1][1])
-      + abs(bboxes[idx2][0]) + abs(bboxes[idx2][1])));
+    log << "Scaling area" << scalingArea << endl;
 
-    double meanY((abs(bboxes[idx1][2]) + abs(bboxes[idx1][3])
-      + abs(bboxes[idx2][2]) + abs(bboxes[idx2][3] + 2. * shift)));
-
-    double scalingArea(sqrt(totAreas[idx2] / totAreas[idx1]));
-
-    if (meanX > meanY)
+    if ((totAreas[idx1] < MINIMAL_AREA) || (totAreas[idx2] < MINIMAL_AREA)
+      || (m_contInterpMeth == AREA))
     {
-      scaling = min(bboxes[idx2][0] / bboxes[idx1][0],
-        bboxes[idx2][1] / bboxes[idx1][1]);
+      scaling = 0.999 * scalingArea;
     }
     else
     {
-      scaling = min((bboxes[idx2][2] + shift) / bboxes[idx1][2],
-        (bboxes[idx2][3] + shift) / bboxes[idx1][3]);
-    }
+      // compute the distance between the center points of the 2 contours at the junctions
+      Point ptOut(ctrLinePtOut(Point(centerLine[idx1].x, centerLine[idx1].y),
+        Vector(normals[idx1].x, normals[idx1].y), prevAngle, prevCurvRadius, length));
+      Vector vec(ptOut, Point(centerLine[idx2].x, centerLine[idx2].y));
+      shift = -CGAL::scalar_product(vec, Vector(normals[idx2].x, normals[idx2].y));
 
-    scaling = 0.999 * min(scalingArea, scaling);
+      double meanX((abs(bb1[0]) + abs(bb1[1])
+        + abs(bb2[0]) + abs(bb2[1])));
+
+      double meanY((abs(bb1[2]) + abs(bb1[3])
+        + abs(bb2[2]) + abs(bb2[3] + 2. * shift)));
+
+      if (meanX > meanY)
+      {
+        scaling = min(bb2[0] / bb1[0], bb2[1] / bb1[1]);
+      }
+      else
+      {
+        scaling = min((bb2[2] + shift) / bb1[2], (bb2[3] + shift) / bb1[3]);
+      }
+
+      scaling = 0.999 * min(scalingArea, scaling);
+    }
 
     return(scaling);
   };
@@ -5056,8 +5106,6 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   double prevScalingFactors[2] = { 1., 1. };
   double scalingFactors[2] = { 1., 1. };
   double array1[2] = { 1., 1. };
-  //const double minDist(1.e-4);
-  const double MINIMAL_AREA(0.15);
   vector<int> tmpPrevSection, prevSecInt, listNextCont, tmpSurf;
   vector<vector<int>> prevSections, intSurfacesIdx;
   int secIdx(0), intSecIdx(0), nextSecIdx, nbCont(contours.size());
@@ -5192,11 +5240,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   {
     switch (m_contInterpMeth)
     {
-    case AREA:
-      prevScalingFactors[0] = 1.;
-      prevScalingFactors[1] = sqrt(totAreas[1] / totAreas[0]);
-      break;
-    case BOUNDING_BOX:
+    case AREA: case BOUNDING_BOX:
       prevScalingFactors[0] = 1.;
       prevScalingFactors[1] = getScalingFactor(0, 1);
       break;
@@ -5228,11 +5272,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       {
         switch (m_contInterpMeth)
         {
-        case AREA:
-          scalingFactors[0] = 1.;
-          scalingFactors[1] =  sqrt(totAreas[i + 1] / totAreas[i]);
-          break;
-        case BOUNDING_BOX:
+        case AREA: case BOUNDING_BOX:
           scalingFactors[0] = 1.;
           scalingFactors[1] = getScalingFactor(i, i + 1);
           break;
@@ -5246,13 +5286,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       {
         switch (m_contInterpMeth)
         {
-        case AREA: 
+        case AREA: case BOUNDING_BOX:
           scalingFactors[0] = 1.;
-          scalingFactors[1] = sqrt((totAreas[i] + totAreas[i + 1]) / 2. / totAreas[i]);
-          break;
-        case BOUNDING_BOX:
-          scalingFactors[0] = 1.;
-          //scalingFactors[1] = getScalingFactor(i, i + 1) / 2.;
           scalingFactors[1] = getScalingFactor(i, i + 1);
           break;
         case FROM_FILE:
@@ -5265,12 +5300,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       {
         switch (m_contInterpMeth)
         {
-        case AREA:
-          scalingFactors[0] = sqrt((totAreas[i-1] + totAreas[i]) / 2. / totAreas[i]);
-          scalingFactors[1] = 1.;
-          break;
-        case BOUNDING_BOX:
-          //scalingFactors[0] = getScalingFactor(i-1, i) / 2.;
+        case AREA: case BOUNDING_BOX:
           scalingFactors[0] = getScalingFactor(i - 1, i);
           scalingFactors[1] = 1.;
           break;
