@@ -4142,8 +4142,12 @@ vector<Point_3> Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(vec
 
 Point_3 Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(Point_3 pt)
 {
+  ofstream log("log.txt", ofstream::app);
+
   Point ptVertPlane(pt.x(), pt.z());
+  log << "ptVertPlane " << ptVertPlane << endl;
   Vector endNormal(m_crossSections.back()->normalOut());
+  log << "endNormal " << endNormal << endl;
   Vector vertical(Vector(0., 1.));
   double angle;// angleCtlNorm;
   double circleArcAngle(m_crossSections.back()->circleArcAngle());
@@ -4151,12 +4155,24 @@ Point_3 Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(Point_3 pt)
   
   angle = fmod(atan2(endNormal.y(), endNormal.x()) -
     atan2(vertical.y(), vertical.x()) + 2. * M_PI, 2. * M_PI);
+  log << "angle " << angle << endl;
+  log << "circleArcAngle " << circleArcAngle << endl;
   
-  if (circleArcAngle > MINIMAL_DISTANCE)
+  if (abs(circleArcAngle) > MINIMAL_DISTANCE)
   {
     if (signbit(m_crossSections.back()->curvRadius() * circleArcAngle))
     {
       angle -= M_PI;
+
+      // rotate the point to compensate inclination of the end normal
+      Transformation rotate(CGAL::ROTATION, sin(angle), cos(angle));
+      ptVertPlane = rotate(Point(ptVertPlane.x(), -ptVertPlane.y()));
+    }
+    else
+    {
+      // rotate the point to compensate inclination of the end normal
+      Transformation rotate(CGAL::ROTATION, sin(angle), cos(angle));
+      ptVertPlane = rotate(ptVertPlane);
     }
   }
   else
@@ -4172,12 +4188,26 @@ Point_3 Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(Point_3 pt)
     if (!signbit((angleCtlNorm - M_PI) * anglePtNorm))
     {
       angle -= M_PI;
+
+      // rotate the point to compensate inclination of the end normal
+      Transformation rotate(CGAL::ROTATION, sin(angle), cos(angle));
+      ptVertPlane = rotate(Point(ptVertPlane.x(), -ptVertPlane.y()));
+    }
+    else
+    {
+      // rotate the point to compensate inclination of the end normal
+      Transformation rotate(CGAL::ROTATION, sin(angle), cos(angle));
+      ptVertPlane = rotate(ptVertPlane);
     }
   }
 
-  // rotate the point to compensate inclination of the end normal
-  Transformation rotate(CGAL::ROTATION, sin(angle), cos(angle));
-  ptVertPlane = rotate(ptVertPlane);
+  log << "angle " << angle << endl;
+
+  //// rotate the point to compensate inclination of the end normal
+  //Transformation rotate(CGAL::ROTATION, sin(angle), cos(angle));
+  //ptVertPlane = rotate(ptVertPlane);
+
+  log << "ptVertPlane " << ptVertPlane << endl;
 
   // shift the point to compensate the origin of the end landmark
   return(Point_3(
@@ -4185,6 +4215,8 @@ Point_3 Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(Point_3 pt)
     pt.y(),
     ptVertPlane.y() + m_crossSections.back()->ctrLinePtOut().y()
   ));
+
+  log.close();
 }
 
 // ****************************************************************************
@@ -4949,7 +4981,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
   ofstream ofs;
   ofstream log("log.txt", ofstream::app);
-  log << "Start cross-section creation" << endl;
+  //log << "Start cross-section creation" << endl;
 
   if (m_geometryImported)
   {
@@ -4964,7 +4996,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     extractContours(tract, contours, surfaceIdx, centerLine, normals);
   }
 
-  log << "Contours extracted" << endl;
+  //log << "Contours extracted" << endl;
 
   // initialize max bounding box
   m_maxCSBoundingBox.first = Point2D(0., 0.);
@@ -5025,7 +5057,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     double scalingArea(sqrt(max(MINIMAL_AREA, totAreas[idx2])
       / max(MINIMAL_AREA, totAreas[idx1])));
 
-    log << "Scaling area" << scalingArea << endl;
+    //log << "Scaling area" << scalingArea << endl;
 
     if ((totAreas[idx1] < MINIMAL_AREA) || (totAreas[idx2] < MINIMAL_AREA)
       || (m_contInterpMeth == AREA))
@@ -5173,8 +5205,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     centerLine[lastCtl - 1].y = pt.y();
   }
 
-  log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
-    << N.x() << "  " << N.y() << endl;
+  //log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
+  //  << N.x() << "  " << N.y() << endl;
 
   //*******************************************
   // Create the cross-sections
@@ -5208,12 +5240,12 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     }
   }
 
-  log << "nbCont " << nbCont << endl;
+  //log << "nbCont " << nbCont << endl;
 
   // create the cross-sections
   for (int i(1); i < nbCont; i++)
   {
-    log << "\ni= " << i << endl;
+    //log << "\ni= " << i << endl;
 
     //**********************************
     // Create previous cross-sections
@@ -5400,8 +5432,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
         //log << "Prev Contour extracted and scaled sc = " 
         //  << prevScalingFactors[1] << endl;
 
-        log << "similar contours " <<
-          similarContours(cont, prevCont, MINIMAL_DISTANCE_DIFF_POLYGONS) << endl;
+        //log << "similar contours " <<
+        //  similarContours(cont, prevCont, MINIMAL_DISTANCE_DIFF_POLYGONS) << endl;
 
         if (!similarContours(cont, prevCont, MINIMAL_DISTANCE_DIFF_POLYGONS))
         {
@@ -5449,9 +5481,9 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
 
               // compute the intersections of both contours
               intersections.clear();
-              log << "Before compute intersection" << endl;
+              //log << "Before compute intersection" << endl;
               CGAL::intersection(prevCont, cont, back_inserter(intersections));
-              log << intersections.size() << " intersections computed" << endl;
+              //log << intersections.size() << " intersections computed" << endl;
 
               // loop over the intersection polygons created
               for (auto pol = intersections.begin();
@@ -5506,7 +5538,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
       prevSections.push_back(tmpPrevSection);
     }
 
-    log << "Intersection computed" << endl;
+    //log << "Intersection computed" << endl;
 
     // set the next section indexes to the previous section 
     nextSecIdx = secIdx + intSecIdx; // index of the first next section
