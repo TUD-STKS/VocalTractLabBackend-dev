@@ -4142,12 +4142,8 @@ vector<Point_3> Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(vec
 
 Point_3 Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(Point_3 pt)
 {
-  ofstream log("log.txt", ofstream::app);
-
   Point ptVertPlane(pt.x(), pt.z());
-  log << "ptVertPlane " << ptVertPlane << endl;
   Vector endNormal(m_crossSections.back()->normalOut());
-  log << "endNormal " << endNormal << endl;
   Vector vertical(Vector(0., 1.));
   double angle;// angleCtlNorm;
   double circleArcAngle(m_crossSections.back()->circleArcAngle());
@@ -4155,8 +4151,6 @@ Point_3 Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(Point_3 pt)
   
   angle = fmod(atan2(endNormal.y(), endNormal.x()) -
     atan2(vertical.y(), vertical.x()) + 2. * M_PI, 2. * M_PI);
-  log << "angle " << angle << endl;
-  log << "circleArcAngle " << circleArcAngle << endl;
   
   if (abs(circleArcAngle) > MINIMAL_DISTANCE)
   {
@@ -4201,22 +4195,12 @@ Point_3 Acoustic3dSimulation::movePointFromExitLandmarkToGeoLandmark(Point_3 pt)
     }
   }
 
-  log << "angle " << angle << endl;
-
-  //// rotate the point to compensate inclination of the end normal
-  //Transformation rotate(CGAL::ROTATION, sin(angle), cos(angle));
-  //ptVertPlane = rotate(ptVertPlane);
-
-  log << "ptVertPlane " << ptVertPlane << endl;
-
   // shift the point to compensate the origin of the end landmark
   return(Point_3(
     ptVertPlane.x() + m_crossSections.back()->ctrLinePtOut().x(),
     pt.y(),
     ptVertPlane.y() + m_crossSections.back()->ctrLinePtOut().y()
   ));
-
-  log.close();
 }
 
 // ****************************************************************************
