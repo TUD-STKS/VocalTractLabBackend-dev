@@ -90,7 +90,7 @@ public:
   bool createCrossSections(VocalTract* tract, bool createRadSection);
   void updateBoundingBox();
   void setBoundingBox(pair<Point2D, Point2D> &bbox);
-  void importGeometry(VocalTract* tract);
+  bool importGeometry(VocalTract* tract);
 
   // For solving the wave problem 
   void computeMeshAndModes();

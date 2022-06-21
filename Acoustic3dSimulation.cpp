@@ -4221,9 +4221,10 @@ bool Acoustic3dSimulation::setTFPointsFromCsvFile(string fileName)
   if (!inputFile.is_open())
   {
     log << "Cannot open " << fileName << endl;
+    log.close();
     return(false);
   }
-  else
+  else if (inputFile.peek() != ifstream::traits_type::eof())
   {
     m_simuParams.tfPoint.clear();
 
@@ -4262,16 +4263,20 @@ bool Acoustic3dSimulation::setTFPointsFromCsvFile(string fileName)
       {
         log << it.x() << "  " << it.y() << "  " << it.z() << endl;
       }
-
+      log.close();
       return(true);
     }
     else
     {
+      log.close();
       return(false);
     }
   }
-
-  log.close();
+  else
+  {
+    log.close();
+    return(false);
+  }
 }
 
 // ****************************************************************************
@@ -4834,33 +4839,46 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
   int idxCont(0);
   Point2D ctlPt, normalVec;
   pair<double, double> scalings;
+  double x, y;
+  bool abort(false);
+  ifstream geoFile(m_geometryFile);
 
   ofstream log("log.txt", ofstream::app);
-  log << "Start geometry importation" << endl;
+  //log << "Start geometry importation" << endl;
 
-  ifstream geoFile(m_geometryFile);
+  //*************************************************************
+  // Lambda expression to convert from string to double failsafe
+  //*************************************************************
+
+  auto strToDouble = [&](const string& str, double& result)
+  {
+    try
+    {
+      result = stod(str);
+    }
+    catch (const std::invalid_argument& ia)
+    {
+      log << ia.what() << endl;
+      abort = true;
+    }
+  };
+
+  //*************************************************************
 
   // check if the file is opened
   if (!geoFile.is_open())
   {
-    log << "Cannot open " << m_geometryFile << endl;
+    log << "Cannot open " << m_geometryFile << endl;  
+    log.close();
     return false;
   }
-  else
+  // check if the file is empty
+  else if (geoFile.peek() != ifstream::traits_type::eof())
   {
-    bool abort(false);
-    log << "Before while loop" << endl;
     while (getline(geoFile, line))
     {
-      log << "Inside while loop" << endl;
-
-      // initialize centerline point, centerline normal and contour
-      tmpCont.clear();
-      tmpCont.push_back(Polygon_2());
-
       // extract the line corresponding to the x components
       stringstream lineX(line);
-      log << "Initialize lineX" << endl;
 
       // extract the line corresponding to the y components
       if (!getline(geoFile, line)) { abort = true; break; };
@@ -4869,27 +4887,35 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
       // extract the centerline point
       if (!getline(lineX, coordX, separator)) { abort = true; break; };
       if (!getline(lineY, coordY, separator)) { abort = true; break; };
-      ctlPt.x = stod(coordX);
-      ctlPt.y = stod(coordY);
+      strToDouble(coordX, ctlPt.x);
+      strToDouble(coordY, ctlPt.y);
 
       // extract the normal to the centerline
-      if (!getline(lineX, coordX, separator)) { abort = true; break; };
-      if (!getline(lineY, coordY, separator)) { abort = true; break; };
-      normalVec.x = stod(coordX);
-      normalVec.y = stod(coordY);
+      if (!getline(lineX, coordX, separator) || abort) { abort = true; break; };
+      if (!getline(lineY, coordY, separator) || abort) { abort = true; break; };
+      strToDouble(coordX, normalVec.x);
+      strToDouble(coordY, normalVec.y);
 
       // extract the scaling factors
-      if (!getline(lineX, coordX, separator)) { abort = true; break; };
-      if (!getline(lineY, coordY, separator)) { abort = true; break; };
-      scalings.first = stod(coordX);
-      scalings.second = stod(coordY);
+      if (!getline(lineX, coordX, separator) || abort) { abort = true; break; };
+      if (!getline(lineY, coordY, separator) || abort) { abort = true; break; };
+      strToDouble(coordX, scalings.first);
+      strToDouble(coordY, scalings.second);
+
+      // initialize contours
+      tmpCont.clear();
+      tmpCont.push_back(Polygon_2());
 
       // extract contour
       while (getline(lineX, coordX, separator) && (coordX.length() > 0))
       {
         if (!getline(lineY, coordY, separator)) { abort = true; break; };
-        tmpCont.back().push_back(Point(stod(coordX), stod(coordY)));
+        strToDouble(coordX, x);
+        strToDouble(coordY, y);
+        if (abort) { break; }
+        tmpCont.back().push_back(Point(x, y));
       }
+      if (abort) { break; }
       
       // check if there is at least 3 points in each contour
       for (int i(0); i < tmpCont.size(); i++)
@@ -4939,15 +4965,21 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
     if (abort)
     {
       log << "Importation failed" << endl;
+      log.close();
       return false;
     }
     else
     {
       log << "Importation successful" << endl;
+      log.close();
       return true;
     }
   }
+  else
+  {
   log.close();
+    return false;
+  }
 }
 
 //*************************************************************************
@@ -5790,28 +5822,30 @@ void Acoustic3dSimulation::setBoundingBox(pair<Point2D, Point2D> &bbox)
 
 //*************************************************************************
 
-void Acoustic3dSimulation::importGeometry(VocalTract* tract)
+bool Acoustic3dSimulation::importGeometry(VocalTract* tract)
 {
   ofstream log("log.txt", ofstream::app);
 
   auto start = std::chrono::system_clock::now();
 
-
   if (createCrossSections(tract, false))
   {
     log << "Geometry successfully imported" << endl;
+
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end - start;
+
+    log << "Time import geometry " << elapsed_seconds.count() << endl;
+
+    log.close();
+    return true;
   }
   else
   {
     log << "Importation failed" << endl;
+    log.close();
+    return false;
   }
-
-  auto end = std::chrono::system_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-
-  log << "Time import geometry " << elapsed_seconds.count() << endl;
-
-  log.close();
 }
 
 //*************************************************************************
@@ -5838,7 +5872,7 @@ complex<double> Acoustic3dSimulation::interpolateTransferFunction(double freq, i
   }
   
   // Check if a transfer function have been computed
-  if (inputTf->rows() > 0)
+  if ((inputTf->rows() > 0) && (m_tfFreqs.size() > 0))
   {
     // Assert that the index of the point corresponds to an actual point
     idxPt = min((int)inputTf->cols(), idxPt);
