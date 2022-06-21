@@ -4836,7 +4836,7 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
   pair<double, double> scalings;
 
   ofstream log("log.txt", ofstream::app);
-  //log << "Start geometry importation" << endl;
+  log << "Start geometry importation" << endl;
 
   ifstream geoFile(m_geometryFile);
 
@@ -4848,47 +4848,50 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
   }
   else
   {
-
+    bool abort(false);
+    log << "Before while loop" << endl;
     while (getline(geoFile, line))
     {
+      log << "Inside while loop" << endl;
+
       // initialize centerline point, centerline normal and contour
       tmpCont.clear();
       tmpCont.push_back(Polygon_2());
 
       // extract the line corresponding to the x components
       stringstream lineX(line);
+      log << "Initialize lineX" << endl;
 
       // extract the line corresponding to the y components
-      if (!getline(geoFile, line)) { break; };
+      if (!getline(geoFile, line)) { abort = true; break; };
       stringstream lineY(line);
 
       // extract the centerline point
-      if (!getline(lineX, coordX, separator)) { break; };
-      if (!getline(lineY, coordY, separator)) { break; };
+      if (!getline(lineX, coordX, separator)) { abort = true; break; };
+      if (!getline(lineY, coordY, separator)) { abort = true; break; };
       ctlPt.x = stod(coordX);
       ctlPt.y = stod(coordY);
 
       // extract the normal to the centerline
-      if (!getline(lineX, coordX, separator)) { break; };
-      if (!getline(lineY, coordY, separator)) { break; };
+      if (!getline(lineX, coordX, separator)) { abort = true; break; };
+      if (!getline(lineY, coordY, separator)) { abort = true; break; };
       normalVec.x = stod(coordX);
       normalVec.y = stod(coordY);
 
       // extract the scaling factors
-      if (!getline(lineX, coordX, separator)) { break; };
-      if (!getline(lineY, coordY, separator)) { break; };
+      if (!getline(lineX, coordX, separator)) { abort = true; break; };
+      if (!getline(lineY, coordY, separator)) { abort = true; break; };
       scalings.first = stod(coordX);
       scalings.second = stod(coordY);
 
       // extract contour
       while (getline(lineX, coordX, separator) && (coordX.length() > 0))
       {
-        if (!getline(lineY, coordY, separator)) { break; };
+        if (!getline(lineY, coordY, separator)) { abort = true; break; };
         tmpCont.back().push_back(Point(stod(coordX), stod(coordY)));
       }
       
       // check if there is at least 3 points in each contour
-      bool abort(false);
       for (int i(0); i < tmpCont.size(); i++)
       {
         if (tmpCont[i].size() < 3) 
@@ -4933,7 +4936,16 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
       log << "Contour " << idxCont << " extracted" << endl;
       idxCont++;
     }
-    return true;
+    if (abort)
+    {
+      log << "Importation failed" << endl;
+      return false;
+    }
+    else
+    {
+      log << "Importation successful" << endl;
+      return true;
+    }
   }
   log.close();
 }
