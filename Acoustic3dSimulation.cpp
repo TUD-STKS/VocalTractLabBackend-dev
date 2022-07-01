@@ -2621,14 +2621,6 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
 
   auto start = std::chrono::system_clock::now();
 
-  //// FIXME: update the values of m_idxSecNoiseSource
-  //// in the 3D simu properties dialog when they are changed
-  //// check if the noise source index is within the indexes range
-  //if (m_idxSecNoiseSource >= numSec)
-  //{
-  //  m_idxSecNoiseSource = numSec - 1;
-  //}
-
   // generate mode amplitude source matrices
   mn = m_crossSections[0]->numberOfModes();
   Eigen::MatrixXcd inputVelocity(Eigen::MatrixXcd::Zero(mn, 1));
