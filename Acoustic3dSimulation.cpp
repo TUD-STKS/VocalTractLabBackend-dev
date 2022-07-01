@@ -2621,13 +2621,13 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
 
   auto start = std::chrono::system_clock::now();
 
-  // FIXME: update the values of m_idxSecNoiseSource
-  // in the 3D simu properties dialog when they are changed
-  // check if the noise source index is within the indexes range
-  if (m_idxSecNoiseSource >= numSec)
-  {
-    m_idxSecNoiseSource = numSec - 1;
-  }
+  //// FIXME: update the values of m_idxSecNoiseSource
+  //// in the 3D simu properties dialog when they are changed
+  //// check if the noise source index is within the indexes range
+  //if (m_idxSecNoiseSource >= numSec)
+  //{
+  //  m_idxSecNoiseSource = numSec - 1;
+  //}
 
   // generate mode amplitude source matrices
   mn = m_crossSections[0]->numberOfModes();
@@ -5510,7 +5510,16 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
               // compute the intersections of both contours
               intersections.clear();
               //log << "Before compute intersection" << endl;
-              CGAL::intersection(prevCont, cont, back_inserter(intersections));
+              try
+              {
+                CGAL::intersection(prevCont, cont, back_inserter(intersections));
+              }
+              catch (const std::exception& e)
+              {
+                log << "Intersection failed" << endl;
+                log << e.what() << endl;
+              }
+              
               //log << intersections.size() << " intersections computed" << endl;
 
               // loop over the intersection polygons created
@@ -5702,6 +5711,15 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   //***************************************************************
 
   updateBoundingBox();
+
+  //**********************************************************************
+  // Check if the noise source index corresponds to an existing segment
+  //**********************************************************************
+
+  if (m_idxSecNoiseSource >= m_crossSections.size())
+  {
+    m_idxSecNoiseSource = max(0, (int)m_crossSections.size() - 1);
+  }
 
   //***************************************************************
   // Export data
