@@ -123,6 +123,7 @@ public:
   bool setTFPointsFromCsvFile(string fileName);
   void RayleighSommerfeldIntegral(vector<Point_3> points,
     Eigen::VectorXcd &radPress, double freq, int radSecIdx);
+  void setAcousticFieldFreq(double freq) {m_simuParams.freqField = freq;}
   complex<double> acousticField(Point_3 queryPt);
   bool findSegmentContainingPoint(Point queryPt, int &idxSeg);
   Eigen::VectorXcd acousticField(vector<Point_3> queryPt);
@@ -185,6 +186,7 @@ public:
   int numberOfSegments() const { return m_crossSections.size(); }
   bool radImpedPrecomputed() const { return m_simuParams.radImpedPrecomputed; }
   openEndBoundaryCond mouthBoundaryCond() const {return m_mouthBoundaryCond;}
+  double freqAcousticField() const {return m_simuParams.freqField;}
   int acousticFieldSize() const { return m_field.size(); }
   int numPtXField() const { return m_nPtx; }
   int numPtYField() const { return m_nPty; }
