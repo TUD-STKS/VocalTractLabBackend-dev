@@ -5870,6 +5870,8 @@ complex<double> Acoustic3dSimulation::interpolateTransferFunction(double freq, i
   int idxFreqs[2];
   int maxIdxFreq(m_tfFreqs.size() - 1);
 
+  ofstream log("log.txt", ofstream::app);
+
   Eigen::MatrixXcd *inputTf; 
   switch (type)
   {
@@ -5879,13 +5881,22 @@ complex<double> Acoustic3dSimulation::interpolateTransferFunction(double freq, i
   case NOISE:
     inputTf = &m_noiseSourceTF;
     break;
+  case INPUT_IMPED:
+    {
+      Eigen::MatrixXcd inputImped(m_planeModeInputImpedance);
+      inputTf = &inputImped;
+      idxPt = 0;
+      break;
+    }
   }
   
   // Check if a transfer function have been computed
   if ((inputTf->rows() > 0) && (m_tfFreqs.size() > 0))
   {
-    // Assert that the index of the point corresponds to an actual point
+    // Make sure that the index of the point corresponds to an actual point
+    //log << "idxPt " << idxPt << endl;
     idxPt = min((int)inputTf->cols(), idxPt);
+    //log << "idxPt " << idxPt << endl;
     // Check if the frequency is in the interval of frequencies computed
     if (freq >= m_tfFreqs[0] && freq <= m_tfFreqs.back())
     {
@@ -5910,7 +5921,7 @@ complex<double> Acoustic3dSimulation::interpolateTransferFunction(double freq, i
   {
     interpolatedTF = complex<double>(NAN, NAN);
   }
-
+  log.close();
   return(interpolatedTF);
 }
 
