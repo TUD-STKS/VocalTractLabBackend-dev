@@ -4887,6 +4887,7 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
       if (!getline(lineY, coordY, separator) || abort) { abort = true; break; };
       strToDouble(coordX, normalVec.x);
       strToDouble(coordY, normalVec.y);
+      normalVec.normalize();
 
       // extract the scaling factors
       if (!getline(lineX, coordX, separator) || abort) { abort = true; break; };
@@ -4934,7 +4935,7 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
       }
 
       // if requested, simplify the contour removing points which are close
-      if (simplifyContours)
+      if (simplifyContours && (tmpCont.back().size() > 10))
       {
         tmpCont.back() = CGAL::Polyline_simplification_2::simplify(
           tmpCont.back(), cost, Stop(0.5));
@@ -5163,20 +5164,20 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   centerLine.push_back(centerLine.back());
   normals.push_back(normals.back());
   int lastCtl(centerLine.size() - 1);
-  //log << "Before last ctl " << centerLine[lastCtl - 2].x << "  "
-  //  << centerLine[lastCtl - 2].y << " normal "
-  //  << normals[lastCtl - 2].x << "  "
-  //  << normals[lastCtl - 2].y << endl;
-  //log << "Last ctl " << centerLine[lastCtl].x << "  "
-  //  << centerLine[lastCtl].y << " normal "
-  //  << normals[lastCtl].x << "  "
-  //  << normals[lastCtl].y << endl;
+  log << "Before last ctl " << centerLine[lastCtl - 2].x << "  "
+    << centerLine[lastCtl - 2].y << " normal "
+    << normals[lastCtl - 2].x << "  "
+    << normals[lastCtl - 2].y << endl;
+  log << "Last ctl " << centerLine[lastCtl].x << "  "
+    << centerLine[lastCtl].y << " normal "
+    << normals[lastCtl].x << "  "
+    << normals[lastCtl].y << endl;
 
   getCurvatureAngleShift(centerLine[lastCtl - 2], centerLine[lastCtl], 
     normals[lastCtl - 2], normals[lastCtl], curvRadius, angle, shift);
 
-  //log << "Curv radius " << curvRadius 
-  //  << " angle " << angle << endl;
+  log << "Curv radius " << curvRadius 
+    << " angle " << angle << endl;
 
   Point pt(Point(centerLine.back().x, centerLine.back().y));
   Vector N(Vector(normals.back().x, normals.back().y));
@@ -5225,8 +5226,8 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     centerLine[lastCtl - 1].y = pt.y();
   }
 
-  //log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
-  //  << N.x() << "  " << N.y() << endl;
+  log << "Trans ctl " << pt.x() << "  " << pt.y() << " normal "
+    << N.x() << "  " << N.y() << endl;
 
   //*******************************************
   // Create the cross-sections
