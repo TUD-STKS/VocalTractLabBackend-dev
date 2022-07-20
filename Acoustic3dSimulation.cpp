@@ -2631,6 +2631,7 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
   //******************************************************
 
   // get the radiation impedance matrix
+  mn = m_crossSections.back()->numberOfModes();
   Eigen::MatrixXcd radImped, radAdmit;
   switch (m_mouthBoundaryCond)
   {
@@ -2645,7 +2646,7 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
     break;
   case ZERO_PRESSURE:
     radAdmit.setZero(mn, mn);
-    radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(1e15, 0.));
+    radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(1e10, 0.));
     radImped = radAdmit.inverse();
     break;
   }
@@ -4955,6 +4956,8 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
       log << "Contour " << idxCont << " extracted" << endl;
       idxCont++;
     }
+    // at least two contours must be given to create a proper geometry
+    if (contours.size() < 2) { abort = true; }
     if (abort)
     {
       log << "Importation failed" << endl;
