@@ -122,7 +122,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_idxSecNoiseSource(25), // for /sh/ 212, for vowels 25
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
   m_mouthBoundaryCond(RADIATION),
-  m_contInterpMeth(BOUNDING_BOX)
+  m_contInterpMeth(AREA)
 {
   m_simuParams.temperature = 31.4266; // for 350 m/s
   //m_simuParams.temperature = 21.0735; // for 344 m/s 
