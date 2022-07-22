@@ -135,6 +135,8 @@ public:
     std::chrono::duration<double>& time, std::chrono::duration<double> *timeExp);
   void solveWaveProblem(VocalTract* tract, double freq,
     std::chrono::duration<double>& time, std::chrono::duration<double>* timeExp);
+  //void solveWaveProblem(VocalTract* tract, double freq, bool precomputeRadImped);
+  //void solveWaveProblem(VocalTract* tract, double freq);
   void solveWaveProblemNoiseSrc(bool &needToExtractMatrixF, Matrix& F, double freq,
     std::chrono::duration<double>* time);
   void computeGlottalTf(int idxFreq, double freq);
@@ -201,7 +203,7 @@ public:
 // **************************************************************************
 
 public:
-  ComplexSignal spectrum, spectrumNoise, spectrumConst;
+  ComplexSignal spectrum, spectrumNoise;
 
 // **************************************************************************
 /// Private data

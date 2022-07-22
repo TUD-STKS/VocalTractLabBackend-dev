@@ -166,7 +166,6 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_numFreqPicture = m_numFreq;
   spectrum.setNewLength(2 * m_numFreq);
   spectrumNoise.setNewLength(2 * m_numFreq);
-  spectrumConst.setNewLength(2 * m_numFreq);
 
   m_lastFreqComputed = NAN;
 
@@ -263,7 +262,6 @@ void Acoustic3dSimulation::setSimulationParameters(double meshDensity,
   //  m_numFreq = 1 << (m_simuParams.spectrumLgthExponent - 1);
   //  spectrum.reset(2 * m_numFreq);
   //  spectrumNoise.reset(2 * m_numFreq);
-  //  spectrumConst.reset(2 * m_numFreq);
   //}
 
   if (m_simuParams.viscoThermalLosses)
@@ -2669,6 +2667,125 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
   time += end - start;
 }
 
+//// **************************************************************************
+//// Solve the wave problem at a given frequency without time tracking
+//
+//void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
+//  bool precomputeRadImped)
+//{
+//  int numSec(m_crossSections.size());
+//  int lastSec(numSec - 1);
+//
+//  ofstream log("log.txt", ofstream::app);
+//
+//  //******************************************************
+//  // Compute the modes and junction matrices if necessary 
+//  //******************************************************
+//
+//  if (m_simuParams.needToComputeModesAndJunctions)
+//  {
+//    // set mode number to 0 to make sure that it is defined by the maximal cutoff 
+//    // frequency when modes are computed
+//    for (int i(0); i < m_crossSections.size(); i++)
+//    {
+//      m_crossSections[i]->setModesNumber(0);
+//    }
+//
+//    // compute modes
+//    for (int i(0); i < m_crossSections.size(); i++)
+//    {
+//      computeMeshAndModes(i);
+//    }
+//
+//    // compute junction matrices
+//    for (int i(0); i < m_crossSections.size(); i++)
+//    {
+//      computeJunctionMatrices(i);
+//      log << "Junction segment " << i << " computed" << endl;
+//    }
+//
+//    if (precomputeRadImped && (m_mouthBoundaryCond == RADIATION))
+//    {
+//      preComputeRadiationMatrices(16, lastSec);
+//    }
+//
+//    m_simuParams.needToComputeModesAndJunctions = false;
+//  }
+//
+//  if (precomputeRadImped && !m_simuParams.radImpedPrecomputed
+//    && (m_mouthBoundaryCond == RADIATION))
+//  {
+//    preComputeRadiationMatrices(16, lastSec);
+//  }
+//
+//  // Actually solve the wave problem
+//  solveWaveProblem(tract, freq);
+//
+//  log.close();
+//}
+//
+//// **************************************************************************
+//
+//void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq)
+//{
+//  int numSec(m_crossSections.size());
+//  int lastSec(numSec - 1);
+//  int mn;
+//
+//  m_lastFreqComputed = freq;
+//
+//  //******************************************************
+//  // Set sources parameters
+//  //******************************************************
+//
+//  // generate mode amplitude source matrices
+//  mn = m_crossSections[0]->numberOfModes();
+//  Eigen::MatrixXcd inputVelocity(Eigen::MatrixXcd::Zero(mn, 1));
+//  Eigen::MatrixXcd inputPressure(Eigen::MatrixXcd::Zero(mn, 1));
+//
+//  //******************************************************
+//  // Propagate impedance, admittance, velocity and pressure
+//  //******************************************************
+//
+//  // get the radiation impedance matrix
+//  mn = m_crossSections.back()->numberOfModes();
+//  Eigen::MatrixXcd radImped, radAdmit;
+//  switch (m_mouthBoundaryCond)
+//  {
+//  case RADIATION:
+//    getRadiationImpedanceAdmittance(radImped, radAdmit, freq, lastSec);
+//    break;
+//  case ADMITTANCE_1:
+//    radAdmit.setZero(mn, mn);
+//    radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(
+//      pow(m_crossSections[lastSec]->scaleOut(), 2), 0.));
+//    radImped = radAdmit.inverse();
+//    break;
+//  case ZERO_PRESSURE:
+//    radAdmit.setZero(mn, mn);
+//    radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(1e10, 0.));
+//    radImped = radAdmit.inverse();
+//    break;
+//  }
+//
+//  // propagate impedance and admittance
+//  propagateImpedAdmit(radImped, radAdmit, freq, lastSec, 0, timeExp);
+//
+//  // create input velocity, for a constant input velocity q = -j * w * rho * v 
+//  inputVelocity(0, 0) = -1i * 2. * M_PI * freq * m_simuParams.volumicMass
+//    * pow(m_crossSections[0]->scaleIn(), 3)
+//    * m_crossSections[0]->area()
+//    ;
+//  inputPressure = m_crossSections[0]->Zin() * inputVelocity;
+//
+//  // propagate velocity and pressure
+//  propagateVelocityPress(inputVelocity, inputPressure, freq, 0, lastSec, timeExp);
+//
+//  // count time for propagation
+//  auto end = std::chrono::system_clock::now();
+//  time += end - start;
+//}
+
 // **************************************************************************
 // Precompute parameters for transfer function computation
 
@@ -2838,8 +2955,6 @@ void Acoustic3dSimulation::generateSpectraForSynthesis(int tfIdx)
     spectrum.im[i] = -spectrum.im[2 * m_numFreq - i - 1];
     spectrumNoise.re[i] = spectrumNoise.re[2 * m_numFreq - i - 1];
     spectrumNoise.im[i] = -spectrumNoise.im[2 * m_numFreq - i - 1];
-    spectrumConst.re[i] = spectrumConst.re[2 * m_numFreq - i - 1];
-    spectrumConst.im[i] = -spectrumConst.im[2 * m_numFreq - i - 1];
   }
 }
 
