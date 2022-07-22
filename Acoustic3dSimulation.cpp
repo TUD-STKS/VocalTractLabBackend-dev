@@ -2698,7 +2698,7 @@ void Acoustic3dSimulation::precomputationsForTf()
   m_noiseSourceTF.resize(m_numFreqComputed, m_simuParams.tfPoint.size());
 
   // resize the plane mode input impedance vector
-  m_planeModeInputImpedance.resize(m_numFreqComputed);
+  m_planeModeInputImpedance.resize(m_numFreqComputed, 1);
 
   m_oldSimuParams = m_simuParams;
 }
@@ -2808,7 +2808,7 @@ void Acoustic3dSimulation::solveWaveProblemNoiseSrc(bool &needToExtractMatrixF, 
 void Acoustic3dSimulation::computeGlottalTf(int idxFreq, double freq)
 {
   m_glottalSourceTF.row(idxFreq) = acousticField(m_tfPoints);
-  m_planeModeInputImpedance(idxFreq) = m_crossSections[0]->Zin()(0, 0);
+  m_planeModeInputImpedance(idxFreq, 0) = m_crossSections[0]->Zin()(0, 0);
   m_tfFreqs.push_back(freq);
 }
 
@@ -2907,9 +2907,9 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
   {
     prop << m_tfFreqs[i] << "  "
       << abs(1i * 2. * M_PI * m_tfFreqs[i] * m_simuParams.volumicMass *
-        m_planeModeInputImpedance(i)) << "  "
+        m_planeModeInputImpedance(i, 0)) << "  "
       << arg(1i * 2. * M_PI * m_tfFreqs[i] * m_simuParams.volumicMass *
-        m_planeModeInputImpedance(i)) << endl;
+        m_planeModeInputImpedance(i, 0)) << endl;
   }
   prop.close();
 
@@ -4496,7 +4496,8 @@ void Acoustic3dSimulation::createContour(double inputUpProf[VocalTract::NUM_PROF
 
               // if the next surface is different from the previous one
               if (upperProfileSurface[pt] !=
-                upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)])
+                //upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)])
+                upperProfileSurface[min(pt + 1, 96)])
               {
                 toNewSurf = !toNewSurf;
 
@@ -4506,8 +4507,10 @@ void Acoustic3dSimulation::createContour(double inputUpProf[VocalTract::NUM_PROF
                   toNewSurf = toNewSurfTeeth;
                 }
                 // if the next surface is a tooth
-                else if ((upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)] == 0)
-                  || (upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)] == 1))
+                //else if ((upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)] == 0)
+                  //|| (upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)] == 1))
+                else if ((upperProfileSurface[min(pt + 1, 96)] == 0)
+                  || (upperProfileSurface[min(pt + 1, 96)] == 1))
                 {
                   // flip this value
                   toNewSurfTeeth = !toNewSurfTeeth;
@@ -4533,7 +4536,8 @@ void Acoustic3dSimulation::createContour(double inputUpProf[VocalTract::NUM_PROF
                   tempPoly.push_back(Point(vecInsertPt.x(), vecInsertPt.y()));
                   if (toNewSurf)
                   {
-                    tempSufIdx.push_back(upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)]);
+                    //tempSufIdx.push_back(upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)]);
+                    tempSufIdx.push_back(upperProfileSurface[min(pt + 1, 96)]);
                   }
                   else
                   {
@@ -5887,8 +5891,7 @@ complex<double> Acoustic3dSimulation::interpolateTransferFunction(double freq, i
     break;
   case INPUT_IMPED:
     {
-      Eigen::MatrixXcd inputImped(m_planeModeInputImpedance);
-      inputTf = &inputImped;
+      inputTf = &m_planeModeInputImpedance;
       idxPt = 0;
       break;
     }
@@ -6091,8 +6094,8 @@ bool Acoustic3dSimulation::exportTransferFucntions(string fileName, enum tfType 
     ofs << m_tfFreqs[i] << "  ";
     if (type == INPUT_IMPED)
     {
-      ofs << abs(m_planeModeInputImpedance[i]) << "  "
-        << arg(m_planeModeInputImpedance[i]);
+      ofs << abs(m_planeModeInputImpedance(i, 0)) << "  "
+        << arg(m_planeModeInputImpedance(i, 0));
     }
     else
     {

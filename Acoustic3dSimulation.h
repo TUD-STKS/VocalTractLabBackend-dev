@@ -251,10 +251,10 @@ private:
   // simulation outputs
   Eigen::MatrixXcd m_glottalSourceTF;
   Eigen::MatrixXcd m_noiseSourceTF;
+  Eigen::MatrixXcd m_planeModeInputImpedance;
   Eigen::MatrixXcd m_field;
   double m_maxAmpField;
   double m_minAmpField;
-  Eigen::VectorXcd m_planeModeInputImpedance;
 
 // **************************************************************************
 // Private functions.
