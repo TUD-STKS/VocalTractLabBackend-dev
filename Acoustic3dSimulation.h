@@ -70,6 +70,7 @@ public:
   void setGeometryFile(string fileName) {
     m_geometryFile = fileName;}
   void setContourInterpolationMethod(enum contourInterpolationMethod method);
+  void requestReloadGeometry() { m_reloadGeometry = true; }
 
   void addCrossSectionFEM(double areas, double spacing,
     Polygon_2 contours, vector<int> surfacesIdx,
@@ -220,6 +221,7 @@ private:
 
   // simulation parameters
   bool m_geometryImported;
+  bool m_reloadGeometry;
   string m_geometryFile;
   contourInterpolationMethod m_contInterpMeth;
   double m_meshDensity;

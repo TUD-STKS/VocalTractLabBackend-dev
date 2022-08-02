@@ -118,6 +118,7 @@ bool similarContours(Polygon_2& cont1, Polygon_2& cont2, double minDist)
 Acoustic3dSimulation::Acoustic3dSimulation()
 // initialise the physical constants
   : m_geometryImported(false),
+  m_reloadGeometry(true),
   m_meshDensity(5.),
   m_idxSecNoiseSource(25), // for /sh/ 212, for vowels 25
   m_glottisBoundaryCond(IFINITE_WAVGUIDE),
@@ -5957,27 +5958,43 @@ void Acoustic3dSimulation::setBoundingBox(pair<Point2D, Point2D> &bbox)
 
 bool Acoustic3dSimulation::importGeometry(VocalTract* tract)
 {
-  ofstream log("log.txt", ofstream::app);
-
-  auto start = std::chrono::system_clock::now();
-
-  if (createCrossSections(tract, false))
+  if (m_reloadGeometry)
   {
-    log << "Geometry successfully imported" << endl;
+    ofstream log("log.txt", ofstream::app);
 
-    auto end = std::chrono::system_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end - start;
+    auto start = std::chrono::system_clock::now();
 
-    log << "Time import geometry " << elapsed_seconds.count() << endl;
+    if (createCrossSections(tract, false))
+    {
+      log << "Geometry successfully imported" << endl;
 
-    log.close();
-    return true;
+      auto end = std::chrono::system_clock::now();
+      std::chrono::duration<double> elapsed_seconds = end - start;
+
+      log << "Time import geometry " << elapsed_seconds.count() << endl;
+
+      // unless it is explicitely requested, the geometry should not be reloaded
+      // if this has already been done
+      m_reloadGeometry = false;
+
+      log.close();
+      return true;
+    }
+    else
+    {
+      log << "Importation failed" << endl;
+
+      // unless it is explicitely requested, the geometry should not be reloaded
+      // if this has already been done
+      m_reloadGeometry = false;
+
+      log.close();
+      return false;
+    }
   }
   else
   {
-    log << "Importation failed" << endl;
-    log.close();
-    return false;
+    return true;
   }
 }
 
