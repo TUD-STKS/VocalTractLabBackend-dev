@@ -4971,8 +4971,12 @@ bool Acoustic3dSimulation::extractContoursFromCsvFile(
     }
     catch (const std::invalid_argument& ia)
     {
-      log << ia.what() << endl;
-      abort = true;
+      log << "Warning: " << ia.what() << " could not convert string \"" 
+        << str << "\" to number" << endl;
+      if (str != "\r")
+      {
+        abort = true;
+      }
     }
   };
 
