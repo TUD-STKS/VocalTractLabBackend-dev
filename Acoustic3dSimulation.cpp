@@ -22,6 +22,7 @@
 #include <CGAL/Aff_transformation_2.h>
 #include <CGAL/Delaunay_mesher_no_edge_refinement_2.h>
 #include <CGAL/Polyline_simplification_2/simplify.h>
+#include <CGAL/convex_hull_2.h>
 
 // type for Eigen
 typedef Eigen::MatrixXd Matrix;
@@ -4612,8 +4613,8 @@ void Acoustic3dSimulation::createContour(double inputUpProf[VocalTract::NUM_PROF
 
               // if the next surface is different from the previous one
               if (upperProfileSurface[pt] !=
-                //upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)])
-                upperProfileSurface[min(pt + 1, 96)])
+                upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)])
+                //upperProfileSurface[min(pt + 1, 96)])
               {
                 toNewSurf = !toNewSurf;
 
@@ -4623,10 +4624,10 @@ void Acoustic3dSimulation::createContour(double inputUpProf[VocalTract::NUM_PROF
                   toNewSurf = toNewSurfTeeth;
                 }
                 // if the next surface is a tooth
-                //else if ((upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)] == 0)
-                  //|| (upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)] == 1))
-                else if ((upperProfileSurface[min(pt + 1, 96)] == 0)
-                  || (upperProfileSurface[min(pt + 1, 96)] == 1))
+                else if ((upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)] == 0)
+                  || (upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)] == 1))
+                //else if ((upperProfileSurface[min(pt + 1, 96)] == 0)
+                //  || (upperProfileSurface[min(pt + 1, 96)] == 1))
                 {
                   // flip this value
                   toNewSurfTeeth = !toNewSurfTeeth;
@@ -4652,8 +4653,8 @@ void Acoustic3dSimulation::createContour(double inputUpProf[VocalTract::NUM_PROF
                   tempPoly.push_back(Point(vecInsertPt.x(), vecInsertPt.y()));
                   if (toNewSurf)
                   {
-                    //tempSufIdx.push_back(upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)]);
-                    tempSufIdx.push_back(upperProfileSurface[min(pt + 1, 96)]);
+                    tempSufIdx.push_back(upperProfileSurface[min(pt + 1, VocalTract::NUM_PROFILE_SAMPLES)]);
+                    //tempSufIdx.push_back(upperProfileSurface[min(pt + 1, 96)]);
                   }
                   else
                   {
@@ -4802,6 +4803,39 @@ void Acoustic3dSimulation::createContour(double inputUpProf[VocalTract::NUM_PROF
       idxContour++;
     }
   }
+}
+
+//*****************************************************************************
+// Merge several contours contained in a vector replacing them by the 
+// convex hull of all their points
+
+void Acoustic3dSimulation::mergeContours(vector<Polygon_2>& vecPoly, 
+  vector<vector<int>> surfaceIdx)
+{
+  Polygon_2 poly, hull;
+  ofstream log("log.txt", ofstream::app);
+
+  for (int j(0); j < vecPoly.size(); j++)
+  {
+    for (int k(0); k < vecPoly[j].size(); k++)
+    {
+      poly.push_back(vecPoly[j][k]);
+    }
+  }
+
+  CGAL::convex_hull_2(poly.begin(), poly.end(), back_inserter(hull));
+
+  // replace the multiple contours by their convex hull
+  vecPoly.clear();
+  vecPoly.push_back(hull);
+
+  // replace the surface indexes by zeros
+  vector<int> tmpIdx(hull.size(), 0);
+  surfaceIdx.clear();
+  surfaceIdx.push_back(tmpIdx);
+
+  log << "Multiple contours merged" << endl;
+  log.close();
 }
 
 //*****************************************************************************
@@ -5142,6 +5176,16 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   else
   {
     extractContours(tract, contours, surfaceIdx, centerLine, normals);
+  }
+
+  // merge contours when several contours are on a cut
+  // this should be removed if the simulation of branches becomes possible
+  for (int i(0); i < contours.size(); i++)
+  {
+    if (contours[i].size() > 1)
+    {
+      mergeContours(contours[i], surfaceIdx[i]);
+    }
   }
 
   //log << "Contours extracted" << endl;
@@ -5723,6 +5767,13 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
     // cross-sections
     if (intContours.size() != 0)
     {
+      // if multiple intersection contours have been created, merge them
+      // this should be removed if the simulation of branches becomes possible
+      if (intContours.size() > 1)
+      {
+        mergeContours(intContours, intSurfacesIdx);
+      }
+
       for (int c(0); c < intContours.size(); c++) {
 
         area = abs(intContours[c].area());

@@ -276,6 +276,7 @@ private:
     int lowerProfileSurface[VocalTract::NUM_PROFILE_SAMPLES],
     vector<double> &areas, vector<double> &spacing,
     vector< Polygon_2> &contours, vector<vector<int>> &surfacesIdx);
+  void mergeContours(vector<Polygon_2>& vecPoly, vector<vector<int>> surfaceIdx);
 
   void getCurvatureAngleShift(Point2D P1, Point2D P2,
     Point2D N1, Point2D N2, double& radius, double& angle, double& shift);
