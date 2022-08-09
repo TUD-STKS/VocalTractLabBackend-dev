@@ -173,7 +173,6 @@ void BesselJDerivativeZero(int v, int n, map<double, pair<int,int>> &zeros)
   // define the derivative of the besselfunction of which one wants 
   // to find the zero and its derivative
   auto function = [&](double z) {
-    //double dJv = cyl_bessel_j_prime(v, z);
     double dJv = 0.5 * (cyl_bessel_j(v - 1, z) - cyl_bessel_j(v + 1, z));
     double d2Jv = 0.25 * (cyl_bessel_j(v - 2, z) -
       2. * cyl_bessel_j(v, z) + cyl_bessel_j(v + 2, z));
@@ -850,7 +849,6 @@ void CrossSection2dRadiation::setBesselParam(struct simulationParameters simuPar
   {
     BesselJDerivativeZero(mu, 1, zeros);
     fc = simuParams.sndSpeed * zeros.rbegin()->first / 2. / M_PI / m_radius;
-    //log << "mu: " << mu << " fc " << fc << endl;
     mu++;
     
   } while (fc < simuParams.maxCutOnFreq/2.);
@@ -1028,7 +1026,6 @@ void CrossSection2dRadiation::computeModes(struct simulationParameters simuParam
       }
     }
   }
-
 
   m_CPML.resize(m_modesNumber, m_modesNumber);
   m_CPML.setFromTriplets(tripletCPML.begin(), tripletCPML.end());
@@ -1791,478 +1788,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
   }
 }
 
-//// **************************************************************************
-//// Propagate the admittance along the cross-section solving Riccati equation
-//
-//void CrossSection2dFEM::propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0, Eigen::MatrixXcd Y0,
-//  struct simulationParameters simuParams,
-//  double freq, double direction, std::chrono::duration<double> &time)
-//{
-//  int mn(m_modesNumber);
-//  double volMass(simuParams.volumicMass);
-//  double da(abs(m_circleArcAngle));          // angle of the circle arc
-//  double R(abs(m_curvatureRadius));        // radius of the circle arc
-//  double al(da * R);                // arc length
-//  int numX(simuParams.numIntegrationStep);
-//  double dX(direction * al/(double)(numX -1));
-//  double curv(curvature(simuParams.curved));
-//  double k(2 * M_PI * freq / simuParams.sndSpeed);
-//  double l0, l1;
-//  double dl;      // parameters of the coefficient l evolution
-//  Eigen::MatrixXcd A0(2*mn, 2*mn), A1(2 * mn, 2 * mn), omega(2 * mn, 2 * mn);
-//  Eigen::MatrixXcd K2(Eigen::MatrixXcd::Zero(mn, mn));
-//  complex<double> wallAdmittance;
-//  // boundary specific admittance vector
-//  Eigen::VectorXcd bndSpecAdm(Eigen::VectorXcd::Zero(mn));  
-//
-//  auto start = std::chrono::system_clock::now();
-//  auto end = std::chrono::system_clock::now();
-//
-//  if (m_length == 0.)
-//  {
-//    m_admittance.push_back(Y0);
-//    m_impedance.push_back(Z0);
-//  }
-//  else
-//  {
-//    // FIXME: not valid for junctions with different number of contours
-//    dl = 0.;
-//
-//    // initialize admittance
-//    m_admittance.clear();
-//    m_admittance.reserve(numX);
-//    m_admittance.push_back(Y0);
-//    m_impedance.clear();
-//    m_impedance.reserve(numX);
-//    m_impedance.push_back(Z0);
-//
-//    // compute wall admittance
-//    wallAdmittance = getWallAdmittance(simuParams, freq);
-//
-//    // compute boundary specific admittance
-//    getSpecificBndAdm(simuParams, freq, bndSpecAdm);
-//
-//    // compute matrices KR and DR
-//    Eigen::MatrixXcd KR2(Eigen::MatrixXcd::Zero(mn, mn));
-//    for (int s(0); s < m_KR2.size(); s++)
-//    {
-//      KR2 += m_KR2[s] * bndSpecAdm.asDiagonal() + wallAdmittance * m_KR2[s];
-//    }
-//
-//    // discretize X axis
-//    for (int i(0); i < numX - 1; i++)
-//    {
-//      // first point of Magnus scheme
-//      if (dX < 0.) {
-//        l0 = (((dl * da * R) / ((double)(numX - 1))) *
-//          ((double)(numX - i) - (0.5 - sqrt(3) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-//      }
-//      else
-//      {
-//        l0 = (((dl * da * R) / (double)(numX - 1)) *
-//          (double(i) + (0.5 - sqrt(3.) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-//      }
-//
-//      // build matrix K
-//      K2.setZero(mn, mn);
-//      for (int j(0); j < mn; j++)
-//      {
-//        K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
-//      }
-//      K2 += 1i * k * l0 * l0 * KR2;
-//      
-//      // build matrix A0
-//      A0 << ((dl / l0) * m_E),
-//        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
-//        (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN )),
-//        (-(dl / l0) * m_E.transpose());
-//
-//      // second point of Magnus scheme
-//      if (dX < 0.)
-//      {
-//        l1 = (((dl * da * R) / ((double)(numX - 1))) *
-//          ((double)(numX - i) - (0.5 + sqrt(3) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-//      }
-//      else
-//      {
-//        l1 = (((dl * da * R) / (double)(numX - 1)) *
-//          (double(i) + (0.5 + sqrt(3.) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-//      }
-//      // build matrix K
-//      K2.setZero(mn, mn);
-//      for (int j(0); j < mn; j++)
-//      {
-//        K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l1, 2);
-//      }
-//      K2 += 1i * k * l1 * l1 * KR2;
-//      // build matrix A1
-//      A1 << ((dl / l1) * m_E),
-//        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
-//        (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN )),
-//        (-(dl / l1) * m_E.transpose());
-//
-//      // compute matrix omega
-//      omega = (0.5 * dX * (A0 + A1) + sqrt(3) * pow(dX, 2) * (A1 * A0 - A0 * A1) / 12.).exp();
-//
-//      start = std::chrono::system_clock::now();
-//
-//      //// compute admittance at the next point
-//      m_admittance.push_back((omega.block(mn, 0, mn, mn) +
-//        omega.block(mn, mn, mn, mn) * m_admittance.back()) *
-//      ((omega.block(0, 0, mn, mn) +
-//        omega.block(0, mn, mn, mn) * m_admittance.back()).inverse()));
-//      m_impedance.push_back(m_admittance.back().fullPivLu().inverse());
-//
-//      end = std::chrono::system_clock::now();
-//      time += end - start;
-//    }
-//  }
-//}
-
-void CrossSection2dFEM::propagateAdmitRiccati(Eigen::MatrixXcd Y0, 
-  struct simulationParameters simuParams, double nextArea,
-  double freq, double direction)
-{
-  int numX(simuParams.numIntegrationStep);
-  int mn(m_modesNumber);
-  double da(abs(m_circleArcAngle));          // angle of the circle arc
-  double R(abs(m_curvatureRadius));        // radius of the circle arc
-  double al(da * R);                // arc length
-  double dX(direction * al / (double)(numX - 1));
-  double curv(curvature(simuParams.curved));
-  double k(2 * M_PI * freq / simuParams.sndSpeed);
-  double l0, l1;
-  double dl(0.);      // parameters of the coefficient l evolution
-  Eigen::MatrixXcd A0(2 * mn, 2 * mn), A1(2 * mn, 2 * mn), omega(2 * mn, 2 * mn);
-  Eigen::MatrixXcd K2(Eigen::MatrixXcd::Zero(mn, mn));
-  complex<double> wallAdmittance;
-  Eigen::VectorXcd bndSpecAdm(Eigen::VectorXcd::Zero(mn));
-
-  if (m_length == 0.)
-  {
-    m_admittance.push_back(Y0);
-  }
-  else
-  {
-    // initialize admittance
-    m_admittance.clear();
-    m_admittance.reserve(numX);
-    m_admittance.push_back(Y0);
-
-    // compute wall admittance
-    wallAdmittance = getWallAdmittance(simuParams, freq);
-
-    // compute boundary specific admittance
-    getSpecificBndAdm(simuParams, freq, bndSpecAdm);
-
-    // compute matrix KR2
-    Eigen::MatrixXcd KR2(Eigen::MatrixXcd::Zero(mn, mn));
-    for (int s(0); s < m_KR2.size(); s++)
-    {
-      KR2 += m_KR2[s] * bndSpecAdm.asDiagonal() + wallAdmittance * m_KR2[s];
-    }
-
-    // discretize X axis
-    for (int i(0); i < numX - 1; i++)
-    {
-      // first point of Magnus scheme
-      if (dX < 0.) {
-        l0 = (((dl * da * R) / ((double)(numX - 1))) *
-          ((double)(numX - i) - (0.5 - sqrt(3) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-      }
-      else
-      {
-        l0 = (((dl * da * R) / (double)(numX - 1)) *
-          (double(i) + (0.5 - sqrt(3.) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-      }
-
-      // build matrix K2
-      K2.setZero(mn, mn);
-      for (int j(0); j < mn; j++)
-      {
-        K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
-      }
-      K2 += 1i * k * l0 * l0 * KR2;
-
-      // build matrix A0
-      A0 << ((dl / l0) * m_E),
-        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
-        (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
-        (-(dl / l0) * m_E.transpose());
-
-      // second point of Magnus scheme
-      if (dX < 0.)
-      {
-        l1 = (((dl * da * R) / ((double)(numX - 1))) *
-          ((double)(numX - i) - (0.5 + sqrt(3) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-      }
-      else
-      {
-        l1 = (((dl * da * R) / (double)(numX - 1)) *
-          (double(i) + (0.5 + sqrt(3.) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-      }
-      // build matrix K
-      K2.setZero(mn, mn);
-      for (int j(0); j < mn; j++)
-      {
-        K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l1, 2);
-      }
-      K2 += 1i * k * l1 * l1 * KR2;
-      // build matrix A1
-      A1 << ((dl / l1) * m_E),
-        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
-        (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN)),
-        (-(dl / l1) * m_E.transpose());
-
-      // compute matrix omega
-      omega = (0.5 * dX * (A0 + A1) + sqrt(3) * pow(dX, 2) * (A1 * A0 - A0 * A1) / 12.).exp();
-
-      // compute admittance at the next point
-      m_admittance.push_back((omega.block(mn, 0, mn, mn) +
-        omega.block(mn, mn, mn, mn) * m_admittance.back()) *
-      ((omega.block(0, 0, mn, mn) +
-        omega.block(0, mn, mn, mn) * m_admittance.back()).inverse()));
-    }
-  }
-}
-
-//************************************************************************
-// Propagation for radiation cross-sections
-
-void CrossSection2dRadiation::propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0, 
-  Eigen::MatrixXcd Y0, struct simulationParameters simuParams,
-  double freq, double direction, std::chrono::duration<double>& time)
-{
-  m_impedance.push_back(Z0);
-  m_admittance.push_back(Y0);
-}
-
-void CrossSection2dRadiation::propagateImpedRiccati(
-  Eigen::MatrixXcd Z0, double nextArea, double freq)
-{
-  m_impedance.push_back(Z0);
-}
-
-void CrossSection2dRadiation::propagateAdmitRiccati(
-  Eigen::MatrixXcd Y0, struct simulationParameters simuParams, double nextArea,
-  double freq, double direction)
-{
-  m_admittance.push_back(Y0);
-}
-
-// **************************************************************************
-// Propagate the axial velocity along the cross-section solving Riccati equation
-
-void CrossSection2dFEM::propagatePressureVelocityRiccati(Eigen::MatrixXcd V0,
-  Eigen::MatrixXcd P0, struct simulationParameters simuParams, double nextArea, 
-  double freq, double direction)
-{
-  int numX(simuParams.numIntegrationStep);
-  double volMass(simuParams.volumicMass);
-  int mn(m_modesNumber);
-  double da(abs(m_circleArcAngle));          // angle of the circle arc
-  double R(abs(m_curvatureRadius));        // radius of the circle arc
-  double al(da * R);                // arc length
-  double dX(direction * al / (double)(numX - 1));  
-  double curv(curvature(simuParams.curved));
-  double k(2 * M_PI * freq / simuParams.sndSpeed);
-  double l0, l1;
-  double dl;
-  Eigen::MatrixXcd A0(2 * mn, 2 * mn), A1(2 * mn, 2 * mn), omega(2 * mn, 2 * mn);
-  Eigen::MatrixXcd K2(Eigen::MatrixXcd::Zero(mn, mn));
-  complex<double> wallAdmittance;
-  // boundary specific admittance vector
-  Eigen::VectorXcd bndSpecAdm(Eigen::VectorXcd::Zero(mn));
-
-  if (m_length == 0.)
-  {
-    m_axialVelocity.push_back(V0);
-    m_acPressure.push_back(P0);
-  }
-  else
-  {
-    // FIXME: not valid for junctions with different number of contours
-    dl = 0.;
-
-    // initialize velocity
-    m_axialVelocity.clear();
-    m_axialVelocity.reserve(numX);
-    m_axialVelocity.push_back(V0);
-    m_acPressure.clear();
-    m_acPressure.reserve(numX);
-    m_acPressure.push_back(P0);
-
-    // compute wall admittance
-    wallAdmittance = getWallAdmittance(simuParams, freq);
-
-    // compute boundary specific admittance
-    getSpecificBndAdm(simuParams, freq, bndSpecAdm);
-
-    // compute matrices KR and DR
-    Eigen::MatrixXcd KR2(Eigen::MatrixXcd::Zero(mn, mn));
-    //Eigen::MatrixXcd DR(Eigen::MatrixXcd::Zero(mn, mn));
-    // loop over the different surfaces
-    for (int s(0); s < m_KR2.size(); s++)
-    {
-      KR2 += m_KR2[s] * bndSpecAdm.asDiagonal() + wallAdmittance * m_KR2[s];
-    }
-
-    // discretize X axis
-    for (int i(0); i < numX - 1; i++)
-    {
-      // first point of Magnus scheme
-      l0 = (((dl * da * R) / (double)(numX - 1)) *
-        (double(i) + (0.5 - sqrt(3.) / 6.)) + sqrt(m_area))/sqrt(m_area);
-
-      // build matrix K
-      K2.setZero(mn, mn);
-      for (int j(0); j < mn; j++)
-      {
-        K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
-      }
-      K2 += 1i * k * l0 * l0 * KR2;
-
-      // build matrix A0
-      A0 << ((dl / l0) * m_E),
-        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
-        (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN )),
-        (-(dl / l0) * m_E.transpose());
-
-      // second point of Magnus scheme
-      l1 = (((dl * da * R) / (double)(numX - 1)) *
-        (double(i) + (0.5 + sqrt(3.) / 6.)) + sqrt(m_area))/ sqrt(m_area);
-
-      // build matrix K
-      K2.setZero(mn, mn);
-      for (int j(0); j < mn; j++)
-      {
-        K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l1, 2);
-      }
-      K2 += 1i * k * l1 * l1 * KR2;
-
-      // build matrix A0
-      A1 << ((dl / l1) * m_E),
-        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
-        (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN )),
-        (-(dl / l1) * m_E.transpose());
-
-      // compute matrix omega
-      omega = (0.5 * dX * (A0 + A1) + sqrt(3) * pow(dX, 2) * (A1 * A0 - A0 * A1) / 12.).exp();
-
-      // case of a contraction
-      if (m_area > nextArea)
-      {
-        // compute axial velocity at the next point
-        m_axialVelocity.push_back((omega.block(mn, 0, mn, mn)
-          + omega.block(mn, mn, mn, mn)
-          * m_admittance[numX - 1 - i]) * m_acPressure.back());
-
-        // compute acoustic pressure at the next point
-        m_acPressure.push_back((omega.block(0, 0, mn, mn) + omega.block(0, mn, mn, mn) *
-          m_admittance[numX - 1 - i]) * m_acPressure.back());
-      }
-      // case of an expension
-      else
-      {
-        // compute axial velocity at the next point
-        m_axialVelocity.push_back((omega.block(mn, 0, mn, mn) * m_impedance[numX - 1 - i] +
-          omega.block(mn, mn, mn, mn))* m_axialVelocity.back());
-
-        // compute acoustic pressure at the next point
-        m_acPressure.push_back((omega.block(0, 0, mn, mn) * m_impedance[numX - 1 - i]
-          + omega.block(0, mn, mn, mn)) * m_axialVelocity.back());
-      }
-    }
-  }
-}
-
-void CrossSection2dFEM::propagatePressureRiccati(Eigen::MatrixXcd P0,
-  struct simulationParameters simuParams, double nextArea, double freq)
-{
-  int numX(simuParams.numIntegrationStep);
-  int mn(m_modesNumber);
-  double da(abs(m_circleArcAngle));          // angle of the circle arc
-  double R(abs(m_curvatureRadius));        // radius of the circle arc
-  double al(da * R);                // arc length
-  double dX(al / (double)(numX - 1));
-  double curv(1. / m_curvatureRadius);
-  double k(2 * M_PI * freq / simuParams.sndSpeed);
-  double l0, l1;
-  double dl;
-  Eigen::MatrixXcd A0(2 * mn, 2 * mn), A1(2 * mn, 2 * mn), omega(2 * mn, 2 * mn);
-  Eigen::MatrixXcd K2(Eigen::MatrixXcd::Zero(mn, mn));
-
-  if (m_length == 0.)
-  {
-    m_acPressure.push_back(P0);
-  }
-  else
-  {
-    dl = 0.;
-
-    m_acPressure.clear();
-    m_acPressure.reserve(numX);
-    m_acPressure.push_back(P0);
-
-    // discretize X axis
-    for (int i(0); i < numX - 1; i++)
-    {
-      // first point of Magnus scheme
-      l0 = (((dl * da * R) / (double)(numX - 1)) *
-        (double(i) + (0.5 - sqrt(3.) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-
-      // build matrix K
-      for (int j(0); j < mn; j++)
-      {
-        K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
-      }
-      // build matrix A0
-      A0 << ((dl / l0) * m_E),
-        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
-        (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
-        (-(dl / l0) * m_E.transpose());
-
-      // second point of Magnus scheme
-      l1 = (((dl * da * R) / (double)(numX - 1)) *
-        (double(i) + (0.5 + sqrt(3.) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-
-      // build matrix K
-      for (int j(0); j < mn; j++)
-      {
-        K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l1, 2);
-      }
-      // build matrix A0
-      A1 << ((dl / l1) * m_E),
-        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
-        (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN)),
-        (-(dl / l1) * m_E.transpose());
-
-      // compute matrix omega
-      omega = (0.5 * dX * (A0 + A1) + sqrt(3) * pow(dX, 2) * (A1 * A0 - A0 * A1) / 12.).exp();
-
-      m_acPressure.push_back((omega.block(0, 0, mn, mn) + omega.block(0, mn, mn, mn) *
-        m_admittance[numX - 1 - i]) * m_acPressure.back());
-    }
-  }
-}
-
-//**************************************************************************
-// Propagation for radiation cross-sections
-
-void CrossSection2dRadiation::propagatePressureVelocityRiccati(Eigen::MatrixXcd V0, 
-  Eigen::MatrixXcd P0, struct simulationParameters simuParams, double nextArea,
-  double freq, double direction)
-{
-  m_axialVelocity.push_back(V0);
-  m_acPressure.push_back(P0);
-}
-
-void CrossSection2dRadiation::propagatePressureRiccati(Eigen::MatrixXcd P0,
-  struct simulationParameters simuParams, double nextArea, double freq)
-{
-  m_acPressure.push_back(P0);
-}
-
 // **************************************************************************
 // Propagate the admittance along the cross-section in a straight tube
 
@@ -2709,8 +2234,6 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
      }
 }
 
-
-
 // **************************************************************************
 // accessors
 
@@ -2804,7 +2327,6 @@ Point CrossSection2dFEM::ctrLinePtOut() const
     }
     else
     {
-      
       theta = abs(m_circleArcAngle) / 2.;
       
       if ((signbit(m_curvatureRadius) && !signbit(m_curvatureRadius * m_circleArcAngle))
@@ -2831,7 +2353,9 @@ Point CrossSection2dFEM::ctrLinePtOut() const
     return(ctrLinePtIn());
   }
 }
+
 //******************************************************
+
 Vector CrossSection2dFEM::normalOut() const
 {
   if (length() > 0.)
@@ -2845,7 +2369,9 @@ Vector CrossSection2dFEM::normalOut() const
     return(normalIn());
   }
 }
+
 //******************************************************
+
 double CrossSection2dFEM::length() const { 
   if (abs(m_circleArcAngle) < MINIMAL_DISTANCE)
   {

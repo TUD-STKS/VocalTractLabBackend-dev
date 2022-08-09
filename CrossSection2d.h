@@ -188,16 +188,6 @@ public:
   virtual void setAreaVariationProfileType(enum areaVariationProfile profile){;}
   virtual void propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
     double freq, double direction, enum physicalQuantity quant, std::chrono::duration<double> *time) {;}
- /* virtual void propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0,
-    Eigen::MatrixXcd Y0, struct simulationParameters simuParams,
-    double freq, double direction, std::chrono::duration<double>& time) {;}*/
-  virtual void propagateImpedRiccati(Eigen::MatrixXcd Z0, double nextArea, double freq) {;}
-  virtual void propagateAdmitRiccati(Eigen::MatrixXcd Y0, 
-    struct simulationParameters simuParams, double nextArea, double freq, double direction) {;}
-  virtual void propagatePressureVelocityRiccati(Eigen::MatrixXcd V0, Eigen::MatrixXcd P0, 
-    struct simulationParameters simuParams, double nextArea, double freq, double direction) {;}
-  virtual void propagatePressureRiccati(Eigen::MatrixXcd P0,
-    struct simulationParameters simuParams, double nextArea, double freq) {;}
   virtual void propagateImpedAdmitStraight(Eigen::MatrixXcd Z0,
     Eigen::MatrixXcd Y0, double freq, struct simulationParameters simuParams,
     double prevArea, double nextArea) {;}
@@ -351,15 +341,6 @@ public:
   double scalingDerivative(double tau);
   void propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
     double freq, double direction, enum physicalQuantity quant, std::chrono::duration<double> *time);
- /* void propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0, Eigen::MatrixXcd Y0, 
-    struct simulationParameters simuParams,
-    double freq, double direction, std::chrono::duration<double>& time);*/
-  void propagateAdmitRiccati(Eigen::MatrixXcd Y0, struct simulationParameters simuParams, double nextArea,
-    double freq, double direction);
-  void propagatePressureVelocityRiccati(Eigen::MatrixXcd V0, Eigen::MatrixXcd P0, 
-    struct simulationParameters simuParams, double nextArea, double freq, double direction);
-  void propagatePressureRiccati(Eigen::MatrixXcd P0,
-    struct simulationParameters simuParams, double nextArea, double freq);
   void propagateImpedAdmitStraight(Eigen::MatrixXcd Z0,
     Eigen::MatrixXcd Y0, double freq, struct simulationParameters simuParams,
     double prevArea, double nextArea);
@@ -481,17 +462,6 @@ public:
   // propagation
   void propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
     double freq, double direction, enum physicalQuantity quant, std::chrono::duration<double> *time) {;}
- /* void propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0, Eigen::MatrixXcd Y0, 
-    struct simulationParameters simuParams,
-    double freq, double direction, std::chrono::duration<double>& time);*/
-  void propagateImpedRiccati(Eigen::MatrixXcd Z0, double nextArea, double freq);
-  void propagateAdmitRiccati(Eigen::MatrixXcd Y0, struct simulationParameters simuParams, double nextArea,
-    double freq, double direction);
-  void propagatePressureVelocityRiccati(Eigen::MatrixXcd V0, Eigen::MatrixXcd P0, 
-    struct simulationParameters simuParams, double nextArea,
-    double freq, double direction);
-  void propagatePressureRiccati(Eigen::MatrixXcd P0,
-    struct simulationParameters simuParams, double nextArea, double freq);
   void propagateImpedAdmitStraight(Eigen::MatrixXcd Z0,
     Eigen::MatrixXcd Y0, double freq, struct simulationParameters simuParams,
     double prevArea, double nextArea);

@@ -284,7 +284,7 @@ void Acoustic3dSimulation::setSimulationParameters(double meshDensity,
 
 void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
 
-  double freq, freqSteps((double)SAMPLING_RATE / 2. / (double)m_numFreq);
+  double freqSteps((double)SAMPLING_RATE / 2. / (double)m_numFreq);
   int numFreqComputed((int)ceil(m_simuParams.maxComputedFreq / freqSteps));
 
   ofstream log;
@@ -2616,7 +2616,6 @@ void Acoustic3dSimulation::computeTransferFunction(VocalTract* tract)
 
 void Acoustic3dSimulation::computeAcousticField(VocalTract* tract)
 {
-  int numSec, lastSec; 
   double freq(m_simuParams.freqField);
 
   generateLogFileHeader(true);
@@ -3058,20 +3057,19 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
   string line, str;
   char separator(';');
   stringstream strs, txtField;
-  string::size_type idxStr;
   ofstream log("log.txt", ofstream::app);
   log << "\nStart test" << endl;
 
   Polygon_2 contour;
   Point_3 pointComputeField;
-  double radius, angle, area, length, inRadius, inAngle, sc, r;
+  double radius, angle, area, length, inRadius, inAngle;
   int nbAngles(100);
   vector<int> surfaceIdx(nbAngles, 0), slectedModesIdx;
   double scalingFactors[2] = { 1., 1. };
   double a(5.5), b(3.2);
-  double freq, freqMax, freqField, endAdmit;
+  double freq, freqMax;
   complex<double> result;
-  int nbFreqs, mn, idxField, cnt;
+  int nbFreqs, mn;
   Eigen::MatrixXcd characImped, radImped, radAdmit, inputVelocity, inputPressure, field;
   vector<Point_3> radPts;
   vector<array<double, 2>> pts;
@@ -3086,7 +3084,6 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
   int nCombinations, ie, je, me, ne;
   Matrix analyticE, E, modes;
   double E1y, E1z, E2y, E2z;
-  bool radiationCondition;
 
   auto start = std::chrono::system_clock::now();
   auto stop = std::chrono::system_clock::now();
@@ -5901,7 +5898,6 @@ bool Acoustic3dSimulation::exportGeoInCsv(string fileName)
   string separator(";");
   Point Pt;
   Vector N;
-  double theta, thetaN;
   int lastSeg(m_crossSections.size() - 1);
 
   if (of.is_open())
@@ -6309,7 +6305,6 @@ void Acoustic3dSimulation::radiationImpedance(Eigen::MatrixXcd& imped, double fr
 
     //FIXME: don't work for lines intersecting several times the polygon
 
-    double dist;
     int numDirections;
     double angleSpacing, direction;
     vector<Point> polGrid;
