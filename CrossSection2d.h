@@ -1,3 +1,24 @@
+// ****************************************************************************
+// This file is part of VocalTractLab3D.
+// Copyright (C) 2022, Peter Birkholz, Dresden, Germany
+// www.vocaltractlab.de
+// author: Peter Birkholz and Rémi Blandin
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+//
+// ****************************************************************************
+
 #ifndef __CROSS_SECTION_2D_H__
 #define __CROSS_SECTION_2D_H__
 
@@ -167,9 +188,9 @@ public:
   virtual void setAreaVariationProfileType(enum areaVariationProfile profile){;}
   virtual void propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
     double freq, double direction, enum physicalQuantity quant, std::chrono::duration<double> *time) {;}
-  virtual void propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0,
+ /* virtual void propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0,
     Eigen::MatrixXcd Y0, struct simulationParameters simuParams,
-    double freq, double direction, std::chrono::duration<double>& time) {;}
+    double freq, double direction, std::chrono::duration<double>& time) {;}*/
   virtual void propagateImpedRiccati(Eigen::MatrixXcd Z0, double nextArea, double freq) {;}
   virtual void propagateAdmitRiccati(Eigen::MatrixXcd Y0, 
     struct simulationParameters simuParams, double nextArea, double freq, double direction) {;}
@@ -275,7 +296,6 @@ protected:
   Point2D m_normal;
   double m_area;
   int m_modesNumber;
-  //double m_maxCutOnFreq;
   int m_direction[4]; // 0 dir Z | 1 dir Y | 2 dir Q | dir P
   vector<Eigen::MatrixXcd> m_impedance;
   vector<Eigen::MatrixXcd> m_admittance;
@@ -331,9 +351,9 @@ public:
   double scalingDerivative(double tau);
   void propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
     double freq, double direction, enum physicalQuantity quant, std::chrono::duration<double> *time);
-  void propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0, Eigen::MatrixXcd Y0, 
+ /* void propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0, Eigen::MatrixXcd Y0, 
     struct simulationParameters simuParams,
-    double freq, double direction, std::chrono::duration<double>& time);
+    double freq, double direction, std::chrono::duration<double>& time);*/
   void propagateAdmitRiccati(Eigen::MatrixXcd Y0, struct simulationParameters simuParams, double nextArea,
     double freq, double direction);
   void propagatePressureVelocityRiccati(Eigen::MatrixXcd V0, Eigen::MatrixXcd P0, 
@@ -445,9 +465,6 @@ public:
   CrossSection2dRadiation(Point2D ctrLinePt, Point2D normal, double radius, double PMLThickness);
   ~CrossSection2dRadiation() { ; }
 
-  //void set(double maxCutOnFreq, Point2D ctrLinePt, Point2D normal,
-  //  double radius, double PMLThickness);
-
   void computeModes(struct simulationParameters simuParams);
   void selectModes(vector<int> modesIdx) { ; }
   Matrix interpolateModes(vector<Point> pts);
@@ -464,9 +481,9 @@ public:
   // propagation
   void propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
     double freq, double direction, enum physicalQuantity quant, std::chrono::duration<double> *time) {;}
-  void propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0, Eigen::MatrixXcd Y0, 
+ /* void propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0, Eigen::MatrixXcd Y0, 
     struct simulationParameters simuParams,
-    double freq, double direction, std::chrono::duration<double>& time);
+    double freq, double direction, std::chrono::duration<double>& time);*/
   void propagateImpedRiccati(Eigen::MatrixXcd Z0, double nextArea, double freq);
   void propagateAdmitRiccati(Eigen::MatrixXcd Y0, struct simulationParameters simuParams, double nextArea,
     double freq, double direction);
@@ -521,7 +538,6 @@ private:
 };
 
 // Print cross-section parameters
-//ostream& operator<<(ostream &os, const CrossSection2d &cs);
 ostream& operator<<(ostream &os, const CrossSection2d &cs);
 
 #endif

@@ -1,3 +1,24 @@
+// ****************************************************************************
+// This file is part of VocalTractLab3D.
+// Copyright (C) 2022, Peter Birkholz, Dresden, Germany
+// www.vocaltractlab.de
+// author: Peter Birkholz and Rémi Blandin
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+//
+// ****************************************************************************
+
 #include "CrossSection2d.h"
 #include "Constants.h"
 #include "Tube.h"
@@ -81,7 +102,6 @@ double distancePolygon(Polygon_2 poli, Point ptToTest)
   double distEdge(NON_SENS_VALUE);
 
   // loop over the edges of the contour
-  //for (int i(0); i < (contour.size() - 1); i++)
   for (auto it = poli.edges_begin(); it != poli.edges_end(); ++it)
   {
 
@@ -150,11 +170,6 @@ void BesselJDerivativeZero(int v, int n, map<double, pair<int,int>> &zeros)
   int digits = numeric_limits<double>::digits; 
   digits = static_cast<int>(digits * 0.6);
 
-  //ofstream log;
-  //log.open("log.txt", ofstream::app);
-  //log << setprecision(10);
-  //log << "digits " << digits << endl;
-
   // define the derivative of the besselfunction of which one wants 
   // to find the zero and its derivative
   auto function = [&](double z) {
@@ -168,7 +183,6 @@ void BesselJDerivativeZero(int v, int n, map<double, pair<int,int>> &zeros)
   // loop over orders
   for (int i(1); i <= n; i++)
   {
-    //if (i >= 1)
     if ((v == 0) && (i == 1))
     {
       zeros.insert({ 0., {0,0} });
@@ -187,20 +201,13 @@ void BesselJDerivativeZero(int v, int n, map<double, pair<int,int>> &zeros)
       minVal = estimatedZero -0.5;
       maxVal = estimatedZero +0.5;
 
-      //log << "estimatedZero " << estimatedZero << endl;
-      //try {
-        res = newton_raphson_iterate(function, estimatedZero, minVal,
-          maxVal, digits);
-      //}
-      //catch (const std::exception& e)
-      //{
-      //  //log << e.what() << endl;
-      //}
-      //log << "result: " << res << endl;
+
+      res = newton_raphson_iterate(function, estimatedZero, minVal,
+        maxVal, digits);
+
       zeros.insert({ res, {v, i - 1} });
     }
   }
-  //log.close();
 }
 
 // ****************************************************************************
@@ -324,10 +331,6 @@ void CrossSection2dFEM::buildMesh()
   array<int, 3> tempTri;
   array<int, 2> tempSeg;
 
-  //ofstream log("log.txt", ofstream::app);
-  //log << "Start build mesh" << endl;
-  //log << "spacing " << m_spacing << endl;
-
   m_mesh.clear();
   m_mesh.insert_constraint(m_contour.vertices_begin(), m_contour.vertices_end(), true);
 
@@ -381,7 +384,6 @@ void CrossSection2dFEM::buildMesh()
       m_triangles.push_back(tempTri);
     }
   }
-  //log.close();
 }
 
 // ****************************************************************************
@@ -390,22 +392,11 @@ void CrossSection2dFEM::buildMesh()
 
 void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
 {
-  //// get time of start
-  //auto start = std::chrono::system_clock::now();
-
-  //ofstream log;
-  //log.open("log.txt", ofstream::app);
-  //log << "\nStart compute modes" << endl;
-
   // declare variables
   bool different;
   int numVert, numSurf, numTri, idxM, idxN, ptIdx, idx, meshContSurfIdx;
-  Matrix mass, massY, stiffness, stiffnessY, B, C, E
-    ,DN
-    ;
-  vector<Matrix> R, KR2
-    ,RY, DR
-    ;
+  Matrix mass, massY, stiffness, stiffnessY, B, C, E, DN;
+  vector<Matrix> R, KR2, RY, DR;
   double signFirstMode, faceArea, dist, oldDist, segLength, maxWaveNumber;
   Point2D midSeg;
 
@@ -469,7 +460,6 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
       numSurf++;
     }
   }
-  //log << endl << "Numsurf: " << numSurf << endl;
 
   // loop over the portions of the contour of the mesh
   Point2D closestPt;
@@ -486,8 +476,10 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
     ct->x();
     ptIdx = 0;
     closestPt = Point2D(ct->x(), ct->y());
+
     // distance between the first point of the contour and the midle of the segment
     oldDist = sqrt(pow(ct->x() - midSeg.x,2) + pow(ct->y() - midSeg.y, 2));
+
     // loop over points of the contour
     for (idx = 1, ct = m_contour.begin()+1; ct != m_contour.end()-1; idx++, ct++)
     {
@@ -502,8 +494,6 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
     }
     meshContSurfIdx = m_surfaceIdx[ptIdx];
 
-    //log << "Surface identified " << meshContSurfIdx << endl;
-
     // determine the index of the submatrix to which add the elements corresponding
     // to the current segment
     for (idx = 0; idx < m_surfIdxList.size(); idx++)
@@ -513,8 +503,6 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
         break;
       }
     }
-
-    //log << "Submatrix identified: " << idx << endl;
 
     // compute the length of the segment
     segLength = sqrt(pow(m_points[m_meshContourSeg[s][0]][0] -
@@ -554,8 +542,6 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
       }
     }
   }
-
-  //log << "Matrices R and RY computed" << endl;
 
   //ofstream matrixR;
   //matrixR.open("matrixR.txt");
@@ -662,26 +648,12 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
     }
   }
 
-  //log << "Stiffness and mass computed" << endl;
-
-  //// get time of end
-  //auto end = std::chrono::system_clock::now();
-  //std::chrono::duration<double> elapsed_seconds = end - start;
-  // Mass stiffness time
-  //log << 2 << "\t";
-  //log << numVert << "\t" << elapsed_seconds.count() << "\t";
-
   // **************************************************************************
   // Compute modes
   // **************************************************************************
 
-  //start = std::chrono::system_clock::now();
-
   // solve eigen problem
   Eigen::GeneralizedSelfAdjointEigenSolver<Matrix> eigenSolver(stiffness, mass);
-
-  //log << "eigen problem solved" << endl;
-  //log << eigenSolver.eigenvalues().size() << " eigenvalues" << endl;
 
   m_eigenFreqs.clear();
   if (m_modesNumber == 0)
@@ -708,19 +680,10 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
     }
   }
 
-  //log << "Modes number " << m_modesNumber << endl;
-
   m_maxAmplitude.clear();
   m_maxAmplitude.reserve(m_modesNumber);
   m_minAmplitude.clear();
   m_minAmplitude.reserve(m_modesNumber);
-
-  //for (int m(0); m < m_modesNumber; m++)
-  //{
-  //  // compute eigen frequencies
-  //  tempEigenFreqs.push_back(sqrt(eigenSolver.eigenvalues()[m]) * soundSpeed / 2 / M_PI);
-  //}
-  // store eigen frequencies
 
   // set the first eigen frequency to 0 since it cannot have other value
   m_eigenFreqs[0] = 0.;
@@ -747,13 +710,10 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
     m_minAmplitude.push_back(m_modes.col(m).minCoeff());
   }
 
-  //log << "Modes computed" << endl;
-
   // **************************************************************************
   // Compute multimodal matrices
   // **************************************************************************
 
-    
   // compute matrices C, DN and E
   m_C = Matrix::Zero(m_modesNumber, m_modesNumber);
   m_DN = Matrix::Zero(m_modesNumber, m_modesNumber);
@@ -772,7 +732,6 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   m_DR.clear(); 
   m_KR2.clear();
   // loop over surfaces
-  //log << "Nb surf " << m_surfIdxList.size() << endl;
   for (int s(0); s < m_surfIdxList.size(); s++)
   {
     m_DR.push_back(Matrix::Zero(m_modesNumber, m_modesNumber));
@@ -786,15 +745,6 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
       }
     }
   }
-
-  //end = std::chrono::system_clock::now();
-  //elapsed_seconds = end - start;
-  // Storage/fn time
-  //log << 4 << "\t";
-  //log << elapsed_seconds.count() << "\t" << endl;
-  
-
-  //log << "Multimodal matrices computed" << endl;
 
   // **************************************************************************
   // Print mesh, modes and matrices in text files
@@ -877,8 +827,6 @@ void CrossSection2dFEM::computeModes(struct simulationParameters simuParams)
   //  matrixKR2 << KR2[s] << endl << endl;
   //}
   //matrixKR2.close();
-  
-  //log.close();
 }
 
 // **************************************************************************
@@ -896,9 +844,6 @@ void CrossSection2dRadiation::setBesselParam(struct simulationParameters simuPar
   map<double, pair<int, int>> zeros;
 
   using namespace boost::math;
-
-  //ofstream log;
-  //log.open("log.txt", ofstream::app);
 
   // determine the number of order of Bessel function necessary
   do
@@ -923,8 +868,6 @@ void CrossSection2dRadiation::setBesselParam(struct simulationParameters simuPar
   // estimate the number of modes from the maximal cut-on frequency 
   // as (BesselZero^2) / 7
   estimateModeNumber = zeros.size()*2;
-  //estimateModeNumber = 2. * pow(2 * M_PI * m_radius * simuParams.maxCutOnFreq / soundSpeed, 2) / 7.;
-  //log << "Estimated mode num " << estimateModeNumber << endl;
 
   // reserve necessary space 
   m_BesselZeros.reserve(estimateModeNumber);
@@ -958,9 +901,6 @@ void CrossSection2dRadiation::setBesselParam(struct simulationParameters simuPar
   }
 
   m_modesNumber = m_BesselZeros.size();
-
-  //log << "Mode number " << m_modesNumber << endl;
-  //log.close();
 }
 
 // **************************************************************************
@@ -973,14 +913,7 @@ void CrossSection2dRadiation::computeModes(struct simulationParameters simuParam
   complex<double> Q1, Q2, avAl(20. * exp(1i * M_PI / 4.)), CPML, DPML;
   int m(0), n(0);
 
-  //ofstream log;
-  //log.open("log.txt", ofstream::app);
-  //log << "Start compute modes radiation" << endl;
-
-
   setBesselParam(simuParams);
-
-  //log << "Bessel param set" << endl;
 
   //***********************************************
   // Define functions to integrate
@@ -1062,8 +995,6 @@ void CrossSection2dRadiation::computeModes(struct simulationParameters simuParam
   //***********************************************
 
   vector<Triplet> tripletCPML, tripletDPML;
-  //m_CPML.setZero(m_modesNumber, m_modesNumber);
-  //m_DPML.setZero(m_modesNumber, m_modesNumber);
 
   // Compute matrices CPML and DPML
   for (; m < m_modesNumber; m++)
@@ -1073,24 +1004,13 @@ void CrossSection2dRadiation::computeModes(struct simulationParameters simuParam
     {
       if (m_BesselOrder[m] == m_BesselOrder[n])
       {
-        //log << m_BesselZeros[m] << "   "
-        //  << m_BesselOrder[m] << "   "
-        //  << m_degeneration[m] << "   "
-        //  << m_normModes[m] << endl;
-
         // compute the matrices CPML
         Q1 = quadrature::gauss<double, 15>::integrate(integral1,
           m_radius - m_PMLThickness, m_radius);
 
-        //log << "m_CPML " << m_CPML.size() << endl;
-
         CPML = (double)(m == n) + m_normModes[m] * m_normModes[n] * 
           (1. + (double)(0 == m_BesselOrder[m])) * M_PI * Q1;
         tripletCPML.push_back(Triplet(m, n, CPML));
-        //m_CPML(m, n) = (double)(m == n) + m_normModes[m] * m_normModes[n] *
-        //  (1. + (double)(0 == m_BesselOrder[m])) * M_PI * Q1;
-
-        //int1 << setprecision(15) << m_CPML(m).real() << "  " << m_CPML(m).imag() << endl;
 
         // compute the matrices DPML
         Q1 = quadrature::gauss<double, 15>::integrate(integral21,
@@ -1122,44 +1042,11 @@ void CrossSection2dRadiation::computeModes(struct simulationParameters simuParam
     Eigen::MatrixXcd mat(inv.solve(m_DPML));
     eig.compute(mat);
   }
-  catch(const exception &e)
-  {
-    //log << e.what() << endl;
-  }
+  catch(const exception &e){  }
+
   m_eigVal = eig.eigenvalues();
   m_eigVec = eig.eigenvectors();
   m_invEigVec = m_eigVec.inverse();
-
-  //log << "Nb eigval " << eig.eigenvalues().size() << endl;
-
-  ///////////////////////////////////////////////////////////////////
-  //// Test to compute the mode shapes
-  //int nP(100), cnt(0);
-  //double dx(2. * m_radius / (double)nP);
-  //vector<Point> pts(nP * nP);
-  //for (int i(0); i < nP; i++)
-  //{
-  //  for (int j(0); j < nP; j++)
-  //  {
-  //    //pts[cnt] = Point(m_ctrLinePt.x + ((double)i-(double)nP/2.)*dx,
-  //    //  m_ctrLinePt.y + ((double)j - (double)nP/ 2.) * dx);
-  //    pts[cnt] = Point(((double)i - (double)nP / 2.) * dx,
-  //      ((double)j - (double)nP / 2.) * dx);
-  //    log << pts[cnt] << endl;
-  //    cnt++;
-  //  }
-  //}
-  //Matrix modeShape(interpolateModes(pts));
-  //ofstream mode;
-  //mode.open("modeS.txt");
-  //mode << modeShape;
-  //mode.close();
-
-  //log << "Modes radiation finished" << endl;
-
-  //log << characteristicAdmittance(1000., 35000., 1.2, 0) << endl;
-
-  //log.close();
 }
 
 // **************************************************************************
@@ -1233,16 +1120,8 @@ Matrix CrossSection2dFEM::interpolateModes(vector<Point> pts)
   Coord_type norm;
   bool ptNotFound(false);
 
-  //ofstream val;
-  //val.open("val.txt", ofstream::app);
-
   ofstream log;
   log.open("log.txt", ofstream::app);
-  //log << "Start interpolation" << endl;
-  //log.close();
-
-  
-
 
   // insert triangulation points
   int numTriPts(m_points.size());
@@ -1252,8 +1131,6 @@ Matrix CrossSection2dFEM::interpolateModes(vector<Point> pts)
     T.insert(points.back());
   }
 
-  //val << "Point triangulated" << endl;
-
   // create the point values maps
   for (int m(0); m < m_modesNumber; m++)
   {
@@ -1261,12 +1138,9 @@ Matrix CrossSection2dFEM::interpolateModes(vector<Point> pts)
     for (int i(0); i < numTriPts; ++i)
     {
       tempValues.insert(make_pair(points[i], m_modes(i, m)));
-      //tempValues.insert(make_pair(points[i], m_modesAmplitude[idxCont][(m * numTriPts) + i]));
     }
     values.push_back(tempValues);
   }
-
-  //val << "Value map created" << endl;
 
   // insert points to interpolate
   for (int i(0); i < numPts; i++)
@@ -1294,9 +1168,7 @@ Matrix CrossSection2dFEM::interpolateModes(vector<Point> pts)
       //Coordinate_vector:
       coords.clear();
       auto res = CGAL::natural_neighbor_coordinates_2(T, pts[i], std::back_inserter(coords));
-      //val << "Point " << i << " location successfull: " << res.third << endl;
       norm = res.second;
-      //norm = CGAL::natural_neighbor_coordinates_2(T, pts[i], std::back_inserter(coords)).second;
 
       for (int m(0); m < m_modesNumber; ++m)
       {
@@ -1308,28 +1180,26 @@ Matrix CrossSection2dFEM::interpolateModes(vector<Point> pts)
     }
   }
 
-  // if a point have not been found export the points and contour
-  if (ptNotFound)
-  {
-    ofstream os("points.txt");
-    for (int i(0); i < pts.size(); i++)
-    {
-      os << pts[i].x() << "  " << pts[i].y() << endl;
-    }
-    os.close();
-    os.open("cont.txt");
-    auto it = m_contour.begin();
-    for (; it != m_contour.end(); it++)
-    {
-      os << it->x() << "  " << it->y() << endl;
-    }
-    it = m_contour.begin();
-    os << it->x() << "  " << it->y() << endl;
-    os.close();
-  }
+  //// if a point have not been found export the points and contour
+  //if (ptNotFound)
+  //{
+  //  ofstream os("points.txt");
+  //  for (int i(0); i < pts.size(); i++)
+  //  {
+  //    os << pts[i].x() << "  " << pts[i].y() << endl;
+  //  }
+  //  os.close();
+  //  os.open("cont.txt");
+  //  auto it = m_contour.begin();
+  //  for (; it != m_contour.end(); it++)
+  //  {
+  //    os << it->x() << "  " << it->y() << endl;
+  //  }
+  //  it = m_contour.begin();
+  //  os << it->x() << "  " << it->y() << endl;
+  //  os.close();
+  //}
 
-  //log << "\nInterpolation finished" << endl << endl;
-  //val.close();
   log.close();
   
   return interpolation;
@@ -1369,9 +1239,6 @@ Matrix CrossSection2dRadiation::interpolateModes(vector<Point> pts)
   Matrix interpolation(numPts, m_modesNumber);
 
   using namespace boost::math;
-  
-  //ofstream log;
-  //log.open("log.txt", ofstream::app);
 
   // Loop over the points
   for (int p(0); p < numPts; p++)
@@ -1380,8 +1247,6 @@ Matrix CrossSection2dRadiation::interpolateModes(vector<Point> pts)
     //
     // relative position assumed
     r = sqrt(pow(pts[p].x(), 2) + pow(pts[p].y(), 2));
-
-    //log << pts[p].x() << "  " << pts[p].y() << "r " << r << endl;
 
     // check if the point is inside the cross-section
     if (r > m_radius)
@@ -1392,8 +1257,6 @@ Matrix CrossSection2dRadiation::interpolateModes(vector<Point> pts)
     else
     {
       // compute the angular polar coordinate of the point
-      //t = atan2(pts[p].y() - m_ctrLinePt.y, 
-      //  pts[p].x() - m_ctrLinePt.x);
       t = atan2(pts[p].y(), pts[p].x());
 
       // loop over the modes
@@ -1407,22 +1270,14 @@ Matrix CrossSection2dRadiation::interpolateModes(vector<Point> pts)
         }
         else
         {
-          //log << m_normModes[m] *
-            //boost::math::cyl_bessel_j(m_BesselOrder[m], r * m_BesselZeros[m] / m_radius) *
-            //cos(m_BesselOrder[m] * t) << endl;
-
           interpolation(p, m) = m_normModes[m] *
             cyl_bessel_j(m_BesselOrder[m], r * m_BesselZeros[m] / m_radius) *
             cos(m_BesselOrder[m] * t);
         }
-        //log << "t " << t << "int " << interpolation(p, m) << endl;
       }
     }
     
   }
-
-  //log.close();
-
   return interpolation;
 }
 
@@ -1533,7 +1388,6 @@ void CrossSection2dFEM::characteristicAdmittance(
   admit = Eigen::MatrixXcd::Zero(m_modesNumber, m_modesNumber);
   double k(2 * M_PI * freq / simuParams.sndSpeed);
   complex<double> diag;
-  //ofstream log;
 
   switch (simuParams.propMethod)
   {
@@ -1650,7 +1504,6 @@ double CrossSection2dFEM::scaling(double tau)
     return (1. + 0.75*exp(-pow(0.3*(tau - 0.5),2)/2./pow(0.04,2)));
     break;
   case ELEPHANT:
-    //return (0.5 * (1 + 9. * pow(tau, 2) - 6. * pow(tau, 3))); // l = [0.5 2]
     return (0.25*(1 + 9.*pow(tau, 2) - 6.*pow(tau, 3))); // l = [0.25 1]
     break;
   }
@@ -1683,7 +1536,6 @@ double CrossSection2dFEM::scalingDerivative(double tau)
        /pow(0.04, 2)/30.);
     break;
   case ELEPHANT:
-    //return (9. * tau * (1. - tau) / 16.95 ); // l = [0.5 2]
     return (9.*tau*(1. - tau)/16.95/2.); // l = [0.25 1]
   }
 }
@@ -1709,10 +1561,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
   Eigen::MatrixXcd K2(Eigen::MatrixXcd::Zero(mn, mn));
   complex<double> wallAdmittance;
   Eigen::VectorXcd bndSpecAdm(Eigen::VectorXcd::Zero(mn));
-
-  //ofstream log("log.txt", ofstream::app);
-  //log << "Start propagate magnus, numX " << numX << endl;
-  //log << "mn " << mn << " curv " << curv << endl;
 
   if (m_length == 0.)
   {
@@ -1764,8 +1612,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
       break;
     }
 
-    //log << "al: " << al << "  " << " dX: " << dX << endl;
-
     // compute wall admittance
     wallAdmittance = getWallAdmittance(simuParams, freq);
 
@@ -1808,9 +1654,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         l0 = scaling(tau);
         dl0 = - Ydir() * scalingDerivative(tau);
 
-        //log << "tau " << tau << " k " << k << endl;
-        //log << "l " << l0 << " dl " << dl0 << endl;
-
         // build matrix K2
         K2.setZero(mn, mn);
         for (int j(0); j < mn; j++)
@@ -1832,7 +1675,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
 
         end = std::chrono::system_clock::now();
         *time += end - start;
-        //*time = *time + matricesMag;
         start = std::chrono::system_clock::now();
 
         break;
@@ -1857,9 +1699,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
           l0 = scaling(tau);
           dl0 = scalingDerivative(tau);
 
-          //log << "i = " << i << " l0 " << l0 << " dl0 " << dl0 
-            //<< " dX " << dX << " curv " << curv << endl;
-
           // build matrix K2
           K2.setZero(mn, mn);
           for (int j(0); j < mn; j++)
@@ -1871,9 +1710,7 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
           // build matrix A0
           A0 << ((dl0 / l0) * m_E),
             (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
-            (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN
-              //-1i*k*l0*l0*DR
-              )),
+            (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
             (-(dl0 / l0) * m_E.transpose());
 
             //*******************************
@@ -1901,9 +1738,7 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
           // build matrix A1
           A1 << ((dl1 / l1) * m_E),
             (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
-            (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN
-              //-1i*k*l1*l1*DR
-              )),
+            (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN)),
             (-(dl1 / l1) * m_E.transpose());
 
             //*******************************
@@ -1953,195 +1788,136 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
     }
   // track time
   tot = end - startTot;
-  //log << "Time precomputations " << 100.*elapsed_preComp.count() / tot.count() << endl;
-  //log << "Time matrix omega " << 100.*matricesMag.count() / tot.count() << endl;
-  //log << "time propa " << 100.*propag.count() / tot.count() << endl;
   }
-  //log.close();
 }
 
-// **************************************************************************
-// Propagate the admittance along the cross-section solving Riccati equation
-
-void CrossSection2dFEM::propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0, Eigen::MatrixXcd Y0,
-  struct simulationParameters simuParams,
-  double freq, double direction, std::chrono::duration<double> &time)
-{
-  int mn(m_modesNumber);
-  double volMass(simuParams.volumicMass);
-  double da(abs(m_circleArcAngle));          // angle of the circle arc
-  double R(abs(m_curvatureRadius));        // radius of the circle arc
-  double al(da * R);                // arc length
-  int numX(simuParams.numIntegrationStep);
-  double dX(direction * al/(double)(numX -1));
-  double curv(curvature(simuParams.curved));
-  double k(2 * M_PI * freq / simuParams.sndSpeed);
-  double l0, l1;
-  double dl;      // parameters of the coefficient l evolution
-  Eigen::MatrixXcd A0(2*mn, 2*mn), A1(2 * mn, 2 * mn), omega(2 * mn, 2 * mn);
-  Eigen::MatrixXcd K2(Eigen::MatrixXcd::Zero(mn, mn));
-  complex<double> wallAdmittance;
-  // boundary specific admittance vector
-  Eigen::VectorXcd bndSpecAdm(Eigen::VectorXcd::Zero(mn));  
-
-  auto start = std::chrono::system_clock::now();
-  auto end = std::chrono::system_clock::now();
-
-  //ofstream wallAdmit;
-  //ofstream log;
-  //log.open("log.txt", ofstream::app);
-  //log << "Imped Num integration steps: " << numX << endl;
-  
-  //log << "start propagate admittance" << endl;
-
-  if (m_length == 0.)
-  {
-    m_admittance.push_back(Y0);
-    m_impedance.push_back(Z0);
-  }
-  else
-  {
-    // FIXME: not valid for junctions with different number of contours
-    dl = 0.;
-    //dl = (sqrt(nextArea) - sqrt(m_area)) / al;
-
-    // initialize admittance
-    m_admittance.clear();
-    m_admittance.reserve(numX);
-    m_admittance.push_back(Y0);
-    m_impedance.clear();
-    m_impedance.reserve(numX);
-    m_impedance.push_back(Z0);
-
-    // compute wall admittance
-    //wallAdmittance = complex<double>(-0.01, 0.);
-    wallAdmittance = getWallAdmittance(simuParams, freq);
-
-    // compute boundary specific admittance
-    getSpecificBndAdm(simuParams, freq, bndSpecAdm);
-
-    //wallAdmit.open("wa.txt", ofstream::app);
-    //wallAdmit << freq << "  " << wallAdmittance.real() << "  " 
-    //  << wallAdmittance.imag() << endl;
-    //wallAdmit << freq << "  " << bndSpecAdm(min(1,mn-1)).real() << "  "
-    //  << bndSpecAdm(min(1, mn - 1)).imag() << "  " << 
-    //  wallAdmittance.real() << "  " << wallAdmittance.imag() << endl;
-    //wallAdmit.close();
-
-    // compute matrices KR and DR
-    Eigen::MatrixXcd KR2(Eigen::MatrixXcd::Zero(mn, mn));
-    //Eigen::MatrixXcd DR(Eigen::MatrixXcd::Zero(mn, mn));
-    // loop over the different surfaces
-    for (int s(0); s < m_KR2.size(); s++)
-    {
-      //KR2 += wallAdmittance * m_KR2[s];
-      //DR += wallAdmittance * m_DR[s];
-
-      KR2 += m_KR2[s] * bndSpecAdm.asDiagonal() + wallAdmittance * m_KR2[s];
-      //DR += m_DR[s] * bndSpecAdm.asDiagonal() + wallAdmittance * m_DR[s];
-    }
-
-    // discretize X axis
-    for (int i(0); i < numX - 1; i++)
-    {
-      
-      //log.open("log.txt", ofstream::app);
-      //log << "Step " << i << endl;
-
-      // first point of Magnus scheme
-      if (dX < 0.) {
-        l0 = (((dl * da * R) / ((double)(numX - 1))) *
-          ((double)(numX - i) - (0.5 - sqrt(3) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-      }
-      else
-      {
-        l0 = (((dl * da * R) / (double)(numX - 1)) *
-          (double(i) + (0.5 - sqrt(3.) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-      }
-      //log << "l0 " << l0 
-      //  << " dl " << dl[c] 
-      //  << " da " << da 
-      //  << " R " << R
-      //  << " numX " << numX
-      //  << " area " << m_area[c]
-      //  << endl;
-
-      // build matrix K
-      K2.setZero(mn, mn);
-      for (int j(0); j < mn; j++)
-      {
-        K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
-      }
-      K2 += 1i * k * l0 * l0 * KR2;
-
-      //wallAdmit.open("kn.txt", ofstream::app);
-      //wallAdmit << freq << "  " << sqrt(K2(0, 0)).real()
-      //  << "  " << sqrt(K2(0, 0)).imag() << endl;
-      //wallAdmit.close();
-      
-      // build matrix A0
-      A0 << ((dl / l0) * m_E),
-        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
-        (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN 
-          //- 1i*k*l0*l0*DR
-          )),
-        (-(dl / l0) * m_E.transpose());
-
-      // second point of Magnus scheme
-      if (dX < 0.)
-      {
-        l1 = (((dl * da * R) / ((double)(numX - 1))) *
-          ((double)(numX - i) - (0.5 + sqrt(3) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-      }
-      else
-      {
-        l1 = (((dl * da * R) / (double)(numX - 1)) *
-          (double(i) + (0.5 + sqrt(3.) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-      }
-      // build matrix K
-      K2.setZero(mn, mn);
-      for (int j(0); j < mn; j++)
-      {
-        K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l1, 2);
-      }
-      K2 += 1i * k * l1 * l1 * KR2;
-      // build matrix A1
-      A1 << ((dl / l1) * m_E),
-        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
-        (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN 
-          //- 1i*k*l1*l1*DR
-          )),
-        (-(dl / l1) * m_E.transpose());
-
-      // compute matrix omega
-      omega = (0.5 * dX * (A0 + A1) + sqrt(3) * pow(dX, 2) * (A1 * A0 - A0 * A1) / 12.).exp();
-
-      start = std::chrono::system_clock::now();
-      
-      //log << "dX " << dX << endl;
-      //log << "omega" << endl;
-      //log << omega << endl << endl;
-
-      //// compute admittance at the next point
-      m_admittance.push_back((omega.block(mn, 0, mn, mn) +
-        omega.block(mn, mn, mn, mn) * m_admittance.back()) *
-      ((omega.block(0, 0, mn, mn) +
-        omega.block(0, mn, mn, mn) * m_admittance.back()).inverse()));
-      m_impedance.push_back(m_admittance.back().fullPivLu().inverse());
-
-      end = std::chrono::system_clock::now();
-      time += end - start;
-      //m_impedance.push_back((omega.block(0, 0, mn, mn)* m_impedance.back() +
-      //  omega.block(0, mn, mn, mn))*
-      //((omega.block(mn, 0, mn, mn)* m_impedance.back() +
-      //  omega.block(mn, mn, mn, mn)).inverse()));
-
-      //log << "admittance computed" << endl;
-      //log.close();
-    }
-  }
-  //log.close();
-}
+//// **************************************************************************
+//// Propagate the admittance along the cross-section solving Riccati equation
+//
+//void CrossSection2dFEM::propagateImpedAdmiteRiccati(Eigen::MatrixXcd Z0, Eigen::MatrixXcd Y0,
+//  struct simulationParameters simuParams,
+//  double freq, double direction, std::chrono::duration<double> &time)
+//{
+//  int mn(m_modesNumber);
+//  double volMass(simuParams.volumicMass);
+//  double da(abs(m_circleArcAngle));          // angle of the circle arc
+//  double R(abs(m_curvatureRadius));        // radius of the circle arc
+//  double al(da * R);                // arc length
+//  int numX(simuParams.numIntegrationStep);
+//  double dX(direction * al/(double)(numX -1));
+//  double curv(curvature(simuParams.curved));
+//  double k(2 * M_PI * freq / simuParams.sndSpeed);
+//  double l0, l1;
+//  double dl;      // parameters of the coefficient l evolution
+//  Eigen::MatrixXcd A0(2*mn, 2*mn), A1(2 * mn, 2 * mn), omega(2 * mn, 2 * mn);
+//  Eigen::MatrixXcd K2(Eigen::MatrixXcd::Zero(mn, mn));
+//  complex<double> wallAdmittance;
+//  // boundary specific admittance vector
+//  Eigen::VectorXcd bndSpecAdm(Eigen::VectorXcd::Zero(mn));  
+//
+//  auto start = std::chrono::system_clock::now();
+//  auto end = std::chrono::system_clock::now();
+//
+//  if (m_length == 0.)
+//  {
+//    m_admittance.push_back(Y0);
+//    m_impedance.push_back(Z0);
+//  }
+//  else
+//  {
+//    // FIXME: not valid for junctions with different number of contours
+//    dl = 0.;
+//
+//    // initialize admittance
+//    m_admittance.clear();
+//    m_admittance.reserve(numX);
+//    m_admittance.push_back(Y0);
+//    m_impedance.clear();
+//    m_impedance.reserve(numX);
+//    m_impedance.push_back(Z0);
+//
+//    // compute wall admittance
+//    wallAdmittance = getWallAdmittance(simuParams, freq);
+//
+//    // compute boundary specific admittance
+//    getSpecificBndAdm(simuParams, freq, bndSpecAdm);
+//
+//    // compute matrices KR and DR
+//    Eigen::MatrixXcd KR2(Eigen::MatrixXcd::Zero(mn, mn));
+//    for (int s(0); s < m_KR2.size(); s++)
+//    {
+//      KR2 += m_KR2[s] * bndSpecAdm.asDiagonal() + wallAdmittance * m_KR2[s];
+//    }
+//
+//    // discretize X axis
+//    for (int i(0); i < numX - 1; i++)
+//    {
+//      // first point of Magnus scheme
+//      if (dX < 0.) {
+//        l0 = (((dl * da * R) / ((double)(numX - 1))) *
+//          ((double)(numX - i) - (0.5 - sqrt(3) / 6.)) + sqrt(m_area)) / sqrt(m_area);
+//      }
+//      else
+//      {
+//        l0 = (((dl * da * R) / (double)(numX - 1)) *
+//          (double(i) + (0.5 - sqrt(3.) / 6.)) + sqrt(m_area)) / sqrt(m_area);
+//      }
+//
+//      // build matrix K
+//      K2.setZero(mn, mn);
+//      for (int j(0); j < mn; j++)
+//      {
+//        K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
+//      }
+//      K2 += 1i * k * l0 * l0 * KR2;
+//      
+//      // build matrix A0
+//      A0 << ((dl / l0) * m_E),
+//        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
+//        (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN )),
+//        (-(dl / l0) * m_E.transpose());
+//
+//      // second point of Magnus scheme
+//      if (dX < 0.)
+//      {
+//        l1 = (((dl * da * R) / ((double)(numX - 1))) *
+//          ((double)(numX - i) - (0.5 + sqrt(3) / 6.)) + sqrt(m_area)) / sqrt(m_area);
+//      }
+//      else
+//      {
+//        l1 = (((dl * da * R) / (double)(numX - 1)) *
+//          (double(i) + (0.5 + sqrt(3.) / 6.)) + sqrt(m_area)) / sqrt(m_area);
+//      }
+//      // build matrix K
+//      K2.setZero(mn, mn);
+//      for (int j(0); j < mn; j++)
+//      {
+//        K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l1, 2);
+//      }
+//      K2 += 1i * k * l1 * l1 * KR2;
+//      // build matrix A1
+//      A1 << ((dl / l1) * m_E),
+//        (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
+//        (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN )),
+//        (-(dl / l1) * m_E.transpose());
+//
+//      // compute matrix omega
+//      omega = (0.5 * dX * (A0 + A1) + sqrt(3) * pow(dX, 2) * (A1 * A0 - A0 * A1) / 12.).exp();
+//
+//      start = std::chrono::system_clock::now();
+//
+//      //// compute admittance at the next point
+//      m_admittance.push_back((omega.block(mn, 0, mn, mn) +
+//        omega.block(mn, mn, mn, mn) * m_admittance.back()) *
+//      ((omega.block(0, 0, mn, mn) +
+//        omega.block(0, mn, mn, mn) * m_admittance.back()).inverse()));
+//      m_impedance.push_back(m_admittance.back().fullPivLu().inverse());
+//
+//      end = std::chrono::system_clock::now();
+//      time += end - start;
+//    }
+//  }
+//}
 
 void CrossSection2dFEM::propagateAdmitRiccati(Eigen::MatrixXcd Y0, 
   struct simulationParameters simuParams, double nextArea,
@@ -2162,19 +1938,12 @@ void CrossSection2dFEM::propagateAdmitRiccati(Eigen::MatrixXcd Y0,
   complex<double> wallAdmittance;
   Eigen::VectorXcd bndSpecAdm(Eigen::VectorXcd::Zero(mn));
 
-  //ofstream log;
-  //log.open("log.txt", ofstream::app);
-  //log << "\nStart propagation admit in section" << endl;
-  //log << "size y0 " << Y0.size() << endl;
-
   if (m_length == 0.)
   {
     m_admittance.push_back(Y0);
   }
   else
   {
-    //log << "Start non zero section" << endl;
-
     // initialize admittance
     m_admittance.clear();
     m_admittance.reserve(numX);
@@ -2248,20 +2017,13 @@ void CrossSection2dFEM::propagateAdmitRiccati(Eigen::MatrixXcd Y0,
       // compute matrix omega
       omega = (0.5 * dX * (A0 + A1) + sqrt(3) * pow(dX, 2) * (A1 * A0 - A0 * A1) / 12.).exp();
 
-      //log << "Omega computed" << endl;
-
       // compute admittance at the next point
       m_admittance.push_back((omega.block(mn, 0, mn, mn) +
         omega.block(mn, mn, mn, mn) * m_admittance.back()) *
       ((omega.block(0, 0, mn, mn) +
         omega.block(0, mn, mn, mn) * m_admittance.back()).inverse()));
-
-      //log << "Admittance computed" << endl;
-      //log << "\n\n" << m_admittance.back() << endl << endl;
     }
   }
-  //log << "Propagation in section finished" << endl;
-  //log.close();
 }
 
 //************************************************************************
@@ -2312,12 +2074,6 @@ void CrossSection2dFEM::propagatePressureVelocityRiccati(Eigen::MatrixXcd V0,
   // boundary specific admittance vector
   Eigen::VectorXcd bndSpecAdm(Eigen::VectorXcd::Zero(mn));
 
-  //ofstream log;
-  //log.open("log.txt", ofstream::app);
-  //log << "Num integration steps: " << numX << endl;
-  //log.close();
-
-
   if (m_length == 0.)
   {
     m_axialVelocity.push_back(V0);
@@ -2327,9 +2083,8 @@ void CrossSection2dFEM::propagatePressureVelocityRiccati(Eigen::MatrixXcd V0,
   {
     // FIXME: not valid for junctions with different number of contours
     dl = 0.;
-    //dl.push_back((sqrt(nextArea[c]) - sqrt(m_area[c])) / al);
 
-      // initialize velocity
+    // initialize velocity
     m_axialVelocity.clear();
     m_axialVelocity.reserve(numX);
     m_axialVelocity.push_back(V0);
@@ -2338,7 +2093,6 @@ void CrossSection2dFEM::propagatePressureVelocityRiccati(Eigen::MatrixXcd V0,
     m_acPressure.push_back(P0);
 
     // compute wall admittance
-    //wallAdmittance = complex<double>(-0.01, 0.);
     wallAdmittance = getWallAdmittance(simuParams, freq);
 
     // compute boundary specific admittance
@@ -2350,23 +2104,15 @@ void CrossSection2dFEM::propagatePressureVelocityRiccati(Eigen::MatrixXcd V0,
     // loop over the different surfaces
     for (int s(0); s < m_KR2.size(); s++)
     {
-      //KR2 += wallAdmittance * m_KR2[s];
-      //DR += wallAdmittance * m_DR[s];
-
       KR2 += m_KR2[s] * bndSpecAdm.asDiagonal() + wallAdmittance * m_KR2[s];
-      //DR += m_DR[s] * bndSpecAdm.asDiagonal() + wallAdmittance * m_DR[s];
     }
 
     // discretize X axis
     for (int i(0); i < numX - 1; i++)
     {
-      //log.open("log.txt", ofstream::app);
-      //log << "point " << i;
-
       // first point of Magnus scheme
       l0 = (((dl * da * R) / (double)(numX - 1)) *
         (double(i) + (0.5 - sqrt(3.) / 6.)) + sqrt(m_area))/sqrt(m_area);
-      //log << "l0 " << l0 << endl;
 
       // build matrix K
       K2.setZero(mn, mn);
@@ -2379,9 +2125,7 @@ void CrossSection2dFEM::propagatePressureVelocityRiccati(Eigen::MatrixXcd V0,
       // build matrix A0
       A0 << ((dl / l0) * m_E),
         (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
-        (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN 
-          //- 1i*k*l0*l0*DR
-          )),
+        (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN )),
         (-(dl / l0) * m_E.transpose());
 
       // second point of Magnus scheme
@@ -2399,9 +2143,7 @@ void CrossSection2dFEM::propagatePressureVelocityRiccati(Eigen::MatrixXcd V0,
       // build matrix A0
       A1 << ((dl / l1) * m_E),
         (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
-        (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN 
-          //- 1i*k*l1*l1*DR
-          )),
+        (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN )),
         (-(dl / l1) * m_E.transpose());
 
       // compute matrix omega
@@ -2411,15 +2153,11 @@ void CrossSection2dFEM::propagatePressureVelocityRiccati(Eigen::MatrixXcd V0,
       if (m_area > nextArea)
       {
         // compute axial velocity at the next point
-        //tmpVelo.push_back((omega.block(mn, 0, mn, mn) + omega.block(mn, mn, mn, mn)*
-        //  m_admittance[c][numX - 2 - i]).fullPivLu().inverse() * tmpPress.back());
         m_axialVelocity.push_back((omega.block(mn, 0, mn, mn)
           + omega.block(mn, mn, mn, mn)
           * m_admittance[numX - 1 - i]) * m_acPressure.back());
 
         // compute acoustic pressure at the next point
-        //tmpPress.push_back((omega.block(0, 0, mn, mn) + omega.block(0, mn, mn, mn) *
-        //  m_admittance[c][numX - 2 - i]).fullPivLu().inverse() * tmpPress.back());
         m_acPressure.push_back((omega.block(0, 0, mn, mn) + omega.block(0, mn, mn, mn) *
           m_admittance[numX - 1 - i]) * m_acPressure.back());
       }
@@ -2427,25 +2165,13 @@ void CrossSection2dFEM::propagatePressureVelocityRiccati(Eigen::MatrixXcd V0,
       else
       {
         // compute axial velocity at the next point
-        //tmpVelo.push_back((omega.block(mn, 0, mn, mn) * m_impedance[c][numX - 2 - i] +
-        //  omega.block(mn, mn, mn, mn)).fullPivLu().inverse() * tmpVelo.back());
         m_axialVelocity.push_back((omega.block(mn, 0, mn, mn) * m_impedance[numX - 1 - i] +
           omega.block(mn, mn, mn, mn))* m_axialVelocity.back());
 
         // compute acoustic pressure at the next point
-        //tmpPress.push_back((omega.block(0, 0, mn, mn) * m_impedance[c][numX - 2 - i]
-        //  + omega.block(0, mn, mn, mn)).fullPivLu().inverse() * tmpVelo.back());
         m_acPressure.push_back((omega.block(0, 0, mn, mn) * m_impedance[numX - 1 - i]
           + omega.block(0, mn, mn, mn)) * m_axialVelocity.back());
       }
-
-      //log << tmpVelo.back() << endl << endl;
-      //log.close();
-
-      //tmpVelo.push_back(((omega.block(mn, 0, mn, mn) * m_impedance[c][numX - 2 - i] +
-      //  omega.block(mn, mn, mn, mn)).householderQr().solve(tmpVelo.back())));
-      //tmpPress.push_back((omega.block(0,0,mn,mn) + omega.block(0,mn,mn,mn)*
-      //  m_admittance[c][numX - 0 -i]).householderQr().solve(tmpPress.back()));
     }
   }
 }
@@ -2484,7 +2210,6 @@ void CrossSection2dFEM::propagatePressureRiccati(Eigen::MatrixXcd P0,
       // first point of Magnus scheme
       l0 = (((dl * da * R) / (double)(numX - 1)) *
         (double(i) + (0.5 - sqrt(3.) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-      //log << "l0 " << l0 << endl;
 
       // build matrix K
       for (int j(0); j < mn; j++)
@@ -2497,12 +2222,9 @@ void CrossSection2dFEM::propagatePressureRiccati(Eigen::MatrixXcd P0,
         (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
         (-(dl / l0) * m_E.transpose());
 
-      //log << "A0\n" << A0 << endl << endl;
-
       // second point of Magnus scheme
       l1 = (((dl * da * R) / (double)(numX - 1)) *
         (double(i) + (0.5 + sqrt(3.) / 6.)) + sqrt(m_area)) / sqrt(m_area);
-      //log << "l1" << l1 << endl;
 
       // build matrix K
       for (int j(0); j < mn; j++)
@@ -2514,7 +2236,6 @@ void CrossSection2dFEM::propagatePressureRiccati(Eigen::MatrixXcd P0,
         (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
         (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN)),
         (-(dl / l1) * m_E.transpose());
-      //log << "A1\n" << A1 << endl << endl;
 
       // compute matrix omega
       omega = (0.5 * dX * (A0 + A1) + sqrt(3) * pow(dX, 2) * (A1 * A0 - A0 * A1) / 12.).exp();
@@ -2570,23 +2291,12 @@ void CrossSection2dFEM::propagateImpedAdmitStraight(Eigen::MatrixXcd Z0,
     log.open("lgth.txt", ofstream::app);
     log << m_length << endl;
     log.close();
-
-    //log.open("areas.txt", ofstream::app);
-    //log << m_area[0] << endl;
-    //log.close();
   }
 
   if (m_length == 0.)
   {
     m_admittance.push_back(Y0);
     m_impedance.push_back(Z0);
-
-    //log.open("Adm.txt", ofstream::app);
-    //log << m_admittance[0][0] << endl << endl;
-    //log.close();
-    //log.open("Imp.txt", ofstream::app);
-    //log << m_impedance[0][0] << endl << endl;
-    //log.close();
   }
   else
   {
@@ -2618,30 +2328,16 @@ void CrossSection2dFEM::propagateImpedAdmitStraight(Eigen::MatrixXcd Z0,
       // if the junction with the next section is a contraction
       if (nextArea > m_area)
       {
-        //tmpAdmit.push_back(((D2 * Zc * tmpAdmit.back() + D1).transpose().
-        //  householderQr().solve((D1 * tmpAdmit.back() + D2 * Yc[c]).transpose()))
-        //  .transpose());
         m_admittance.push_back(iD3 * Yc - iD2 * Yc *
         (m_admittance.back() + iD3 * Yc).inverse() * iD2 * Yc);
         m_impedance.push_back(m_admittance.back().fullPivLu().inverse());
-
-        //log.open("log.txt", ofstream::app);
-        //log << "YY" << endl;
-        //log.close();
       }
       // if the junction with the next section is an expansion
       else
       {
-        //tmpImped.push_back(((D2 * Yc[c] + D1 * tmpAdmit.back()).transpose().
-        //  householderQr().solve((D1 + D2 * Zc * tmpAdmit.back()).transpose()))
-        //  .transpose());
         m_impedance.push_back(iD3 * Zc - iD2 * Zc * m_admittance.back() *
           (I + iD3*Zc * m_admittance.back()).inverse() * iD2*Zc);
         m_admittance.push_back(m_impedance.back().fullPivLu().inverse());
-
-        //log.open("log.txt", ofstream::app);
-        //log << "ZY" << endl;
-        //log.close();
       }
     }
     // if the junction with the previous section is an expansion
@@ -2650,55 +2346,18 @@ void CrossSection2dFEM::propagateImpedAdmitStraight(Eigen::MatrixXcd Z0,
       // if the junction with the next section is a contraction
       if (nextArea > m_area)
       {
-        //tmpAdmit.push_back((D2 * Zc + D1 * tmpImped.back()).transpose().
-        //  householderQr().solve((D1 + D2*Yc[c]*tmpImped.back()).transpose())
-        //  .transpose());
         m_admittance.push_back(iD3*Yc - iD2*Yc * m_impedance.back() *
           (I + iD3 * Yc * m_impedance.back()).inverse() * iD2 * Yc);
         m_impedance.push_back(m_admittance.back().fullPivLu().inverse());
-
-        //log.open("log.txt", ofstream::app);
-        //log << "YZ" << endl;
-        //log.close();
       }
       // if the junction with the next section is an expansion
       else
       {
-        //tmpImped.push_back(((D2*Yc[c]*tmpImped.back() + D1).transpose().
-        //  householderQr().solve((D1*tmpImped.back() + D2*Zc).transpose()))
-        //  .transpose());
         m_impedance.push_back(iD3 * Zc - iD2 * Zc *
           (m_impedance.back() + iD3*Zc).inverse() * iD2 * Zc);
         m_admittance.push_back(m_impedance.back().fullPivLu().inverse());
-
-        //log.open("log.txt", ofstream::app);
-        //log << "ZZ" << endl;
-        //log.close();
       }
     }
-
-    //log.open("admR.txt", ofstream::app);
-    //log << m_admittance[0].real()(0, 0) << "  ";
-    //log.close();
-    //log.open("admI.txt", ofstream::app);
-    //log << m_admittance[0].imag()(0, 0) << "  ";
-    //log.close();
-
-    //log.open("impR.txt", ofstream::app);
-    //log << m_impedance[0][0].real()(0, 0) << "  ";
-    //log.close();
-    //log.open("impI.txt", ofstream::app);
-    //log << m_impedance[0][0].imag()(0, 0) << "  ";
-    //log.close();
-
-    //log.open("Adm.txt", ofstream::app);
-    //log << m_admittance[c][0] << endl << endl;
-    //log << m_admittance[c][1] << endl << endl;
-    //log.close();
-    //log.open("Imp.txt", ofstream::app);
-    //log << m_impedance[c][0] << endl << endl;
-    //log << m_impedance[c][1] << endl << endl;
-    //log.close();
   }
 }
 
@@ -2727,8 +2386,6 @@ void CrossSection2dFEM::propagatePressureVelocityStraight(Eigen::MatrixXcd V0,
   Eigen::MatrixXcd Yc;
   characteristicAdmittance(Yc, freq, simuParams);
 
-  //ofstream log;
-
   if (m_length == 0.)
   {
     m_axialVelocity.push_back(V0);
@@ -2736,7 +2393,6 @@ void CrossSection2dFEM::propagatePressureVelocityStraight(Eigen::MatrixXcd V0,
   }
   else
   {
-
     // initalise velocity
     m_axialVelocity.push_back(V0);
     m_acPressure.push_back(P0);
@@ -2814,9 +2470,6 @@ void CrossSection2dRadiation::radiatePressure(double distance, double freq,
 
 bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut, bool useBbox)
 {
-  //ofstream log("log.txt", ofstream::app);
-  //log << "Start get coordinates" << endl;
-
   bool isInside(false);
   double x, y, z, sc;
   if (length() > 0.)
@@ -2841,13 +2494,10 @@ bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut,
       // center of the circle arc
       Point C(ctl.x() + m_curvatureRadius * m_normal.x, ctl.y()
         + m_curvatureRadius * m_normal.y);
-      //Point C(ctl.x() - R * m_normal.x, ctl.y() - R * m_normal.y);        
-      //log << "Circle arc center " << C << endl;
       complex<double> ptCplx(pt.x() - C.x(), pt.z() - C.y());
       complex<double> ctlCplx(ctl.x() - C.x(), ctl.y() - C.y());
 
       // get the x coordinate by computing the angle between the 2 complex coordinate pts
-      //x = R * fmod(arg(ctlCplx) - arg(ptCplx) + 2.*M_PI, 2.*M_PI);
       if (((m_curvatureRadius < 0.) && (m_curvatureRadius * m_circleArcAngle > 0.))
         || ((m_curvatureRadius > 0.) && (m_curvatureRadius * m_circleArcAngle < 0.)))
       {
@@ -2872,13 +2522,10 @@ bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut,
       }
     }
 
-    //log << x << "  " << y << "  " << z << "  " << pt.x() << "  " << pt.z() << endl;
-
     // check if the point is inside the section
     isInside = true;
     if ((x > length()) || (x < 0.))
     {
-      //log << "x > length" << endl;
       x = NAN; y = NAN; z = NAN;
       isInside = false;
     }
@@ -2894,7 +2541,6 @@ bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut,
     }
     else if (m_contour.has_on_unbounded_side(Point(y, z)))
     {
-      //log << "Outside of contour" << endl;
       x = NAN; y = NAN; z = NAN;
       isInside = false;
     }
@@ -2904,8 +2550,6 @@ bool CrossSection2dFEM::getCoordinateFromCartesianPt(Point_3 pt, Point_3 &ptOut,
     x = NAN; y = NAN; z = NAN;
   }
   ptOut = Point_3(x, y, z);
-  //log << "PtOut " << ptOut << endl;
-  //log.close();
   return(isInside);
 }
 
@@ -2962,8 +2606,6 @@ complex<double> CrossSection2dFEM::q(Point_3 pt, struct simulationParameters sim
 complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationParameters simuParams,
           enum physicalQuantity quant)
 {
-  //ofstream log("log.txt", ofstream::app);
-
   // get arc length
   double al(length());
   int numX(simuParams.numIntegrationStep);
@@ -2972,15 +2614,12 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
   // locate indexes of previous and following points
   int nPt(m_impedance.size()-1);
   double x_dx(pt.x() / dx);
-  //log << "x/dx " << x_dx << endl;
   int idx[2] = {min((int)floor(x_dx), numX - 2),
     min((int)ceil(x_dx), numX - 1)};
-  //log << "Idx1 " << idx[0] << " idx2 " << idx[1] << endl;
 
   // define the interpolation point
   vector<Point> pts;
   pts.push_back(Point(pt.y(), pt.z()));
-  //log << "Point " << pts.back() << endl;
 
   auto correctIdxIfBackwardProp = [&idx, nPt](double dir)
   {if (dir == -1) { for (int i(0); i < 2; i++) { idx[i] = nPt - idx[i]; } }};
@@ -3068,7 +2707,6 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
               Q.transpose() * modes)(0, 0));
         break;
      }
-  //log.close();
 }
 
 
@@ -3217,6 +2855,7 @@ double CrossSection2dFEM::length() const {
     return(abs(m_circleArcAngle) * abs(m_curvatureRadius));
   }
  }
+
 vector<double> CrossSection2dFEM::intersectionsArea() const { return m_intersectionsArea; }
 double CrossSection2dFEM::spacing() const { return m_spacing; }
 int CrossSection2dFEM::numberOfVertices() const { return m_mesh.number_of_vertices(); }
