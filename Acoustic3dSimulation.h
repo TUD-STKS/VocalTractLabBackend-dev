@@ -1,3 +1,24 @@
+// ****************************************************************************
+// This file is part of VocalTractLab3D.
+// Copyright (C) 2022, Peter Birkholz, Dresden, Germany
+// www.vocaltractlab.de
+// author: Peter Birkholz and Rémi Blandin
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+//
+// ****************************************************************************
+
 #ifndef _ACOUSTIC_3D_SIMULATION_
 #define _ACOUSTIC_3D_SIMULATION_
 
@@ -57,28 +78,20 @@ public:
   ~Acoustic3dSimulation();
   static Acoustic3dSimulation *getInstance();
 
+  // set simulation parameters
   void setBoundarySpecificAdmittance();
   void setSimulationParameters(double meshDensity, int secNoiseSource,
     struct simulationParameters simuParams,
     enum openEndBoundaryCond cond, enum contourInterpolationMethod scalingMethod);
   void setIdxSecNoiseSource(int idx) { m_idxSecNoiseSource = idx; }
-  void generateLogFileHeader(bool cleanLog);
-
-  void setGeometryImported(bool isImported) {
-    m_geometryImported = isImported;
-  }
-  void setGeometryFile(string fileName) {
-    m_geometryFile = fileName;}
+  void setGeometryImported(bool isImported) { m_geometryImported = isImported; }
+  void setGeometryFile(string fileName) { m_geometryFile = fileName; }
   void setContourInterpolationMethod(enum contourInterpolationMethod method);
   void requestReloadGeometry() { m_reloadGeometry = true; }
+  void requestModesAndJunctionComputation() { m_simuParams.needToComputeModesAndJunctions = true; }
+  void setNeedToComputeModesAndJunctions(bool val) { m_simuParams.needToComputeModesAndJunctions = val; }
 
-  void addCrossSectionFEM(double areas, double spacing,
-    Polygon_2 contours, vector<int> surfacesIdx,
-    double length, Point2D ctrLinePt, Point2D normal, 
-    double scalingFactors[2]);
-
-  void addCrossSectionRadiation(Point2D ctrLinePt, Point2D normal,
-    double radius, double PMLThickness);
+  void generateLogFileHeader(bool cleanLog);
 
   // For geometry creation
   void extractContours(VocalTract* tract, 
@@ -88,35 +101,39 @@ public:
     vector<vector<Polygon_2>>& contours, vector<vector<vector<int>>>& surfaceIdx,
     vector<Point2D>& centerLine, vector<Point2D>& normals, 
     vector<pair<double, double>>& scalingFactors, bool simplifyContours);
+  void addCrossSectionFEM(double areas, double spacing,
+    Polygon_2 contours, vector<int> surfacesIdx,
+    double length, Point2D ctrLinePt, Point2D normal,
+    double scalingFactors[2]);
+  void addCrossSectionRadiation(Point2D ctrLinePt, Point2D normal,
+    double radius, double PMLThickness);
   bool createCrossSections(VocalTract* tract, bool createRadSection);
   void updateBoundingBox();
   void setBoundingBox(pair<Point2D, Point2D> &bbox);
   bool importGeometry(VocalTract* tract);
 
-  // For solving the wave problem 
+  // For transverse modes and junction matrices computation
   void computeMeshAndModes();
   void computeMeshAndModes(int segIdx);
   void computeJunctionMatrices(int segIdx);
   void computeJunctionMatrices(bool computeG);
-  void requestModesAndJunctionComputation() { m_simuParams.needToComputeModesAndJunctions = true; }
-  void setNeedToComputeModesAndJunctions(bool val) { m_simuParams.needToComputeModesAndJunctions = val; }
+
+  // For radiation impedance computation
   void preComputeRadiationMatrices(int nbRadFreqs, int idxRadSec);
   void initCoefInterpRadiationMatrices(int nbRadFreqs, int idxRadSec);
   void addRadMatToInterpolate(int nbRadFreqs, int idxRadSec, int idxRadFreq);
   void computeInterpCoefRadMat(int nbRadFreqs, int idxRadSec);
+
   void propagateImpedAdmitBranch(vector< Eigen::MatrixXcd> Q0, double freq,
     vector<int> startSections, vector<int> endSections, double direction);
   void propagateImpedAdmit(Eigen::MatrixXcd& startImped, Eigen::MatrixXcd& startAdmit, 
     double freq, int startSection, int endSection, std::chrono::duration<double> *time, int direction);
   void propagateImpedAdmit(Eigen::MatrixXcd& startImped, Eigen::MatrixXcd& startAdmit,
     double freq, int startSection, int endSection, std::chrono::duration<double> *time);
-  void propagateAdmit(Eigen::MatrixXcd radImped, double freq);
   void propagateVelocityPress(Eigen::MatrixXcd &startVelocity, Eigen::MatrixXcd &startPressure, 
     double freq, int startSection, int endSection, std::chrono::duration<double> *time, int direction);
   void propagateVelocityPress(Eigen::MatrixXcd& startVelocity, Eigen::MatrixXcd& startPressure,
     double freq, int startSection, int endSection, std::chrono::duration<double> *time);
-  void propagatePressure(Eigen::MatrixXcd startVelocity, double freq);
-  //void propagateAcPressure(vector<Eigen::MatrixXcd> inputPressure, double freq);
 
   // For acoustic field and transfer function computation
   Point_3 movePointFromExitLandmarkToGeoLandmark(Point_3 pt);
@@ -136,8 +153,6 @@ public:
     std::chrono::duration<double>& time, std::chrono::duration<double> *timeExp);
   void solveWaveProblem(VocalTract* tract, double freq,
     std::chrono::duration<double>& time, std::chrono::duration<double>* timeExp);
-  //void solveWaveProblem(VocalTract* tract, double freq, bool precomputeRadImped);
-  //void solveWaveProblem(VocalTract* tract, double freq);
   void solveWaveProblemNoiseSrc(bool &needToExtractMatrixF, Matrix& F, double freq,
     std::chrono::duration<double>* time);
   void computeGlottalTf(int idxFreq, double freq);
@@ -291,7 +306,6 @@ private:
     Point2D N1, Point2D N2, double& radius, double& angle, double& shift);
   
   // for radiation impedance 
-  
   void interpolateRadiationImpedance(Eigen::MatrixXcd& imped, double freq, int idxRadSec); 
   void interpolateRadiationAdmittance(Eigen::MatrixXcd& admit, double freq, int idxRadSec);
   void radiationImpedance(Eigen::MatrixXcd& imped, double freq, double gridDensity, int idxRadSec);
