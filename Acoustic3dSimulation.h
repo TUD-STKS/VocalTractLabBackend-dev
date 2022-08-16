@@ -166,6 +166,8 @@ public:
 
   // for data exportation
   complex<double> interpolateTransferFunction(double freq, int idxPt, enum tfType type);
+  void interpolateTransferFunction(vector<double> &freq, int idxPt, enum tfType type, 
+    vector<complex<double>> &interpolatedValues);
   double interpolateAcousticField(Point querryPt);
   void interpolateAcousticField(Vec &coordX, Vec &coordY, Matrix &field);
   bool exportGeoInCsv(string fileName);

@@ -5764,8 +5764,6 @@ complex<double> Acoustic3dSimulation::interpolateTransferFunction(double freq, i
   int idxFreqs[2];
   int maxIdxFreq(m_tfFreqs.size() - 1);
 
-  ofstream log("log.txt", ofstream::app);
-
   Eigen::MatrixXcd *inputTf; 
   switch (type)
   {
@@ -5811,8 +5809,24 @@ complex<double> Acoustic3dSimulation::interpolateTransferFunction(double freq, i
   {
     interpolatedTF = complex<double>(NAN, NAN);
   }
-  log.close();
+
   return(interpolatedTF);
+}
+
+//*************************************************************************
+
+void Acoustic3dSimulation::interpolateTransferFunction(vector<double>& freq, int idxPt, 
+  enum tfType type, vector<complex<double>>& interpolatedValues)
+{
+  interpolatedValues.clear();
+  interpolatedValues.reserve(freq.size());
+
+  for (auto f : freq)
+  {
+    interpolatedValues.push_back(
+      interpolateTransferFunction(f, idxPt, type)
+    );
+  }
 }
 
 //*************************************************************************
