@@ -5870,6 +5870,10 @@ double Acoustic3dSimulation::interpolateAcousticField(Point querryPt)
 
 void Acoustic3dSimulation::interpolateAcousticField(Vec &coordX, Vec &coordY, Matrix &field)
 {
+  auto start = std::chrono::system_clock::now();
+  auto end = std::chrono::system_clock::now();
+  std::chrono::duration<double> time = end - end;
+
   int nx(coordX.size());
   int ny(coordY.size());
   int iMin, jMin;
@@ -5891,8 +5895,13 @@ void Acoustic3dSimulation::interpolateAcousticField(Vec &coordX, Vec &coordY, Ma
         jMin = min((int)m_field.cols() - 2,
           (int)floor((coordX(j) - m_simuParams.bboxLastFieldComputed[0].x()) / dx));
 
+        start = std::chrono::system_clock::now();
+
         field(i, j) = abs((m_field(iMin, jMin) + m_field(iMin, jMin + 1)
           + m_field(iMin + 1, jMin) + m_field(iMin + 1, jMin + 1)) / 4.);
+
+        end = std::chrono::system_clock::now();
+        time += end - start;
       }
       else
       {
