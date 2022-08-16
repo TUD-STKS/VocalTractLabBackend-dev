@@ -181,6 +181,7 @@ public:
   struct simulationParameters simuParams() const { return m_simuParams; }
   struct simulationParameters oldSimuParams() const { return m_oldSimuParams; }
   enum contourInterpolationMethod contInterpMeth() const {return m_contInterpMeth;}
+  bool isReloadGeometryRequested() const { return m_reloadGeometry; }
   bool isGeometryImported() const { return m_geometryImported; }
   int sectionNumber() const;
   double soundSpeed() const;
