@@ -4617,6 +4617,28 @@ void Acoustic3dSimulation::createUniqueContour(double inputUpProf[VocalTract::NU
 }
 
 //*****************************************************************************
+
+void Acoustic3dSimulation::removeDuplicatedPoints(Polygon_2& contour)
+{
+  auto it = contour.vertices_begin();
+  const double TOLERANCE(1e-4);
+
+  while (it != contour.vertices_end() - 1)
+  {
+    if (max(abs(it->x() - (it + 1)->x()),
+      abs(it->y() - (it + 1)->y()))
+      < TOLERANCE)
+    {
+      contour.erase(it + 1);
+    }
+    else
+    {
+      it++;
+    }
+  }
+}
+
+//*****************************************************************************
 // Merge several contours contained in a vector replacing them by the 
 // convex hull of all their points
 
@@ -5407,6 +5429,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
                 pol != intersections.end(); pol++)
               {
 
+
                 // add the corresponding previous section index
                 // to the previous section index list for the 
                 // intermediate section which will be created
@@ -5420,8 +5443,12 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
                 // to the previous section index list
                 tmpPrevSection.push_back(secIdx + intSecIdx);
 
+                // remove the duplicated points if some have been created
+                Polygon_2 outerBoundary(pol->outer_boundary());
+                removeDuplicatedPoints(outerBoundary);
+
                 // add it the intermediate contour list
-                intContours.push_back(pol->outer_boundary());
+                intContours.push_back(outerBoundary);
 
                 // create a surface index vector (the value does not
                 // mater since they are not used after)

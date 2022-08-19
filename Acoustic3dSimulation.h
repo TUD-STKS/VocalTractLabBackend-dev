@@ -302,6 +302,7 @@ private:
     vector<double>& areas, vector<double>& spacing,
     vector< Polygon_2>& contours, vector<vector<int>>& surfacesIdx);
 
+  void removeDuplicatedPoints(Polygon_2& contour);
   void mergeContours(vector<Polygon_2>& vecPoly, vector<vector<int>>& surfaceIdx);
   void makeContourConvexHull(Polygon_2& poly, vector<int>& surfaceIdx);
 
