@@ -2235,6 +2235,13 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
 }
 
 // **************************************************************************
+
+complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationParameters simuParams)
+{
+  return(interiorField(pt, simuParams, simuParams.fieldPhysicalQuantity));
+}
+
+// **************************************************************************
 // accessors
 
 int CrossSection2d::numPrevSec() const { return m_previousSections.size(); }

@@ -208,6 +208,7 @@ public:
   bool radImpedPrecomputed() const { return m_simuParams.radImpedPrecomputed; }
   openEndBoundaryCond mouthBoundaryCond() const {return m_mouthBoundaryCond;}
   double freqAcousticField() const {return m_simuParams.freqField;}
+  enum physicalQuantity fieldPhysicalQuantity() const { return m_simuParams.fieldPhysicalQuantity; }
   int acousticFieldSize() const { return m_field.size(); }
   int numPtXField() const { return m_nPtx; }
   int numPtYField() const { return m_nPty; }

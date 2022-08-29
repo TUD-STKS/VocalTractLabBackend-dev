@@ -108,6 +108,7 @@ struct simulationParameters
 
   // for acoustic field computation
   double freqField;
+  enum physicalQuantity fieldPhysicalQuantity;
   Point bbox[2];
   Point bboxLastFieldComputed[2];
   int fieldResolution;        // number of points per cm
@@ -208,6 +209,8 @@ public:
     {return complex<double>();}
   virtual complex<double> interiorField(Point_3 pt, struct simulationParameters simuParams,
           enum physicalQuantity quant)
+    {return complex<double>();}
+  virtual complex<double> interiorField(Point_3 pt, struct simulationParameters simuParams)
     {return complex<double>();}
 
   // **************************************************************************
@@ -358,6 +361,7 @@ public:
   complex<double> q(Point_3 pt, struct simulationParameters simuParams);
   complex<double> interiorField(Point_3 pt, struct simulationParameters simuParams,
           enum physicalQuantity quant);
+  complex<double> interiorField(Point_3 pt, struct simulationParameters simuParams);
 
   // **************************************************************************
   // accessors

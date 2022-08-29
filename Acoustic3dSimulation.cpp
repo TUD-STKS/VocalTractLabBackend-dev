@@ -173,6 +173,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
 
   // for acoustic field computation
   m_simuParams.freqField = 5000.;
+  m_simuParams.fieldPhysicalQuantity = PRESSURE;
   m_simuParams.fieldResolution = 30;
   m_simuParams.fieldResolutionPicture = 30;
   m_simuParams.computeRadiatedField = false;
@@ -448,7 +449,25 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   log << endl;
 
   log << "ACOUSTIC FIELD COMPUTATION PARAMETERS:" << endl;
-  log << "Acoustic field computation at " << m_simuParams.freqField
+  switch (m_simuParams.fieldPhysicalQuantity)
+  {
+  case PRESSURE:
+    log << "Pressure ";
+    break;
+
+  case VELOCITY:
+    log << "Velocity ";
+    break;
+
+  case IMPEDANCE:
+    log << "Impedance ";
+    break;
+
+  case ADMITTANCE:
+    log << "Admittance ";
+    break;
+  }
+  log << "field computation at " << m_simuParams.freqField
   << " Hz with " << m_simuParams.fieldResolution << " points per cm" << endl;
   log << "Spatial resolution for field picture: " 
     << m_simuParams.fieldResolutionPicture << " points per cm" << endl;
@@ -2102,7 +2121,7 @@ complex<double> Acoustic3dSimulation::acousticField(Point_3 queryPt)
       if (m_crossSections[s]->getCoordinateFromCartesianPt(queryPt, outPt, false))
       {
         ptFound = true;
-        field = m_crossSections[s]->interiorField(outPt, m_simuParams, PRESSURE);
+        field = m_crossSections[s]->interiorField(outPt, m_simuParams);
         break;
       }
     }
