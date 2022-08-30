@@ -163,6 +163,9 @@ public:
   void coneConcatenationSimulation(string fileName);
   void runTest(enum testType tType, string fileName);
   void cleanAcousticField();
+  double maxAmpField();
+  double minAmpField();
+  void setFieldImageComputation(bool val) { m_simuParams.computeFieldImage = val; }
 
   // for data exportation
   complex<double> interpolateTransferFunction(double freq, int idxPt, enum tfType type);
@@ -209,11 +212,12 @@ public:
   openEndBoundaryCond mouthBoundaryCond() const {return m_mouthBoundaryCond;}
   double freqAcousticField() const {return m_simuParams.freqField;}
   enum physicalQuantity fieldPhysicalQuantity() const { return m_simuParams.fieldPhysicalQuantity; }
+  bool showFieldAmplitude() const { return m_simuParams.showAmplitude; }
+  bool fieldIndB() const { return m_simuParams.fieldIndB; }
+  bool computeFieldImage() const { return m_simuParams.computeFieldImage; }
   int acousticFieldSize() const { return m_field.size(); }
   int numPtXField() const { return m_nPtx; }
   int numPtYField() const { return m_nPty; }
-  double maxAmpField() const { return m_maxAmpField; }
-  double minAmpField() const { return m_minAmpField; }
   int numFreqComputed() const { return m_numFreqComputed; }
   double freqSteps() const { return m_freqSteps; }
   double lastFreqComputed() const { return m_lastFreqComputed; }
@@ -278,6 +282,8 @@ private:
   Eigen::MatrixXcd m_field;
   double m_maxAmpField;
   double m_minAmpField;
+  double m_maxPhaseField;
+  double m_minPhaseField;
 
 // **************************************************************************
 // Private functions.

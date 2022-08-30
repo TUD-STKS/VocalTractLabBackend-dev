@@ -174,14 +174,19 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   // for acoustic field computation
   m_simuParams.freqField = 5000.;
   m_simuParams.fieldPhysicalQuantity = PRESSURE;
+  m_simuParams.showAmplitude = true;
+  m_simuParams.fieldIndB = false;
   m_simuParams.fieldResolution = 30;
   m_simuParams.fieldResolutionPicture = 30;
   m_simuParams.computeRadiatedField = false;
+  m_simuParams.computeFieldImage = true;
 
   m_oldSimuParams = m_simuParams;
 
   m_maxAmpField = -1.;
   m_minAmpField = -1.;
+  m_maxPhaseField = 0.;
+  m_minPhaseField = 0.;
 
   m_numFreq = 1 << (m_simuParams.spectrumLgthExponent - 1);
   m_numFreqPicture = m_numFreq;
@@ -466,6 +471,14 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
   case ADMITTANCE:
     log << "Admittance ";
     break;
+  }
+  if (m_simuParams.showAmplitude)
+  {
+    log << "amplitude ";
+  }
+  else
+  {
+    log << "phase ";
   }
   log << "field computation at " << m_simuParams.freqField
   << " Hz with " << m_simuParams.fieldResolution << " points per cm" << endl;
@@ -2183,6 +2196,8 @@ void Acoustic3dSimulation::prepareAcousticFieldComputation()
   m_field.setConstant(NAN);
   m_maxAmpField = 0.;
   m_minAmpField = 100.;
+  m_maxPhaseField = 0.;
+  m_minPhaseField = 0.;
 }
 
 // **************************************************************************
@@ -2203,6 +2218,10 @@ void Acoustic3dSimulation::acousticFieldInLine(int idxLine)
     // compute the minimal and maximal amplitude of the field
     m_maxAmpField = max(m_maxAmpField, abs(m_field(j, idxLine)));
     m_minAmpField = min(m_minAmpField, abs(m_field(j, idxLine)));
+
+    // compute the minimal and maximal phase of the field
+    m_maxPhaseField = max(m_maxPhaseField, arg(m_field(j, idxLine)));
+    m_minPhaseField = min(m_minPhaseField, arg(m_field(j, idxLine)));
   }
 }
 
@@ -3743,6 +3762,34 @@ void Acoustic3dSimulation::runTest(enum testType tType, string fileName)
 void Acoustic3dSimulation::cleanAcousticField()
 {
   m_field.resize(0, 0);
+}
+
+// ****************************************************************************
+
+double Acoustic3dSimulation::maxAmpField()
+{
+  if (m_simuParams.showAmplitude)
+  {
+    return m_maxAmpField;
+  }
+  else
+  {
+    return m_maxPhaseField;
+  }
+}
+
+// ****************************************************************************
+
+double Acoustic3dSimulation::minAmpField()
+{
+  if (m_simuParams.showAmplitude)
+  {
+    return m_minAmpField;
+  }
+  else
+  {
+    return m_minPhaseField;
+  }
 }
 
 // ****************************************************************************
@@ -5924,6 +5971,7 @@ void Acoustic3dSimulation::interpolateAcousticField(Vec &coordX, Vec &coordY, Ma
   int ny(coordY.size());
   int iMin, jMin;
   double dx(1. / (double)m_simuParams.fieldResolutionPicture);
+  complex<double> interpolatedField;
 
   field.resize(ny, nx);
 
@@ -5943,15 +5991,24 @@ void Acoustic3dSimulation::interpolateAcousticField(Vec &coordX, Vec &coordY, Ma
 
         start = std::chrono::system_clock::now();
 
-        field(i, j) = abs((m_field(iMin, jMin) + m_field(iMin, jMin + 1)
-          + m_field(iMin + 1, jMin) + m_field(iMin + 1, jMin + 1)) / 4.);
+        interpolatedField = (m_field(iMin, jMin) + m_field(iMin, jMin + 1)
+          + m_field(iMin + 1, jMin) + m_field(iMin + 1, jMin + 1)) / 4.;
+
+        if (m_simuParams.showAmplitude)
+        {
+          field(i, j) = abs(interpolatedField);
+        }
+        else
+        {
+          field(i, j) = arg(interpolatedField);
+        }
 
         end = std::chrono::system_clock::now();
         time += end - start;
       }
       else
       {
-        field(i, j) = -1.;
+        field(i, j) = NAN;
       }
     }
   }
@@ -6088,7 +6145,14 @@ bool Acoustic3dSimulation::exportAcousticField(string fileName)
   ofs.open(fileName, ofstream::out | ofstream::trunc);
 
   stringstream txtField;
-  txtField << m_field.cwiseAbs();
+  if (m_simuParams.showAmplitude)
+  {
+    txtField << m_field.cwiseAbs();
+  }
+  else
+  {
+    txtField << m_field.array().arg();
+  }
   ofs << regex_replace(txtField.str(), regex("-nan\\(ind\\)"), "nan");
 
   ofs.close();

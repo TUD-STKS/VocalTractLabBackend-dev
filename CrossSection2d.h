@@ -109,11 +109,14 @@ struct simulationParameters
   // for acoustic field computation
   double freqField;
   enum physicalQuantity fieldPhysicalQuantity;
+  bool showAmplitude;
+  bool fieldIndB;
   Point bbox[2];
   Point bboxLastFieldComputed[2];
   int fieldResolution;        // number of points per cm
   int fieldResolutionPicture; // number of points per cm of the last field computation
   bool computeRadiatedField;
+  bool computeFieldImage;
 };
 
 /////////////////////////////////////////////////////////////////////////////
