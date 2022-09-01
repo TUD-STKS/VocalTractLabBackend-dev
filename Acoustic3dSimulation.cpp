@@ -175,7 +175,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_simuParams.freqField = 5000.;
   m_simuParams.fieldPhysicalQuantity = PRESSURE;
   m_simuParams.showAmplitude = true;
-  m_simuParams.fieldIndB = false;
+  m_simuParams.fieldIndB = true;
   m_simuParams.fieldResolution = 30;
   m_simuParams.fieldResolutionPicture = 30;
   m_simuParams.computeRadiatedField = false;
