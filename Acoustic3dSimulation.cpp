@@ -165,6 +165,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_simuParams.needToComputeModesAndJunctions = true;
   m_simuParams.radImpedPrecomputed = false;
   m_simuParams.radImpedGridDensity = 15.;
+  m_simuParams.integrationMethodRadiation = GAUSS;
 
   // for transfer function computation
   m_simuParams.maxComputedFreq = 10000.; // (double)SAMPLING_RATE / 2.;
@@ -357,6 +358,17 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
     log << "RADIATION" << endl;
     log << "Radiation impedance grid density: "
       << m_simuParams.radImpedGridDensity << endl;
+    log << "Integration method: ";
+    switch (m_simuParams.integrationMethodRadiation)
+    {
+    case DISCRETE:
+      log << "DISCRETE";
+      break;
+    case GAUSS:
+      log << "GAUSS";
+      break;
+    }
+    log << endl;
     log << "Radiation impedance precomputed: ";
     if (m_simuParams.radImpedPrecomputed)
     {
@@ -2528,6 +2540,7 @@ void Acoustic3dSimulation::solveWaveProblemNoiseSrc(bool &needToExtractMatrixF, 
 
 void Acoustic3dSimulation::computeGlottalTf(int idxFreq, double freq)
 {
+  m_simuParams.freqField = freq;
   m_glottalSourceTF.row(idxFreq) = acousticField(m_tfPoints);
   m_planeModeInputImpedance(idxFreq, 0) = m_crossSections[0]->Zin()(0, 0);
   m_tfFreqs.push_back(freq);
@@ -3971,46 +3984,112 @@ void Acoustic3dSimulation::RayleighSommerfeldIntegral(vector<Point_3> points,
   // get velocity mode amplitude (v_x = j * q / w / rho)
   auto Vm = m_crossSections[radSecIdx]->Qout();
 
-  // get quadrature points
-  gaussPointsFromMesh(gaussPts, areaFaces, 
-    m_crossSections[radSecIdx]->triangulation());
-
-  // interpolate modes
-  Matrix interpolatedModes = m_crossSections[radSecIdx]->
-    interpolateModes(gaussPts);
-
-  // scale the position of the integration points
-  Transformation3 scale(CGAL::SCALING, 1./scaling);
-  for (int i(0); i < points.size(); i++)
-  {
-    points[i] = scale(points[i]);
-  }
-
-  // compute Guauss integral
   radPress = Eigen::VectorXcd::Zero(nbPts);
-  // loop over the faces of the mesh
-  for (int f(0); f < areaFaces.size(); f++)
-  {
-    // loop over the modes
-    for (int m(0); m < m_crossSections[radSecIdx]->numberOfModes(); m++)
-    {
-      // loop over points
-      for (int p(0); p < nbPts; p++)
-      {
-        // loop over Gauss integration points
-        for (int g(0); g < 3; g++)
-        {
-          // compute distance r between gauss point and the point
-          r = sqrt(CGAL::squared_distance(points[p], 
-            Point_3(0.,gaussPts[f * 3 + g].x(), gaussPts[f * 3 + g].y())));
 
-          // compute integral
-          radPress(p) -= areaFaces[f] * quadPtWeight *
-            Vm(m) * interpolatedModes(f * 3 + g, m) * exp(-1i * k * scaling * r) / scaling / r;
+  switch (m_simuParams.integrationMethodRadiation)
+  {
+    //////////////
+    // DISCRETE
+    /////////////
+
+  case DISCRETE:
+  {
+    // determine the  spacing of the grid
+    double gridDensity(15.);
+    double spacing(sqrt(m_crossSections[radSecIdx]->area())
+      / gridDensity);
+    double dS(pow(spacing, 2));
+
+    // generate the grid
+    Polygon_2 contour(m_crossSections[radSecIdx]->contour());
+    vector<Point> cartGrid;
+    Point pt;
+    double xmin(contour.bbox().xmin());
+    double ymin(contour.bbox().ymin());
+    int nx(ceil((contour.bbox().xmax() - xmin) / spacing));
+    int ny(ceil((contour.bbox().ymax() - ymin) / spacing));
+    for (int i(0); i < nx; i++)
+    {
+      for (int j(0); j < ny; j++)
+      {
+        pt = Point(xmin + i * spacing, ymin + j * spacing);
+        if (contour.has_on_bounded_side(pt))
+        {
+          cartGrid.push_back(pt);
         }
       }
     }
+
+    // Interpolate the propagation modes on the cartesian grid
+    Matrix intCartGrid(m_crossSections[radSecIdx]->interpolateModes(cartGrid));
+
+    // loop over the integration points
+    for (int c(0); c < cartGrid.size(); c++)
+    {
+      // loop over the transverse modes
+      for (int m(0); m < m_crossSections[radSecIdx]->numberOfModes(); m++)
+      {
+        // loop over points
+        for (int p(0); p < nbPts; p++)
+        {
+          r = sqrt(CGAL::squared_distance(points[p],
+            Point_3(0., cartGrid[c].x(), cartGrid[c].y())));
+          radPress(p) -= Vm(m) * intCartGrid(c, m) * exp(1i * k * scaling * r) * dS / scaling / r;
+        }
+      }
+    }
+    break;
   }
+
+    //////////
+    // GAUSS
+    //////////
+
+    // compute Guauss integral
+  case GAUSS:
+    {
+      // get quadrature points
+      gaussPointsFromMesh(gaussPts, areaFaces,
+        m_crossSections[radSecIdx]->triangulation());
+
+      // interpolate modes
+      Matrix interpolatedModes = m_crossSections[radSecIdx]->
+        interpolateModes(gaussPts);
+
+      // scale the position of the integration points
+      Transformation3 scale(CGAL::SCALING, 1. / scaling);
+      for (int i(0); i < points.size(); i++)
+      {
+        points[i] = scale(points[i]);
+      }
+      
+      // loop over the faces of the mesh
+      for (int f(0); f < areaFaces.size(); f++)
+      {
+        // loop over the modes
+        for (int m(0); m < m_crossSections[radSecIdx]->numberOfModes(); m++)
+        {
+          // loop over points
+          for (int p(0); p < nbPts; p++)
+          {
+            // loop over Gauss integration points
+            for (int g(0); g < 3; g++)
+            {
+              // compute distance r between gauss point and the point
+              r = sqrt(CGAL::squared_distance(points[p],
+                Point_3(0., gaussPts[f * 3 + g].x(), gaussPts[f * 3 + g].y())));
+
+              // compute integral
+              radPress(p) -= areaFaces[f] * quadPtWeight *
+                Vm(m) * interpolatedModes(f * 3 + g, m) * exp(-1i * k * scaling * r) / scaling / r;
+            }
+          }
+        }
+      }
+      break;
+    }
+  }
+
   radPress /= 2 * M_PI;
 }
 

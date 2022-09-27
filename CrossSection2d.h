@@ -78,6 +78,11 @@ enum areaVariationProfile {
   ELEPHANT
 };
 
+enum integrationMethodRadiation {
+  DISCRETE,
+  GAUSS
+};
+
 struct simulationParameters
 {
   double temperature;
@@ -100,6 +105,7 @@ struct simulationParameters
   bool needToComputeModesAndJunctions;
   bool radImpedPrecomputed;
   double radImpedGridDensity;
+  enum integrationMethodRadiation integrationMethodRadiation;
 
   // for transfer function computation
   double maxComputedFreq;
