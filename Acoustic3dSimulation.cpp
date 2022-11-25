@@ -5140,6 +5140,7 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
   array<double, 4> arrayZeros = { 0., 0., 0., 0. };
   Vector shiftVec;
 
+  generateLogFileHeader(true);
   ofstream ofs;
   ofstream log("log.txt", ofstream::app);
   log << "Start cross-section creation" << endl;
@@ -5567,7 +5568,9 @@ bool Acoustic3dSimulation::createCrossSections(VocalTract* tract,
             {
               // compute the intersections of both contours
               intersections.clear();
+              log << "before intersection" << endl;
               CGAL::intersection(prevCont, cont, back_inserter(intersections));
+              log << "Intersection size: " << intersections.size() << endl;
 
               // loop over the intersection polygons created
               for (auto pol = intersections.begin();
