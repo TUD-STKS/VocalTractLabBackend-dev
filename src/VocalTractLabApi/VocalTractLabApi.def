@@ -11,6 +11,7 @@ vtlGetGlottisParams
 vtlGetTractParams
 vtlExportTractSvg
 vtlTractToTube
+vtlFastTractToTube
 vtlGetDefaultTransferFunctionOptions
 vtlGetTransferFunction
 vtlInputTractToLimitedTract
