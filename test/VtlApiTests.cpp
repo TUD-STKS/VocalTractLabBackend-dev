@@ -154,6 +154,32 @@ TEST(ApiTest, TractToTube)
 	vtlClose();
 }
 
+TEST(ApiTest, FastTractToTube)
+{
+	vtlInitialize(speakerFile);
+
+	int _, numTubeSections, numVocalTractParams;
+	double d_;
+	vtlGetConstants(&_, &numTubeSections, &numVocalTractParams, &_, &_, &d_);
+	const char* shapeName = "a";
+	std::vector<double> param(numVocalTractParams);
+	vtlGetTractParams(shapeName, &param[0]);
+
+	std::vector<double> tubeLength_cm(numTubeSections);
+	std::vector<double> tubeArea_cm2(numTubeSections);
+	std::vector<int> tubeArticulator(numTubeSections);
+	std::vector<double> incisorPos_cm(numTubeSections);
+	std::vector<double> tongueTipSideElevation(numTubeSections);
+	std::vector<double> velumOpening_cm2(numTubeSections);
+
+	int ret = vtlFastTractToTube(&param[0], &tubeLength_cm[0], &tubeArea_cm2[0], &tubeArticulator[0],
+		&incisorPos_cm[0], &tongueTipSideElevation[0], &velumOpening_cm2[0]);
+
+	EXPECT_EQ(ret, 0);
+
+	vtlClose();
+}
+
 TEST(ApiTest, DefaultTransferFunctionOptions)
 {
 	vtlInitialize(speakerFile);

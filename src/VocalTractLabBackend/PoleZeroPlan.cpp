@@ -19,10 +19,10 @@
 //
 // ****************************************************************************
 
-#include "PoleZeroPlan.h"
-#include "Dsp.h"
-#include "TlModel.h"
-#include "Constants.h"
+#include "VocalTractLabBackend/PoleZeroPlan.h"
+#include "VocalTractLabBackend/Dsp.h"
+#include "VocalTractLabBackend/TlModel.h"
+#include "VocalTractLabBackend/Constants.h"
 
 // ****************************************************************************
 // Constructor.

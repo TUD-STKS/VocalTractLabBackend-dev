@@ -221,6 +221,30 @@ C_EXPORT int vtlTractToTube(double* tractParams,
 
 
 // ****************************************************************************
+// Provides the tube data (especially the area function) for the given vector
+// of tractParams. This version does NOT store and restore the previous vocal
+// tract state. That means it is at least twice as fast as vtlTractToTube.
+// However, this breaks incremental synthesis. That means you should not call
+// this method during synthesis via the methods vtlSynthesisAddTube or
+// vtlSynthesisAddTract (otherwise the current tract state will be changed).
+// It has no negative impact on all other synthesis methods.
+// 
+// The vectors tubeLength_cm, tubeArea_cm2, and tubeArticulator, 
+// must each have as many elements as tube sections.
+// The values incisorPos_cm, tongueTipSideElevation, and velumOpening_cm2 are 
+// one double value each.
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlFastTractToTube(double* tractParams,
+  double* tubeLength_cm, double* tubeArea_cm2, int* tubeArticulator,
+  double* incisorPos_cm, double* tongueTipSideElevation, double* velumOpening_cm2);
+
+
+// ****************************************************************************
 // Enumerates the different options to model radiation of the sound wave
 // from the mouth
 // ****************************************************************************

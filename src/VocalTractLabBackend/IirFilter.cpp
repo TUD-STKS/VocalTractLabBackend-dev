@@ -19,8 +19,8 @@
 //
 // ****************************************************************************
 
-#include "IirFilter.h"
-#include "Dsp.h"
+#include "VocalTractLabBackend/IirFilter.h"
+#include "VocalTractLabBackend/Dsp.h"
 
 
 // ****************************************************************************

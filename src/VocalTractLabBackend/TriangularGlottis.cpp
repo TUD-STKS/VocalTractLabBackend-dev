@@ -19,8 +19,8 @@
 //
 // ****************************************************************************
 
-#include "TriangularGlottis.h"
-#include "Constants.h"
+#include "VocalTractLabBackend/TriangularGlottis.h"
+#include "VocalTractLabBackend/Constants.h"
 #include <cmath>
 
 // ****************************************************************************

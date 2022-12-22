@@ -19,10 +19,10 @@
 //
 // ****************************************************************************
 
-#include "GesturalScore.h"
-#include "Dsp.h"
-#include "Constants.h"
-#include "Sampa.h"
+#include "VocalTractLabBackend/GesturalScore.h"
+#include "VocalTractLabBackend/Dsp.h"
+#include "VocalTractLabBackend/Constants.h"
+#include "VocalTractLabBackend/Sampa.h"
 
 #include <cstdio>
 #include <cstdlib>

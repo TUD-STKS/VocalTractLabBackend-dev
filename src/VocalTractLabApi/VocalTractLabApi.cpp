@@ -20,22 +20,22 @@
 // ****************************************************************************
 
 #include "VocalTractLabApi.h"
-#include "Dsp.h"
-#include "AudioFile.h"
-#include "Synthesizer.h"
-#include "SegmentSequence.h"
+#include "VocalTractLabBackend/Dsp.h"
+#include "VocalTractLabBackend/AudioFile.h"
+#include "VocalTractLabBackend/Synthesizer.h"
+#include "VocalTractLabBackend/SegmentSequence.h"
 
-#include "GeometricGlottis.h"
-#include "TwoMassModel.h"
-#include "TriangularGlottis.h"
+#include "VocalTractLabBackend/GeometricGlottis.h"
+#include "VocalTractLabBackend/TwoMassModel.h"
+#include "VocalTractLabBackend/TriangularGlottis.h"
 
-#include "VocalTract.h"
-#include "TdsModel.h"
-#include "GesturalScore.h"
+#include "VocalTractLabBackend/VocalTract.h"
+#include "VocalTractLabBackend/TdsModel.h"
+#include "VocalTractLabBackend/GesturalScore.h"
 
-#include "Speaker.h"
+#include "VocalTractLabBackend/Speaker.h"
 
-#include "TlModel.h"
+#include "VocalTractLabBackend/TlModel.h"
 
 #include <iostream>
 #include <fstream>
@@ -612,7 +612,87 @@ int vtlTractToTube(double *tractParams,
   // ****************************************************************
 
   vocalTract->restoreControlParams();
+
+  return 0;
+}
+
+
+// ****************************************************************************
+// Provides the tube data (especially the area function) for the given vector
+// of tractParams. This version does NOT store and restore the previous vocal
+// tract state. That means it is at least twice as fast as vtlTractToTube.
+// However, this breaks incremental synthesis. That means you should not call
+// this method during synthesis via the methods vtlSynthesisAddTube or
+// vtlSynthesisAddTract (otherwise the current tract state will be changed).
+// It has no negative impact on all other synthesis methods.
+// 
+// The vectors tubeLength_cm, tubeArea_cm2, and tubeArticulator, 
+// must each have as many elements as tube sections.
+// The values incisorPos_cm, tongueTipSideElevation, and velumOpening_cm2 are 
+// one double value each.
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+int vtlFastTractToTube(double *tractParams,
+  double *tubeLength_cm, double *tubeArea_cm2, int *tubeArticulator,
+  double *incisorPos_cm, double *tongueTipSideElevation, double *velumOpening_cm2)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  // ****************************************************************
+  // Do not store the current control parameter values.
+  // ****************************************************************
+
+
+
+  // ****************************************************************
+  // Set the given vocal tract parameters.
+  // ****************************************************************
+
+  int i;
+  for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+  {
+    vocalTract->param[i].x = tractParams[i];
+  }
+
+  // ****************************************************************
+  // Get the tube for the new vocal tract shape.
+  // ****************************************************************
+
+  Tube tube;
   vocalTract->calculateAll();
+  vocalTract->getTube(&tube);
+
+  // ****************************************************************
+  // Copy the tube parameters to the user arrays.
+  // ****************************************************************
+
+  Tube::Section *ts = NULL;
+  for (i = 0; i < Tube::NUM_PHARYNX_MOUTH_SECTIONS; i++)
+  {
+    ts = &tube.pharynxMouthSection[i];
+
+    tubeLength_cm[i] = ts->length_cm;
+    tubeArea_cm2[i] = ts->area_cm2;
+    tubeArticulator[i] = ts->articulator;
+  }
+
+  *incisorPos_cm = tube.teethPosition_cm;
+  *tongueTipSideElevation = tube.tongueTipSideElevation;
+  *velumOpening_cm2 = tube.getVelumOpening_cm2();
+
+  // ****************************************************************
+  // Do not restore the previous control parameter values. This way
+  // calculateAll is only called once and the processing time is 
+  // reduced by 50%.
+  // ****************************************************************
 
   return 0;
 }

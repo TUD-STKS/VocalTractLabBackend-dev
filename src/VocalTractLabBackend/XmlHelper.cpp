@@ -19,7 +19,7 @@
 //
 // ****************************************************************************
 
-#include "XmlHelper.h"
+#include "VocalTractLabBackend/XmlHelper.h"
 #include <cstdio>
 
 #include <regex>

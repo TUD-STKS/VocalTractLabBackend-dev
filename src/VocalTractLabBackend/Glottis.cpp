@@ -19,7 +19,7 @@
 //
 // ****************************************************************************
 
-#include "Glottis.h"
+#include "VocalTractLabBackend/Glottis.h"
 
 #include <iomanip>
 #include <cstdio>
