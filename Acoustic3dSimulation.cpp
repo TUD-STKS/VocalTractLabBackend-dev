@@ -6179,39 +6179,15 @@ bool Acoustic3dSimulation::exportTransferFucntions(string fileName, enum tfType 
   ofstream ofs;
   ofs.open(fileName, ofstream::out | ofstream::trunc);
 
+  Eigen::MatrixXcd imped;
+  int idxRadSec(m_crossSections.size() - 1);
+
   for (int i(0); i < m_tfFreqs.size(); i++)
   {
     ofs << m_tfFreqs[i] << "  ";
-    //if (type == INPUT_IMPED)
-    //{
-    //  ofs << abs(m_planeModeInputImpedance(i, 0)) << "  "
-    //    << arg(m_planeModeInputImpedance(i, 0));
-    //}
-    //else
-    //{
-    //  for (int p(0); p < m_simuParams.tfPoint.size(); p++)
-    //  {
-    //    switch (type)
-    //    {
-    //    case GLOTTAL:
-    //      ofs << abs(m_glottalSourceTF(i, p)) << "  "
-    //        << arg(m_glottalSourceTF(i, p)) << "  ";
-    //      break;
-    //    case NOISE:
-    //      ofs << abs(m_noiseSourceTF(i, p)) << "  "
-    //        << arg(m_noiseSourceTF(i, p)) << "  ";
-    //      break;
-    //    }
-    //  }
-    //}
-    //
+
     switch (type)
     {
-    case INPUT_IMPED:
-      ofs << abs(m_planeModeInputImpedance(i, 0)) << "  "
-        << arg(m_planeModeInputImpedance(i, 0));
-      break;
-
     case GLOTTAL:
       for (int p(0); p < m_simuParams.tfPoint.size(); p++)
       {
@@ -6226,6 +6202,23 @@ bool Acoustic3dSimulation::exportTransferFucntions(string fileName, enum tfType 
         ofs << abs(m_noiseSourceTF(i, p)) << "  "
           << arg(m_noiseSourceTF(i, p)) << "  ";
       }
+      break;
+
+    case INPUT_IMPED:
+      ofs << abs(m_planeModeInputImpedance(i, 0)) << "  "
+        << arg(m_planeModeInputImpedance(i, 0));
+      break;
+
+    case RAD_IMPED_REAL_PART:
+      ofs << endl;
+      interpolateRadiationImpedance(imped, m_tfFreqs[i], idxRadSec);
+      ofs << imped.real();
+      break;
+
+    case RAD_IMPED_IMAG_PART:
+      ofs << endl;
+      interpolateRadiationImpedance(imped, m_tfFreqs[i], idxRadSec);
+      ofs << imped.imag();
       break;
     }
     ofs << endl;

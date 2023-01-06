@@ -65,7 +65,8 @@ enum tfType {
   GLOTTAL,
   NOISE,
   INPUT_IMPED,
-  RAD_IMPED_REAL_PART
+  RAD_IMPED_REAL_PART,
+  RAD_IMPED_IMAG_PART
 };
 
 class Acoustic3dSimulation
