@@ -1919,6 +1919,7 @@ int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaFileName)
 //             Lower Cover (JAW) = 148)
 // o filePath: path leading to the directory where EMA and mesh files shall be stored.
 // o fileName: name of all exported datasets
+// o frameSamplingRate: sampling rate of the frames, i. e. how many frames are in one second
 //
 // The return value is 0 if successful, and otherwise an error code >= 1.
 // Error codes:
@@ -1933,9 +1934,10 @@ int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaFileName)
 // 8: EMA file already exists: prevents overwriting
 // 9: EMA file could not be opened
 // 10: API has not been initialized
+// 11: frameSamplingRate <= 0.0
 // ****************************************************************************
 
-int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int numTractParams, int numGlottisParams, int numFrames, int numEmaPoints, int *surf, int *vert, const char *filePath, const char *fileName)
+int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int numTractParams, int numGlottisParams, int numFrames, int numEmaPoints, int *surf, int *vert, const char *filePath, const char *fileName, double frameSamplingRate)
 {
   // Return if no EMA point is selected
   if (numEmaPoints <= 0)
@@ -1943,6 +1945,13 @@ int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int
     printf("Error in vtlTractSequenceToEmaAndMesh(): numEmaPoints <= 0");
     return 1;
   }
+
+  if (frameSamplingRate <= 0.0)
+  {
+    printf("Error in vtlTractSequenceToEmaAndMesh(): frameSamplingRate <= 0");
+    return 11;
+  }
+
 
   if (surf == NULL)
   {
@@ -2100,7 +2109,7 @@ int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int
     for (int f = 0; f < numFrames; f++)
     {
       fs::path objFileName = objFilePath.string() + to_string(f) + ".obj" ;  // name of current .obj file
-      emaFile << f*0.005 << " "; // Write current time (frame*0.005 currently) into file
+      emaFile << f * (1/frameSamplingRate) << " "; // time of the time step in seconds
 
       // Set the properties of the target tube.
       for (i = 0; i < numTractParams; i++)
@@ -2246,7 +2255,7 @@ int vtlGesturalScoreToEmaAndMesh(const char *gestureFileName, const char *filePa
   int vertex[] = {115,225,335};  // Vertex Index of selected EMA point
 
   // Call of vtlTractSequenceToEmaAndMesh could also be done from outside!
-  return vtlTractSequenceToEmaAndMesh(tractParams.data(), glottisParams.data(), numTractParams, numGlottisParams, numFrames, 3, surf, vertex, filePath, fileName);
+  return vtlTractSequenceToEmaAndMesh(tractParams.data(), glottisParams.data(), numTractParams, numGlottisParams, numFrames, 3, surf, vertex, filePath, fileName, EMA_SAMPLING_RATE_HZ);
 }
 
 // ****************************************************************************
