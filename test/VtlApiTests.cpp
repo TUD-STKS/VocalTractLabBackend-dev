@@ -352,7 +352,7 @@ TEST(ApiTest, TractToEmaAndMesh)
 	ret = vtlTractSequenceToEmaAndMesh(tractSeq.data(), glottisSeq.data(),
 		numVocalTractParams, numGlottisParams, numFrames, numEmaPoints,
 		surf, vert,
-		exportedMeshPath, exportMeshBaseName);
+		exportedMeshPath, exportMeshBaseName, 200.0);
 
 	EXPECT_EQ(ret, 0);
 

@@ -654,6 +654,7 @@ C_EXPORT int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaF
 //             Lower Cover (JAW) = 148)
 // o filePath: path leading to the directory where EMA and mesh files shall be stored.
 // o fileName: name of all exported datasets
+// o frameSamplingRate: sampling rate of the frames, i. e. how many frames are in one second
 //
 // The return value is 0 if successful, and otherwise an error code >= 1.
 // Error codes:
@@ -668,9 +669,10 @@ C_EXPORT int vtlGesturalScoreToEma(const char *gestureFileName, const char *emaF
 // 8: EMA file already exists: prevents overwriting
 // 9: EMA file could not be opened
 // 10: API has not been initialized
+// 11: frameSamplingRate <= 0.0
 // ****************************************************************************
 
-C_EXPORT int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int numTractParams, int numGlottisParams, int numFrames, int numEmaPoints, int *surf, int *vert, const char *filePath, const char *fileName);
+C_EXPORT int vtlTractSequenceToEmaAndMesh(double *tractParams, double *glottisParams, int numTractParams, int numGlottisParams, int numFrames, int numEmaPoints, int *surf, int *vert, const char *filePath, const char *fileName, double frameSamplingRate);
 
 
 // ****************************************************************************
