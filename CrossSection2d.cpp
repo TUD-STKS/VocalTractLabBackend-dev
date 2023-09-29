@@ -1423,21 +1423,36 @@ void CrossSection2dRadiation::characteristicAdmittance(
 // **************************************************************************
 // Compute wall admittance
 
-complex<double> CrossSection2dFEM::getWallAdmittance(
+vector<complex<double>> CrossSection2dFEM::getWallAdmittance(
   struct simulationParameters simuParams, double freq)
 {
+  int nb_surf = m_surfIdxList.size();
+  vector<complex<double>> wallAdmittance(nb_surf);
   if (simuParams.wallLosses)
   {
-    return(-simuParams.percentageLosses*(-simuParams.volumicMass * simuParams.sndSpeed *
-      (1. / (complex<double>(Tube::STANDARD_WALL_RESISTANCE_CGS,
-        2. * M_PI * freq * Tube::STANDARD_WALL_MASS_CGS -
-        Tube::STANDARD_WALL_STIFFNESS_CGS / 2. / M_PI / freq)
-        / m_perimeter / m_length))));
+    for (int i(0); i < nb_surf; i++)
+    {
+      wallAdmittance[i] = -simuParams.percentageLosses * (-simuParams.volumicMass * simuParams.sndSpeed *
+        (1. / (complex<double>(Tube::STANDARD_WALL_RESISTANCE_CGS,
+          2. * M_PI * freq * Tube::STANDARD_WALL_MASS_CGS -
+          Tube::STANDARD_WALL_STIFFNESS_CGS / 2. / M_PI / freq)
+          / m_perimeter / m_length)));
+    }
+    //return(-simuParams.percentageLosses*(-simuParams.volumicMass * simuParams.sndSpeed *
+    //  (1. / (complex<double>(Tube::STANDARD_WALL_RESISTANCE_CGS,
+    //    2. * M_PI * freq * Tube::STANDARD_WALL_MASS_CGS -
+    //    Tube::STANDARD_WALL_STIFFNESS_CGS / 2. / M_PI / freq)
+    //    / m_perimeter / m_length))));
   }
   else
   {
-    return(complex<double>(0., 0.));
+    for (int i(0); i < nb_surf; i++)
+    {
+      wallAdmittance[i] = complex<double>(0., 0.);
+    }
+    //return(complex<double>(0., 0.));
   }
+  return(wallAdmittance);
 }
 
 // **************************************************************************
@@ -1556,8 +1571,11 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
   // parameters of the coefficient l evolution
   Eigen::MatrixXcd A0(2 * mn, 2 * mn), A1(2 * mn, 2 * mn), omega(2 * mn, 2 * mn);
   Eigen::MatrixXcd K2(Eigen::MatrixXcd::Zero(mn, mn));
-  complex<double> wallAdmittance;
+  vector<complex<double>> wallAdmittance;
   Eigen::VectorXcd bndSpecAdm(Eigen::VectorXcd::Zero(mn));
+
+  ofstream log;
+  log.open("log.txt", ofstream::app);
 
   if (m_length == 0.)
   {
@@ -1612,6 +1630,14 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
     // compute wall admittance
     wallAdmittance = getWallAdmittance(simuParams, freq);
 
+    // print surface types
+    for (int i(0); i < m_surfIdxList.size(); i++)
+    {
+      log << m_surfIdxList[i] << ", " << getSurfaceName(m_surfIdxList[i])
+        << ", ";
+    }
+    log << endl;
+
     // compute boundary specific admittance
     getSpecificBndAdm(simuParams, freq, bndSpecAdm);
 
@@ -1619,7 +1645,7 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
     Eigen::MatrixXcd KR2(Eigen::MatrixXcd::Zero(mn, mn));
     for (int s(0); s < m_KR2.size(); s++)
     {
-      KR2 += m_KR2[s] * bndSpecAdm.asDiagonal() + wallAdmittance * m_KR2[s];
+      KR2 += m_KR2[s] * bndSpecAdm.asDiagonal() + wallAdmittance[s] * m_KR2[s];
     }
 
     // track time
@@ -1786,6 +1812,7 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
   // track time
   tot = end - startTot;
   }
+  log.close();
 }
 
 // **************************************************************************
@@ -2253,6 +2280,71 @@ Point CrossSection2d::ctrLinePtIn() const { return(Point(m_ctrLinePt.x, m_ctrLin
 Point2D CrossSection2d::normal() const { return(m_normal); }
 Vector CrossSection2d::normalIn() const { return(Vector(m_normal.x, m_normal.y)); }
 double CrossSection2d::area() const { return(m_area); }
+//******************************************************
+surfaceType CrossSection2d::getSurfaceType(int idx) const
+{
+  surfaceType surfType;
+  switch (idx)
+  {
+  case 2: case 3: case 23: case 24:		// covers
+    surfType = COVERS;
+    break;
+  case 16:						// tongue
+    surfType = TONGUE;
+    break;
+  case 0: case 1:					// teeth
+    surfType = TEETH;
+    break;
+  case 29:						// epiglotis
+    surfType = EPIGLOTIS;
+    break;
+  case 26:						// uvula
+    surfType = UVULA;
+    break;
+  case 4: case 5:					// lips
+    surfType = LIPS;
+    break;
+  case 31:						// radiation
+    surfType = RADIATING_SURF;
+    break;
+  default:
+    surfType = OTHER;
+  }
+  return surfType;
+}
+//******************************************************
+string CrossSection2d::getSurfaceName(int idx) const
+{
+  string surfaceName;
+  surfaceType surfType(getSurfaceType(idx));
+  switch (surfType)
+  {
+  case COVERS:
+    surfaceName = "COVERS";
+    break;
+  case TONGUE:
+    surfaceName = "TONGUE";
+    break;
+  case TEETH:
+    surfaceName = "TEETH";
+    break;
+  case EPIGLOTIS:
+    surfaceName = "EPIGLOTIS";
+    break;
+  case UVULA:
+    surfaceName = "UVULA";
+    break;
+  case LIPS:
+    surfaceName = "LIPS";
+    break;
+  case RADIATING_SURF:
+    surfaceName = "RADIATING_SURF";
+    break;
+  default:
+    surfaceName = "OTHER";
+  }
+  return surfaceName;
+}
 //******************************************************
 Eigen::MatrixXcd CrossSection2d::Zin() const
 {

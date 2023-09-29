@@ -154,6 +154,7 @@ Acoustic3dSimulation::Acoustic3dSimulation()
   m_simuParams.propMethod = MAGNUS;
   m_simuParams.viscoThermalLosses = true;
   m_simuParams.wallLosses = true;
+  m_simuParams.surfaceSpecificWallLosses = false;
   m_simuParams.constantWallImped = false;
   m_simuParams.wallAdmit = complex<double>(0.005, 0.);
   m_simuParams.sndSpeed = (sqrt(ADIABATIC_CONSTANT * STATIC_PRESSURE_CGS / m_simuParams.volumicMass));
@@ -332,9 +333,13 @@ void Acoustic3dSimulation::generateLogFileHeader(bool cleanLog) {
     log << "thermal boundary specific admittance " << m_simuParams.thermalBndSpecAdm
       << " g.cm^-2 .s^-1" << endl;
   }
+  if (m_simuParams.wallLosses && m_simuParams.surfaceSpecificWallLosses)
+  {
+    log << "Surface specific wall losse included" << endl;
+  }
   if (m_simuParams.wallLosses)
   {
-    log << "Wall losse included" << endl;
+      log << "Wall losse included" << endl;
   }
   if (m_simuParams.constantWallImped)
   {

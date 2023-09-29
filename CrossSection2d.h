@@ -83,6 +83,17 @@ enum integrationMethodRadiation {
   GAUSS
 };
 
+enum surfaceType {
+  COVERS,
+  TONGUE,
+  TEETH,
+  EPIGLOTIS,
+  UVULA,
+  LIPS,
+  RADIATING_SURF,
+  OTHER
+};
+
 struct simulationParameters
 {
   double temperature;
@@ -97,6 +108,7 @@ struct simulationParameters
   double percentageLosses;
   bool viscoThermalLosses;
   bool wallLosses;
+  bool surfaceSpecificWallLosses;
   bool constantWallImped;
   complex<double> wallAdmit;
   bool curved;
@@ -183,8 +195,8 @@ public:
     Eigen::MatrixXcd & characImped, double freq, struct simulationParameters simuParams) {;}
   virtual void characteristicAdmittance(
     Eigen::MatrixXcd& admit, double freq, struct simulationParameters simuParams) {;}
-  virtual complex<double> getWallAdmittance( 
-    struct simulationParameters simuParams, double freq) { return complex<double>(); }
+  virtual vector<complex<double>> getWallAdmittance( 
+    struct simulationParameters simuParams, double freq) { return vector<complex<double>>(); }
   virtual void getSpecificBndAdm(struct simulationParameters simuParams, double freq, 
     Eigen::VectorXcd& bndSpecAdm) {;}
   void setAxialVelocity(vector<Eigen::MatrixXcd> inputVelocity) { m_axialVelocity = inputVelocity; }
@@ -241,6 +253,9 @@ public:
 
   double area() const;
   int numberOfModes() const { return m_modesNumber; }
+
+  surfaceType getSurfaceType(int idx) const;
+  string getSurfaceName(int idx) const;
 
   virtual double scaleIn() const { return 1.;  }
   virtual double scaleOut() const { return 1.; }
@@ -342,7 +357,7 @@ public:
     double freq, struct simulationParameters simuParams);
   void characteristicAdmittance(Eigen::MatrixXcd& admit, 
     double freq, struct simulationParameters simuParams);
-  complex<double> getWallAdmittance(struct simulationParameters simuParams, double freq);
+  vector<complex<double>> getWallAdmittance(struct simulationParameters simuParams, double freq);
   void getSpecificBndAdm(struct simulationParameters simuParams, double freq, 
     Eigen::VectorXcd& bndSpecAdm);
 
@@ -467,8 +482,8 @@ public:
     Eigen::MatrixXcd& characImped, double freq, struct simulationParameters simuParams);
   void characteristicAdmittance(Eigen::MatrixXcd &admit, 
     double freq, struct simulationParameters simuParams);
-  complex<double> getWallAdmittance(struct simulationParameters simuParams,
-    double freq) {return complex<double>(); }
+  vector<complex<double>> getWallAdmittance(struct simulationParameters simuParams,
+    double freq) {return vector<complex<double>>(); }
   void getSpecificBndAdm(struct simulationParameters simuParams, double freq,
     Eigen::VectorXcd& bndSpecAdm) {;}
 
