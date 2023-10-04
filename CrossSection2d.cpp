@@ -1428,21 +1428,43 @@ vector<complex<double>> CrossSection2dFEM::getWallAdmittance(
 {
   int nb_surf = m_surfIdxList.size();
   vector<complex<double>> wallAdmittance(nb_surf);
-  if (simuParams.wallLosses)
+  enum surfaceType surfType;
+
+  ofstream log;
+  log.open("log.txt", ofstream::app);
+
+  if (simuParams.wallLosses && simuParams.surfaceSpecificWallLosses)
   {
     for (int i(0); i < nb_surf; i++)
     {
-      wallAdmittance[i] = -simuParams.percentageLosses * (-simuParams.volumicMass * simuParams.sndSpeed *
-        (1. / (complex<double>(Tube::STANDARD_WALL_RESISTANCE_CGS,
-          2. * M_PI * freq * Tube::STANDARD_WALL_MASS_CGS -
-          Tube::STANDARD_WALL_STIFFNESS_CGS / 2. / M_PI / freq)
-          / m_perimeter / m_length)));
+      //log << m_surfIdxList[i] << " " << getSurfaceName(m_surfIdxList[i]) << endl;
+      surfType = getSurfaceType(m_surfIdxList[i]);
+      switch (surfType)
+      {
+      case TEETH:
+        wallAdmittance[i] = complex<double>(0., 0.);
+        break;
+      default:
+        //wallAdmittance[i] = -simuParams.percentageLosses * (-simuParams.volumicMass * simuParams.sndSpeed *
+        //  (1. / (complex<double>(Tube::STANDARD_WALL_RESISTANCE_CGS,
+        //    2. * M_PI * freq * Tube::STANDARD_WALL_MASS_CGS -
+        //    Tube::STANDARD_WALL_STIFFNESS_CGS / 2. / M_PI / freq)
+        //    / m_perimeter / m_length)));
+        wallAdmittance[i] = simuParams.wallAdmit;
+      }
     }
-    //return(-simuParams.percentageLosses*(-simuParams.volumicMass * simuParams.sndSpeed *
-    //  (1. / (complex<double>(Tube::STANDARD_WALL_RESISTANCE_CGS,
-    //    2. * M_PI * freq * Tube::STANDARD_WALL_MASS_CGS -
-    //    Tube::STANDARD_WALL_STIFFNESS_CGS / 2. / M_PI / freq)
-    //    / m_perimeter / m_length))));
+  }
+  else if (simuParams.wallLosses)
+  {
+    for (int i(0); i < nb_surf; i++)
+    {
+      //wallAdmittance[i] = -simuParams.percentageLosses * (-simuParams.volumicMass * simuParams.sndSpeed *
+      //  (1. / (complex<double>(Tube::STANDARD_WALL_RESISTANCE_CGS,
+      //    2. * M_PI * freq * Tube::STANDARD_WALL_MASS_CGS -
+      //    Tube::STANDARD_WALL_STIFFNESS_CGS / 2. / M_PI / freq)
+      //    / m_perimeter / m_length)));
+      wallAdmittance[i] = simuParams.wallAdmit;
+    }
   }
   else
   {
@@ -1450,8 +1472,8 @@ vector<complex<double>> CrossSection2dFEM::getWallAdmittance(
     {
       wallAdmittance[i] = complex<double>(0., 0.);
     }
-    //return(complex<double>(0., 0.));
   }
+  log.close();
   return(wallAdmittance);
 }
 
@@ -1629,14 +1651,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
 
     // compute wall admittance
     wallAdmittance = getWallAdmittance(simuParams, freq);
-
-    // print surface types
-    for (int i(0); i < m_surfIdxList.size(); i++)
-    {
-      log << m_surfIdxList[i] << ", " << getSurfaceName(m_surfIdxList[i])
-        << ", ";
-    }
-    log << endl;
 
     // compute boundary specific admittance
     getSpecificBndAdm(simuParams, freq, bndSpecAdm);
