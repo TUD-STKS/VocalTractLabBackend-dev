@@ -1437,20 +1437,21 @@ vector<complex<double>> CrossSection2dFEM::getWallAdmittance(
   {
     for (int i(0); i < nb_surf; i++)
     {
-      //log << m_surfIdxList[i] << " " << getSurfaceName(m_surfIdxList[i]) << endl;
       surfType = getSurfaceType(m_surfIdxList[i]);
       switch (surfType)
       {
       case TEETH:
         wallAdmittance[i] = complex<double>(0., 0.);
         break;
+      case RADIATING_SURF:
+        wallAdmittance[i] = complex<double>(1., 0.);
+        break;
       default:
-        //wallAdmittance[i] = -simuParams.percentageLosses * (-simuParams.volumicMass * simuParams.sndSpeed *
-        //  (1. / (complex<double>(Tube::STANDARD_WALL_RESISTANCE_CGS,
-        //    2. * M_PI * freq * Tube::STANDARD_WALL_MASS_CGS -
-        //    Tube::STANDARD_WALL_STIFFNESS_CGS / 2. / M_PI / freq)
-        //    / m_perimeter / m_length)));
-        wallAdmittance[i] = simuParams.wallAdmit;
+        wallAdmittance[i] = -simuParams.percentageLosses * (-simuParams.volumicMass * simuParams.sndSpeed *
+          (1. / (complex<double>(Tube::STANDARD_WALL_RESISTANCE_CGS,
+            2. * M_PI * freq * Tube::STANDARD_WALL_MASS_CGS -
+            Tube::STANDARD_WALL_STIFFNESS_CGS / 2. / M_PI / freq)
+            / m_perimeter / m_length)));
       }
     }
   }
@@ -1458,12 +1459,11 @@ vector<complex<double>> CrossSection2dFEM::getWallAdmittance(
   {
     for (int i(0); i < nb_surf; i++)
     {
-      //wallAdmittance[i] = -simuParams.percentageLosses * (-simuParams.volumicMass * simuParams.sndSpeed *
-      //  (1. / (complex<double>(Tube::STANDARD_WALL_RESISTANCE_CGS,
-      //    2. * M_PI * freq * Tube::STANDARD_WALL_MASS_CGS -
-      //    Tube::STANDARD_WALL_STIFFNESS_CGS / 2. / M_PI / freq)
-      //    / m_perimeter / m_length)));
-      wallAdmittance[i] = simuParams.wallAdmit;
+      wallAdmittance[i] = -simuParams.percentageLosses * (-simuParams.volumicMass * simuParams.sndSpeed *
+        (1. / (complex<double>(Tube::STANDARD_WALL_RESISTANCE_CGS,
+          2. * M_PI * freq * Tube::STANDARD_WALL_MASS_CGS -
+          Tube::STANDARD_WALL_STIFFNESS_CGS / 2. / M_PI / freq)
+          / m_perimeter / m_length)));
     }
   }
   else
