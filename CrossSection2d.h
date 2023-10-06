@@ -314,6 +314,8 @@ protected:
   double m_area;
   int m_modesNumber;
   int m_direction[4]; // 0 dir Z | 1 dir Y | 2 dir Q | dir P
+  pair<int, double> m_omegaParams;
+  vector<Eigen::MatrixXcd> m_omega;
   vector<Eigen::MatrixXcd> m_impedance;
   vector<Eigen::MatrixXcd> m_admittance;
   vector<Eigen::MatrixXcd> m_axialVelocity;

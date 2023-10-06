@@ -222,6 +222,7 @@ CrossSection2d::CrossSection2d()
   setYdir(-1);
   setQdir(1);
   setPdir(1);
+  m_omegaParams = pair<int, double>(0, 0.);
 }
 
 CrossSection2d::CrossSection2d(Point2D ctrLinePt, Point2D normal)
@@ -1577,6 +1578,310 @@ double CrossSection2dFEM::scalingDerivative(double tau)
 // **************************************************************************
 // Propagate impedance, admittance, pressure or velocity using the 
 // order 2 or 4 Magnu-Moebius scheme
+
+//void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
+//  double freq, double direction, enum physicalQuantity quant, std::chrono::duration<double>* time)
+//{
+//  // track time
+//  auto startTot = std::chrono::system_clock::now();
+//
+//  bool computeOmega(false);
+//  int numX(simuParams.numIntegrationStep);
+//  int mn(m_modesNumber);
+//  double al(length()); // arc length
+//  double dX; // (direction * al / (double)(numX - 1));
+//  double curv(curvature(simuParams.curved));
+//  double k(2 * M_PI * freq / simuParams.sndSpeed);
+//  double tau, l0, l1, dl0, dl1;
+//  // parameters of the coefficient l evolution
+//  Eigen::MatrixXcd A0(2 * mn, 2 * mn), A1(2 * mn, 2 * mn), omega(2 * mn, 2 * mn);
+//  Eigen::MatrixXcd KR2(Eigen::MatrixXcd::Zero(mn, mn));
+//  Eigen::MatrixXcd K2(Eigen::MatrixXcd::Zero(mn, mn));
+//  vector<complex<double>> wallAdmittance;
+//  Eigen::VectorXcd bndSpecAdm(Eigen::VectorXcd::Zero(mn));
+//  int idx;
+//
+//  ofstream log;
+//  log.open("log.txt", ofstream::app);
+//
+//  if (m_length == 0.)
+//  {
+//    switch (quant) {
+//    case IMPEDANCE:
+//      m_impedance.clear();
+//      m_impedance.push_back(Q0);
+//      break;
+//    case ADMITTANCE:
+//      m_admittance.clear();
+//      m_admittance.push_back(Q0);
+//      break;
+//    case PRESSURE:
+//      m_acPressure.clear();
+//      m_acPressure.push_back(Q0);
+//      break;
+//    case VELOCITY:
+//      m_axialVelocity.clear();
+//      m_axialVelocity.push_back(Q0);
+//      break;
+//    }
+//  }
+//  else
+//  {
+//    switch (quant) {
+//    case IMPEDANCE:
+//      m_impedance.clear();
+//      m_impedance.reserve(numX);
+//      m_impedance.push_back(Q0);
+//      dX = -al / (double)(numX - 1);
+//      break;
+//    case ADMITTANCE:
+//      m_admittance.clear();
+//      m_admittance.reserve(numX);
+//      m_admittance.push_back(Q0);
+//      dX = -al / (double)(numX - 1);
+//      break;
+//    case PRESSURE:
+//      m_acPressure.clear();
+//      m_acPressure.reserve(numX);
+//      m_acPressure.push_back(Q0);
+//      dX = al / (double)(numX - 1);
+//      break;
+//    case VELOCITY:
+//      m_axialVelocity.clear();
+//      m_acPressure.reserve(numX);
+//      m_axialVelocity.push_back(Q0);
+//      dX = al / (double)(numX - 1);
+//      break;
+//    }
+//
+//    //*******************************************************
+//    // check if the matrix Omega have already been compuuted
+//    //*******************************************************
+//
+//    log << "Freq: " << freq << " direction: " << direction << endl;
+//    log << "m_omegaParams " << m_omegaParams.first << "  " << m_omegaParams.second << endl;
+//
+//    // if one of the computation parameters have be changed, compute Omega
+//    if ((simuParams.orderMagnusScheme != m_omegaParams.first) || (freq != m_omegaParams.second))
+//    {
+//      computeOmega = true;
+//      m_omega.clear();
+//      m_omega.reserve(numX);
+//
+//      // save the computation parameters
+//      m_omegaParams.first = simuParams.orderMagnusScheme;
+//      m_omegaParams.second = freq;
+//
+//      // compute wall admittance
+//      wallAdmittance = getWallAdmittance(simuParams, freq);
+//
+//      // compute boundary specific admittance
+//      getSpecificBndAdm(simuParams, freq, bndSpecAdm);
+//
+//      // compute matrix KR2
+//      for (int s(0); s < m_KR2.size(); s++)
+//      {
+//        KR2 += m_KR2[s] * bndSpecAdm.asDiagonal() + wallAdmittance[s] * m_KR2[s];
+//      }
+//    }
+//
+//    log << "Compute Omega:" << computeOmega << endl;
+//
+//    // track time
+//    auto start = std::chrono::system_clock::now();
+//    auto end = std::chrono::system_clock::now();
+//    std::chrono::duration<double> elapsed_preComp, matricesMag, propag, tot;
+//    elapsed_preComp = end - startTot;
+//
+//    // discretize X axis
+//    for (int i(0); i < numX - 1; i++)
+//    {
+//      if (computeOmega)
+//      {
+//        switch (simuParams.orderMagnusScheme)
+//        {
+//          //****************************
+//          // Magnus scheme order 2
+//          //****************************
+//
+//        case 2:
+//
+//          if (direction < 0.)
+//          {
+//            tau = ((double)(numX - i) - 1.5) / (double)(numX - 1);
+//          }
+//          else
+//          {
+//            tau = ((double)(i)+0.5) / (double)(numX - 1);
+//          }
+//          l0 = scaling(tau);
+//          dl0 = -Ydir() * scalingDerivative(tau);
+//
+//          // build matrix K2
+//          K2.setZero(mn, mn);
+//          for (int j(0); j < mn; j++)
+//          {
+//            K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
+//          }
+//          K2 += 1i * k * l0 * KR2;
+//
+//          // build matrix A0
+//          omega << ((dl0 / l0) * m_E),
+//            (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
+//            (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN
+//              )),
+//            (-(dl0 / l0) * m_E.transpose());
+//
+//          start = std::chrono::system_clock::now();
+//
+//          omega = (dX * omega).exp();
+//          m_omega.push_back(omega);
+//
+//          end = std::chrono::system_clock::now();
+//          *time += end - start;
+//          start = std::chrono::system_clock::now();
+//
+//          break;
+//
+//          //****************************
+//          // Magnus scheme order 4
+//          //****************************
+//
+//        case 4:
+//
+//          //*******************************
+//          // first point of Magnus scheme
+//          //*******************************
+//
+//          if (dX < 0.) {
+//            tau = ((double)(numX - i) - 1.5 + sqrt(3) / 6.) / (double)(numX - 1);
+//          }
+//          else
+//          {
+//            tau = (double)(i + 0.5 - sqrt(3) / 6.) / (double)(numX - 1);
+//          }
+//          l0 = scaling(tau);
+//          dl0 = scalingDerivative(tau);
+//
+//          // build matrix K2
+//          K2.setZero(mn, mn);
+//          for (int j(0); j < mn; j++)
+//          {
+//            K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l0, 2);
+//          }
+//          K2 += 1i * k * l0 * KR2;
+//
+//          // build matrix A0
+//          A0 << ((dl0 / l0) * m_E),
+//            (Eigen::MatrixXcd::Identity(mn, mn) - curv * l0 * m_C) / pow(l0, 2),
+//            (K2 + curv * l0 * (m_C * pow(k * l0, 2) - m_DN)),
+//            (-(dl0 / l0) * m_E.transpose());
+//
+//          //*******************************
+//          // second point of Magnus scheme
+//          //*******************************
+//
+//          if (dX < 0.)
+//          {
+//            tau = ((double)(numX - i) - 1.5 - sqrt(3) / 6.) / (double)(numX - 1);
+//          }
+//          else
+//          {
+//            tau = (double)(i + 0.5 + sqrt(3) / 6.) / (double)(numX - 1);
+//          }
+//          l1 = scaling(tau);
+//          dl1 = scalingDerivative(tau);
+//
+//          // build matrix K
+//          K2.setZero(mn, mn);
+//          for (int j(0); j < mn; j++)
+//          {
+//            K2(j, j) = pow(2 * M_PI * m_eigenFreqs[j] / simuParams.sndSpeed, 2) - pow(k * l1, 2);
+//          }
+//          K2 += 1i * k * l1 * KR2;
+//          // build matrix A1
+//          A1 << ((dl1 / l1) * m_E),
+//            (Eigen::MatrixXcd::Identity(mn, mn) - curv * l1 * m_C) / pow(l1, 2),
+//            (K2 + curv * l1 * (m_C * pow(k * l1, 2) - m_DN)),
+//            (-(dl1 / l1) * m_E.transpose());
+//
+//          //*******************************
+//          // compute matrix omega
+//          //*******************************
+//
+//          // tract time  
+//          start = std::chrono::system_clock::now();
+//
+//          omega = (0.5 * dX * (A0 + A1) + sqrt(3) * pow(dX, 2) * (A1 * A0 - A0 * A1) / 12.).exp();
+//          m_omega.push_back(omega);
+//
+//          // tract time
+//          end = std::chrono::system_clock::now();
+//          matricesMag += end - start;
+//          start = std::chrono::system_clock::now();
+//
+//          break;
+//        }
+//
+//        // set the index of the omega matrix which should be used
+//        idx = m_omega.size() - 1;
+//      }
+//      else
+//      {
+//        // extract the correct idx of omega
+//        if (direction > 0.)
+//        {
+//          idx = numX - 2 - i;
+//        }
+//        else
+//        {
+//          idx = i;
+//        }
+//      }
+//
+//      log << "Idx: " << idx << endl;
+//
+//      // compute the propagated quantity at the next point
+//      switch (quant)
+//      {
+//      case IMPEDANCE:
+//        m_impedance.push_back((m_omega[idx].block(0, 0, mn, mn) * m_impedance.back() +
+//          m_omega[idx].block(0, mn, mn, mn)) *
+//          ((m_omega[idx].block(mn, 0, mn, mn) * m_impedance.back() +
+//            m_omega[idx].block(mn, mn, mn, mn)).inverse()));
+//        break;
+//      case ADMITTANCE:
+//        m_admittance.push_back((m_omega[idx].block(mn, 0, mn, mn) +
+//          m_omega[idx].block(mn, mn, mn, mn) * m_admittance.back()) *
+//          ((m_omega[idx].block(0, 0, mn, mn) +
+//            m_omega[idx].block(0, mn, mn, mn) * m_admittance.back()).inverse()));
+//        break;
+//      case PRESSURE:
+//        m_acPressure.push_back((m_omega[idx].block(0, 0, mn, mn) + m_omega[idx].block(0, mn, mn, mn) *
+//          m_admittance[numX - 1 - i]) * m_acPressure.back());
+//        break;
+//      case VELOCITY:
+//        m_axialVelocity.push_back((m_omega[idx].block(mn, 0, mn, mn) * m_impedance[numX - 1 - i] +
+//          m_omega[idx].block(mn, mn, mn, mn)) * m_axialVelocity.back());
+//      }
+//
+//      // track time
+//      end = std::chrono::system_clock::now();
+//      propag += end - start;
+//    }
+//
+//    // if the direction of the propagation was reverse, reverse m_omega
+//    if (direction > 0.)
+//    {
+//      std::reverse(m_omega.begin(), m_omega.end());
+//    }
+//
+//    // track time
+//    tot = end - startTot;
+//  }
+//  log.close();
+//}
+
 void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationParameters simuParams,
   double freq, double direction, enum physicalQuantity quant, std::chrono::duration<double> *time)
 {
@@ -1671,7 +1976,7 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
       // discretize X axis
       for (int i(0); i < numX - 1; i++)
       {
-
+        log << "i = " << i << endl;
         switch (simuParams.orderMagnusScheme)
         {
       //****************************
@@ -1690,6 +1995,7 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         }
         l0 = scaling(tau);
         dl0 = - Ydir() * scalingDerivative(tau);
+        //log << "l0: " << l0 << " dl0: " << dl0 << " dX: " << dX << endl;
 
         // build matrix K2
         K2.setZero(mn, mn);
@@ -1794,6 +2100,9 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
 
           break;
         }
+
+        //log << omega.real() << endl;
+        //log << omega.imag() << endl;
 
       // compute the propagated quantity at the next point
       switch (quant)
