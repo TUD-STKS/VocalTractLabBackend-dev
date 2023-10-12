@@ -173,9 +173,9 @@ void BesselJDerivativeZero(int v, int n, map<double, pair<int,int>> &zeros)
   // define the derivative of the besselfunction of which one wants 
   // to find the zero and its derivative
   auto function = [&](double z) {
-    double dJv = 0.5 * (cyl_bessel_j(v - 1, z) - cyl_bessel_j(v + 1, z));
-    double d2Jv = 0.25 * (cyl_bessel_j(v - 2, z) -
-      2. * cyl_bessel_j(v, z) + cyl_bessel_j(v + 2, z));
+    double dJv = 0.5 * (boost::math::cyl_bessel_j(v - 1, z) - boost::math::cyl_bessel_j(v + 1, z));
+    double d2Jv = 0.25 * (boost::math::cyl_bessel_j(v - 2, z) -
+      2. * boost::math::cyl_bessel_j(v, z) + boost::math::cyl_bessel_j(v + 2, z));
     return make_pair(dJv, d2Jv);
   };
 
@@ -882,7 +882,7 @@ void CrossSection2dRadiation::setBesselParam(struct simulationParameters simuPar
       m_BesselOrder.push_back(z.second.first);
       m_degeneration.push_back(false);
       m_normModes.push_back(1. / (m_radius * sqrt(M_PI) *
-        cyl_bessel_j<int, double>(0, m_BesselZeros.back())));
+        boost::math::cyl_bessel_j<int, double>(0, m_BesselZeros.back())));
     }
     else
     {
@@ -890,7 +890,7 @@ void CrossSection2dRadiation::setBesselParam(struct simulationParameters simuPar
       m_BesselOrder.push_back(z.second.first);
       m_degeneration.push_back(false);
       m_normModes.push_back(sqrt(2 / (M_PI * (1 - pow(m_BesselOrder.back() / m_BesselZeros.back(), 2)))) /
-        m_radius / cyl_bessel_j<int, double>(m_BesselOrder.back(), m_BesselZeros.back()));
+        m_radius / boost::math::cyl_bessel_j<int, double>(m_BesselOrder.back(), m_BesselZeros.back()));
 
       m_BesselZeros.push_back(z.first);
       m_BesselOrder.push_back(-z.second.first);
@@ -957,8 +957,8 @@ void CrossSection2dRadiation::computeModes(struct simulationParameters simuParam
 
     // return the value of the expression to integrate
     return (al * bet - 1.) *
-      cyl_bessel_j(m_BesselOrder[m], r * m_BesselZeros[m] / m_radius) *
-      cyl_bessel_j(m_BesselOrder[n], r * m_BesselZeros[n] / m_radius) * r;
+      boost::math::cyl_bessel_j(m_BesselOrder[m], r * m_BesselZeros[m] / m_radius) *
+      boost::math::cyl_bessel_j(m_BesselOrder[n], r * m_BesselZeros[n] / m_radius) * r;
   };
 
   // expression of the first term to integrate in DPML
@@ -969,10 +969,10 @@ void CrossSection2dRadiation::computeModes(struct simulationParameters simuParam
 
     // return the value of the expression to integrate
     return (bet / al - 1.) * (0.25 *
-      (cyl_bessel_j(m_BesselOrder[m] - 1, r * m_BesselZeros[m] / m_radius) -
-      cyl_bessel_j(m_BesselOrder[m] + 1, r * m_BesselZeros[m] / m_radius))*
-      (cyl_bessel_j(m_BesselOrder[n] - 1, r * m_BesselZeros[n] / m_radius) -
-      cyl_bessel_j(m_BesselOrder[n] + 1, r * m_BesselZeros[n] / m_radius))
+      (boost::math::cyl_bessel_j(m_BesselOrder[m] - 1, r * m_BesselZeros[m] / m_radius) -
+      boost::math::cyl_bessel_j(m_BesselOrder[m] + 1, r * m_BesselZeros[m] / m_radius))*
+      (boost::math::cyl_bessel_j(m_BesselOrder[n] - 1, r * m_BesselZeros[n] / m_radius) -
+      boost::math::cyl_bessel_j(m_BesselOrder[n] + 1, r * m_BesselZeros[n] / m_radius))
        * r);
   };
 
@@ -984,8 +984,8 @@ void CrossSection2dRadiation::computeModes(struct simulationParameters simuParam
 
     // return the value of the expression to integrate
     return (al / bet - 1.) * (
-      cyl_bessel_j(m_BesselOrder[m], r * m_BesselZeros[m] / m_radius) *
-      cyl_bessel_j(m_BesselOrder[n], r * m_BesselZeros[n] / m_radius)
+      boost::math::cyl_bessel_j(m_BesselOrder[m], r * m_BesselZeros[m] / m_radius) *
+      boost::math::cyl_bessel_j(m_BesselOrder[n], r * m_BesselZeros[n] / m_radius)
        / r);
   };
 
@@ -1004,7 +1004,7 @@ void CrossSection2dRadiation::computeModes(struct simulationParameters simuParam
       if (m_BesselOrder[m] == m_BesselOrder[n])
       {
         // compute the matrices CPML
-        Q1 = quadrature::gauss<double, 15>::integrate(integral1,
+        Q1 = boost::math::quadrature::gauss<double, 15>::integrate(integral1,
           m_radius - m_PMLThickness, m_radius);
 
         CPML = (double)(m == n) + m_normModes[m] * m_normModes[n] * 
@@ -1012,10 +1012,10 @@ void CrossSection2dRadiation::computeModes(struct simulationParameters simuParam
         tripletCPML.push_back(Triplet(m, n, CPML));
 
         // compute the matrices DPML
-        Q1 = quadrature::gauss<double, 15>::integrate(integral21,
+        Q1 = boost::math::quadrature::gauss<double, 15>::integrate(integral21,
           m_radius - m_PMLThickness, m_radius);
 
-        Q2 = quadrature::gauss<double, 15>::integrate(integral22,
+        Q2 = boost::math::quadrature::gauss<double, 15>::integrate(integral22,
           m_radius - m_PMLThickness, m_radius);
 
         DPML = (double)(m == n) * pow(m_BesselZeros[m] / m_radius, 2) + 
@@ -1263,13 +1263,13 @@ Matrix CrossSection2dRadiation::interpolateModes(vector<Point> pts)
         if (m_degeneration[m])
         {
           interpolation(p, m) = m_normModes[m] *
-            cyl_bessel_j(m_BesselOrder[m], r * m_BesselZeros[m] / m_radius) *
+            boost::math::cyl_bessel_j(m_BesselOrder[m], r * m_BesselZeros[m] / m_radius) *
             sin(m_BesselOrder[m] * t);
         }
         else
         {
           interpolation(p, m) = m_normModes[m] *
-            cyl_bessel_j(m_BesselOrder[m], r * m_BesselZeros[m] / m_radius) *
+            boost::math::cyl_bessel_j(m_BesselOrder[m], r * m_BesselZeros[m] / m_radius) *
             cos(m_BesselOrder[m] * t);
         }
       }
