@@ -1901,9 +1901,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
   vector<complex<double>> wallAdmittance;
   Eigen::VectorXcd bndSpecAdm(Eigen::VectorXcd::Zero(mn));
 
-  ofstream log;
-  log.open("log.txt", ofstream::app);
-
   if (m_length == 0.)
   {
     switch (quant) {
@@ -1976,7 +1973,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
       // discretize X axis
       for (int i(0); i < numX - 1; i++)
       {
-        log << "i = " << i << endl;
         switch (simuParams.orderMagnusScheme)
         {
       //****************************
@@ -1995,7 +1991,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
         }
         l0 = scaling(tau);
         dl0 = - Ydir() * scalingDerivative(tau);
-        //log << "l0: " << l0 << " dl0: " << dl0 << " dX: " << dX << endl;
 
         // build matrix K2
         K2.setZero(mn, mn);
@@ -2101,9 +2096,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
           break;
         }
 
-        //log << omega.real() << endl;
-        //log << omega.imag() << endl;
-
       // compute the propagated quantity at the next point
       switch (quant)
       {
@@ -2135,7 +2127,6 @@ void CrossSection2dFEM::propagateMagnus(Eigen::MatrixXcd Q0, struct simulationPa
   // track time
   tot = end - startTot;
   }
-  log.close();
 }
 
 // **************************************************************************
@@ -2481,6 +2472,9 @@ complex<double> CrossSection2dFEM::q(Point_3 pt, struct simulationParameters sim
 complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationParameters simuParams,
           enum physicalQuantity quant)
 {
+  ofstream log("log.txt", ofstream::app);
+  log << "Start field computation" << endl;
+
   // get arc length
   double al(length());
   int numX(simuParams.numIntegrationStep);
@@ -2506,6 +2500,7 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
   switch (quant)
      {
       case PRESSURE:
+        log << "PRESSURE" << endl;
         // if the propagation direction is backward, reverse the indexes
         correctIdxIfBackwardProp(Pdir());
         // if the pressure amplitudes have not been computed
@@ -2526,6 +2521,7 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
       return((interpolateModes(pts) * Q)(0,0));
         break;
       case VELOCITY:
+        log << "VELOCITY" << endl;
         // if the propagation direction is backward, reverse the indexes
         correctIdxIfBackwardProp(Qdir());
         if (Qdir() == -1) { for (auto it : idx) { it = nPt - it; } }
@@ -2545,6 +2541,7 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
       return((interpolateModes(pts) * Q)(0,0));
         break;
       case IMPEDANCE:
+        log << "IMPEDANCE" << endl;
         // if the propagation direction is backward, reverse the indexes
         correctIdxIfBackwardProp(Zdir());
         // if the impedance have not been computed
@@ -2563,6 +2560,7 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
         return((modes.completeOrthogonalDecomposition().pseudoInverse() * Q * modes)(0, 0));
         break;
       case ADMITTANCE:
+        log << "ADMITTANCE" << endl;
         // if the propagation direction is backward, reverse the indexes
         correctIdxIfBackwardProp(Ydir());
         // if the admittance have not been computed
@@ -2582,6 +2580,7 @@ complex<double> CrossSection2dFEM::interiorField(Point_3 pt, struct simulationPa
               Q.transpose() * modes)(0, 0));
         break;
      }
+  log.close();
 }
 
 // **************************************************************************
