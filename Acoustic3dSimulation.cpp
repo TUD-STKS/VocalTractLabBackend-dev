@@ -2389,6 +2389,11 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
     radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(1e10, 0.));
     radImped = radAdmit.inverse();
     break;
+  case HARD_WALL:
+    radAdmit.setZero(mn, mn);
+    radAdmit.diagonal() = Eigen::VectorXcd::Constant(mn, complex<double>(1e-10, 0.));
+    radImped = radAdmit.inverse();
+    break;
   }
 
   // propagate impedance and admittance
@@ -2399,6 +2404,10 @@ void Acoustic3dSimulation::solveWaveProblem(VocalTract* tract, double freq,
     * pow(m_crossSections[0]->scaleIn(), 3)
     * m_crossSections[0]->area();
   inputPressure = m_crossSections[0]->Zin() * inputVelocity;
+
+  //// create input parameters for a constant acoustic pressure
+  //inputPressure(0, 0) = 1.;
+  //inputVelocity = m_crossSections[0]->Yin() * inputPressure;
 
   // propagate velocity and pressure
   propagateVelocityPress(inputVelocity, inputPressure, freq, 0, lastSec, timeExp);
