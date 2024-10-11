@@ -8,8 +8,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/$<CONFIG>)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/$<CONFIG>)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/$<CONFIG>)
 
-add_definitions(-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS)
-
 set(BackendSources 
  src/VocalTractLabBackend/AnatomyParams.cpp 
  src/VocalTractLabBackend/Dsp.cpp 
@@ -52,12 +50,13 @@ target_include_directories (VocalTractLabApi PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 target_sources(VocalTractLabApi PRIVATE ${BackendSources} 
 src/VocalTractLabApi/VocalTractLabApi.cpp 
 src/VocalTractLabApi/VocalTractLabApi.def)
-
+target_compile_definitions(VocalTractLabApi PRIVATE _USE_MATH_DEFINES PRIVATE _CRT_SECURE_NO_WARNINGS)
 
 project("VocalTractLabBackend")
 add_library(VocalTractLabBackend STATIC)
 target_include_directories (VocalTractLabBackend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_sources(VocalTractLabBackend PUBLIC ${BackendSources})
+target_compile_definitions(VocalTractLabBackend PUBLIC _USE_MATH_DEFINES PUBLIC _CRT_SECURE_NO_WARNINGS)
 
 
 include(FetchContent)
