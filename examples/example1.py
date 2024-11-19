@@ -207,6 +207,42 @@ for wave in audios:
     _wav.extend(list(wave))
 
 
+# export tube sections
+tube_length_cm = (ctypes.c_double * 40)()
+tube_area_cm2 = (ctypes.c_double * 40)()
+tube_articulator = (ctypes.c_int * 40)()
+incisor_pos_cm = ctypes.c_double(0)
+tongue_tip_side_elevation = ctypes.c_double(0)
+velum_opening_cm2 = ctypes.c_double(0)
+
+VTL.vtlTractToTube(ctypes.byref(params_a),
+            ctypes.byref(tube_length_cm),
+            ctypes.byref(tube_area_cm2),
+            ctypes.byref(tube_articulator),
+            ctypes.byref(incisor_pos_cm),
+            ctypes.byref(tongue_tip_side_elevation),
+            ctypes.byref(velum_opening_cm2))
+
+# from Tube.h
+ARTICULATOR = {0: 'vocal folds',
+        1: 'tongue',
+        2: 'lower incisors',
+        3: 'lower lip',
+        4: 'other articulator',
+        5: 'num articulators',
+        }
+
+arti = [ARTICULATOR[sec] for sec in list(tube_articulator)]
+
+if plt is not None and np is not None:
+    plt.plot(np.cumsum(tube_length_cm), tube_area_cm2, ds='steps')
+    plt.xlabel('tube section [cm]')
+    plt.ylabel('tube area [cm^2]')
+    for ii, x_pos in enumerate(np.cumsum(tube_length_cm)):
+        plt.text(x_pos, 1 + 0.3 * (ii % 2), arti[ii], rotation='vertical', fontsize='small')
+    plt.show()
+
+
 # destroy current state of VTL and free memory
 VTL.vtlClose()
 
@@ -236,15 +272,4 @@ if wavfile is not None and np is not None:
 else:
     print('scipy not available')
     print('skip writing out wav file')
-
-# Plot the area function of the first and the last frame.
-# TODO
-# Matlab code:
-#figure;
-#plot(1:1:numTubeSections, tubeAreas(1:numTubeSections), ...
-#    1:1:numTubeSections,
-#    tubeAreas(1+(numFrames-1)*numTubeSections:(numFrames-1)*numTubeSections +
-#    numTubeSections));
-#xlabel('Position in cm');
-#ylabel('Tube section index');
 
