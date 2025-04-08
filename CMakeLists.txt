@@ -56,8 +56,8 @@ src/VocalTractLabApi/VocalTractLabApi.def)
 
 project("VocalTractLabBackend")
 add_library(VocalTractLabBackend STATIC)
-target_include_directories (VocalTractLabBackend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_sources(VocalTractLabBackend PUBLIC ${BackendSources})
+target_include_directories(VocalTractLabBackend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_sources(VocalTractLabBackend PRIVATE ${BackendSources})
 
 
 include(FetchContent)
