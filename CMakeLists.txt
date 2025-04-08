@@ -1,7 +1,7 @@
 ﻿# CMakeList.txt : CMake project for VocalTractLabApi, include source and define
 # project specific logic here.
 #
-cmake_minimum_required (VERSION 3.13)
+cmake_minimum_required (VERSION 3.5)
 set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/$<CONFIG>)
@@ -56,8 +56,8 @@ src/VocalTractLabApi/VocalTractLabApi.def)
 
 project("VocalTractLabBackend")
 add_library(VocalTractLabBackend STATIC)
-target_include_directories (VocalTractLabBackend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_sources(VocalTractLabBackend PUBLIC ${BackendSources})
+target_include_directories(VocalTractLabBackend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_sources(VocalTractLabBackend PRIVATE ${BackendSources})
 
 
 include(FetchContent)
