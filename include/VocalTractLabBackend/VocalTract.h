@@ -441,6 +441,7 @@ public:
   void calcCrossSections();
   void getCrossProfiles(Point2D P, Point2D v, double *upperProfile, double *lowerProfile, 
     bool considerTongue, Tube::Articulator &articulator, bool debug = false);
+  int getRawCuts(Point2D P, Point2D v, double *cutData, int maxCuts);
   void insertUpperProfileLine(Point2D P0, Point2D P1, int surfaceIndex, 
     double *upperProfile, int *upperProfileSurface);
   void insertLowerProfileLine(Point2D P0, Point2D P1, int surfaceIndex, 
@@ -481,15 +482,16 @@ public:
   /// Private data.
   // **************************************************************************
 
-private:
-  bool intersectionsPrepared[NUM_SURFACES];  // For the fast intersection method
-  bool hasStoredControlParams;
-  double storedControlParams[NUM_PARAMS];
-
+  // Outlines used for centerline computation (public for debug export).
   LineStrip2D upperOutline;
   LineStrip2D lowerOutline;
   LineStrip2D tongueOutline;
   LineStrip2D epiglottisOutline;
+
+private:
+  bool intersectionsPrepared[NUM_SURFACES];  // For the fast intersection method
+  bool hasStoredControlParams;
+  double storedControlParams[NUM_PARAMS];
 };
 
 // ****************************************************************************

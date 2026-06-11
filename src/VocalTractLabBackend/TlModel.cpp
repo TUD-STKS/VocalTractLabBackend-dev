@@ -592,6 +592,7 @@ void TlModel::prepareCalculations()
       matrixProduct[k][i] = K;
     }
     fossaInputImpedance = K.A / K.C;
+    fossaInputImpedanceArray[i] = fossaInputImpedance;
 
     // **************************************************************
     // The matrix products of the subglottal system and pharynx.
@@ -1504,3 +1505,40 @@ ComplexValue TlModel::getFlowSourceTF(int freqIndex, int section)
 
 // ****************************************************************************
 
+// ****************************************************************************
+/// Returns the matrix product of the tube sections up to the given section
+/// at the given frequency index (for analysis / debugging).
+// ****************************************************************************
+
+Matrix2x2 TlModel::getMatrixProduct(int section, int freqIndex)
+{
+  return matrixProduct[section][freqIndex];
+}
+
+// ****************************************************************************
+/// Returns the input impedance of the piriform fossa at the given
+/// frequency index.
+// ****************************************************************************
+
+ComplexValue TlModel::getFossaInputImpedance(int freqIndex)
+{
+  return fossaInputImpedanceArray[freqIndex];
+}
+
+// ****************************************************************************
+/// Returns the nose radiation impedance at the given frequency index.
+// ****************************************************************************
+
+ComplexValue TlModel::getNoseRadiationImpedance(int freqIndex)
+{
+  return noseRadiationImpedance[freqIndex];
+}
+
+// ****************************************************************************
+/// Returns the mouth radiation impedance at the given frequency index.
+// ****************************************************************************
+
+ComplexValue TlModel::getMouthRadiationImpedance(int freqIndex)
+{
+  return mouthRadiationImpedance[freqIndex];
+}

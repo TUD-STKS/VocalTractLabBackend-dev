@@ -440,6 +440,7 @@ void Tube::setGlottisArea(const double area_cm2)
 
 void Tube::setVelumOpening(const double openingArea_cm2)
 {
+  rawVelumOpening_cm2 = openingArea_cm2;
   const int N = 4;  // Only the first N-1 sections of the nose change their shape
   int i;
   Section *ts = NULL;
@@ -554,7 +555,7 @@ void Tube::interpolate(const Tube *leftTube, const Tube *rightTube, const double
 
 double Tube::getVelumOpening_cm2() const
 {
-  return noseSection[0].area_cm2;
+  return rawVelumOpening_cm2;
 }
 
 
@@ -767,6 +768,7 @@ void Tube::operator=(const Tube &t)
   this->nasalCavityLength_cm = t.nasalCavityLength_cm;
   this->piriformFossaLength_cm = t.piriformFossaLength_cm;
   this->piriformFossaVolume_cm3 = t.piriformFossaVolume_cm3;
+  this->rawVelumOpening_cm2 = t.rawVelumOpening_cm2;
 }
 
 // ****************************************************************************

@@ -694,6 +694,372 @@ C_EXPORT int vtlGesturalScoreToEmaAndMesh(const char *gestureFileName, const cha
 
 // ****************************************************************************
 
+// ****************************************************************************
+// Set control parameters on the current glottis model, call calcGeometry(),
+// and return derived parameters and tube data.
+//
+// Parameters:
+// o controlParams (in): Control parameter values (numGlottisParams elements).
+// o derivedParams (out): Derived parameter values after calcGeometry().
+//     Must have at least 8 elements for the geometric glottis.
+// o numDerivedParams (out): Number of derived parameters written.
+// o tubeLength_cm (out): Tube section lengths (2 elements).
+// o tubeArea_cm2 (out): Tube section areas (2 elements).
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlGlottisCalcGeometry(double *controlParams,
+                                    double *derivedParams,
+                                    int *numDerivedParams,
+                                    double *tubeLength_cm,
+                                    double *tubeArea_cm2);
+
+// ****************************************************************************
+// Perform one incTime step on the current glottis model, then call
+// calcGeometry() and return the updated state.
+//
+// Parameters:
+// o timeIncrement_s (in): Time step in seconds.
+// o pressure_dPa (in): Pressure values (4 elements):
+//     [subglottal, lower_glottis, upper_glottis, supraglottal].
+// o controlParams (in): Control parameter values for this step.
+// o derivedParams (out): Derived parameters after the step.
+// o numDerivedParams (out): Number of derived parameters written.
+// o tubeLength_cm (out): Tube section lengths (2 elements).
+// o tubeArea_cm2 (out): Tube section areas (2 elements).
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlGlottisIncTime(double timeIncrement_s, double *pressure_dPa,
+                               double *controlParams, double *derivedParams,
+                               int *numDerivedParams, double *tubeLength_cm,
+                               double *tubeArea_cm2);
+
+// ****************************************************************************
+// Reset the motion state of the current glottis model (phase, time, filters).
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlGlottisResetMotion();
+
+// ****************************************************************************
+// Returns static parameter info for the current glottis model.
+// The arrays must have at least numStaticParams elements.
+//
+// Parameters out:
+// o names: Tab-separated parameter names (at least 10*numStaticParams chars).
+// o paramMin, paramMax, paramStandard: Min, max, default values.
+// o numStaticParams: Number of static parameters.
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlGetGlottisStaticParamInfo(char *names, double *paramMin,
+                                          double *paramMax,
+                                          double *paramStandard,
+                                          int *numStaticParams);
+
+// ****************************************************************************
+// TDS (Time-Domain Simulation) Component Testing API
+// ****************************************************************************
+
+// ****************************************************************************
+// Set TDS options (e.g., disable noise sources for deterministic testing).
+//
+// Parameters:
+// o generateNoiseSources (in): Enable/disable noise source generation.
+// o turbulenceLosses (in): Consider fluid dynamic losses due to turbulence.
+// o softWalls (in): Consider losses due to soft walls.
+// o radiationFromSkin (in): Allow sound radiation from the skin.
+// o piriformFossa (in): Include the piriform fossa.
+// o innerLengthCorrections (in): Additional inductivities between sections.
+// o transvelarCoupling (in): Sound transmission through the velum tissue.
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlTdsSetOptions(
+    bool generateNoiseSources,
+    bool turbulenceLosses,
+    bool softWalls,
+    bool radiationFromSkin,
+    bool piriformFossa,
+    bool innerLengthCorrections,
+    bool transvelarCoupling
+);
+
+// ****************************************************************************
+// Reset the TDS model motion state.
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlTdsResetMotion();
+
+// ****************************************************************************
+// Set the piriform fossa dimensions on the global tube object.
+// This allows testing the TDS/Synthesizer with non-default fossa values
+// through synthesis_add_tube (which normally uses the global tube's defaults).
+//
+// Parameters (in):
+// o length_cm: Fossa length in cm.
+// o volume_cm3: Fossa volume in cm^3.
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlSetFossaDims(double length_cm, double volume_cm3);
+
+// ****************************************************************************
+// Set tube geometry on the TDS model and run one time step.
+// Returns all internal state for component-level testing.
+//
+// Parameters (in):
+// o tubeLength_cm: Pharynx+mouth section lengths (40 elements).
+// o tubeArea_cm2: Pharynx+mouth section areas (40 elements).
+// o tubeArticulator: Pharynx+mouth articulators (40 elements).
+// o incisorPos_cm: Position of the incisors.
+// o velumOpening_cm2: Naso-pharyngeal port area.
+// o tongueTipSideElevation: TS3 parameter.
+// o filtering: Apply area filtering (true/false).
+// o pressureSourceSection: Section index for pressure source (-1 = none).
+// o pressureSourceAmp: Pressure source amplitude in dPa.
+//
+// Parameters (out):
+// o secArea: Area per section (93 elements).
+// o secLength: Length per section (93 elements).
+// o secR0: Left resistance per section (93 elements).
+// o secR1: Right resistance per section (93 elements).
+// o secL: Inductance per section (93 elements).
+// o secC: Capacitance per section (93 elements).
+// o secD: D value per section (93 elements).
+// o secE: E value per section (93 elements).
+// o secAlpha: Alpha (wall vibration) per section (93 elements).
+// o secBeta: Beta (wall vibration) per section (93 elements).
+// o secPressure: Pressure per section (93 elements).
+// o bcMagnitude: Branch current magnitude (97 elements).
+// o mouthFlow: Radiated flow from mouth (scalar).
+// o nostrilFlow: Radiated flow from nostrils (scalar).
+// o skinFlow: Radiated flow from skin (scalar).
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlTdsSetTubeAndRun(
+    double *tubeLength_cm, double *tubeArea_cm2, int *tubeArticulator,
+    double incisorPos_cm, double velumOpening_cm2,
+    double tongueTipSideElevation, bool filtering, int pressureSourceSection,
+    double pressureSourceAmp, double *secArea, double *secLength, double *secR0,
+    double *secR1, double *secL, double *secC, double *secD, double *secE,
+    double *secAlpha, double *secBeta, double *secPressure, double *bcMagnitude,
+    double *mouthFlow, double *nostrilFlow, double *skinFlow);
+
+// ****************************************************************************
+
+// ****************************************************************************
+// Returns all 93 tube sections (area, length, volume, wall properties, etc.)
+// for the given vocal tract parameters.
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlTractToFullTube(double *tractParams,
+                                double *tubeLength_cm,
+                                double *tubeArea_cm2,
+                                double *tubeVolume_cm3,
+                                double *tubeWallMass_cgs,
+                                double *tubeWallStiffness_cgs,
+                                double *tubeWallResistance_cgs,
+                                int *tubeArticulator,
+                                double *incisorPos_cm,
+                                double *tongueTipSideElevation,
+                                double *velumOpening_cm2,
+                                double *piriformFossaLength_cm,
+                                double *piriformFossaVolume_cm3);
+
+// ****************************************************************************
+// Returns intermediate TL model values (matrixProduct for all 93 sections,
+// fossa input impedance, radiation impedances) at a given frequency index.
+// Used for analysis and debugging of the TL model computation.
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// 2: freqIndex out of range.
+// ****************************************************************************
+
+C_EXPORT int vtlGetTLIntermediateValues(
+    double *tractParams,
+    int numSpectrumSamples,
+    TransferFunctionOptions *opts,
+    int freqIndex,
+    double *matrix_A_re, double *matrix_A_im,
+    double *matrix_B_re, double *matrix_B_im,
+    double *matrix_C_re, double *matrix_C_im,
+    double *matrix_D_re, double *matrix_D_im,
+    double *fossa_input_imp_re, double *fossa_input_imp_im,
+    double *nose_rad_imp_re, double *nose_rad_imp_im,
+    double *mouth_rad_imp_re, double *mouth_rad_imp_im);
+
+// ****************************************************************************
+// Returns the 129 cross-section areas, positions, and articulators from the
+// VocalTract model after calling calculateAll on the given tract parameters.
+// NUM_CENTERLINE_POINTS = (1 << 7) + 1 = 129.
+//
+// Parameters:
+// o tractParams (in): Is a vector of vocal tract parameters with
+//     numVocalTractParams elements.
+// o crossSectionAreas (out): Is a vector of 129 cross-section areas in cm^2.
+// o crossSectionPositions (out): Is a vector of 129 cross-section positions
+//     along the center line in cm.
+// o crossSectionArticulators (out): Is a vector of 129 articulator indices
+//     (int cast of Tube::Articulator enum).
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlGetCrossSections(double *tractParams,
+                                 double *crossSectionAreas,
+                                 double *crossSectionPositions,
+                                 int *crossSectionArticulators);
+
+// ****************************************************************************
+// Returns the upper and lower cross-sectional profiles at a specific
+// centerline index for the given vocal tract parameters.
+//
+// Parameters:
+// o tractParams (in): Is a vector of vocal tract parameters with
+//     numVocalTractParams elements.
+// o centerlineIndex (in): Index along the centerline (0..128).
+// o upperProfile (out): Is a vector of 96 (NUM_PROFILE_SAMPLES) doubles
+//     representing the upper profile.
+// o lowerProfile (out): Is a vector of 96 (NUM_PROFILE_SAMPLES) doubles
+//     representing the lower profile.
+// o centerlineInfo (out): Is a vector of 6 doubles:
+//     [point.x, point.y, normal.x, normal.y, area, pos].
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// 2: The centerline index is out of range.
+// ****************************************************************************
+
+C_EXPORT int vtlGetProfiles(double *tractParams, int centerlineIndex,
+                             double *upperProfile, double *lowerProfile,
+                             double *centerlineInfo);
+
+// ****************************************************************************
+// Returns all 129 centerline points (x, y, normal_x, normal_y, pos) after
+// computing the vocal tract geometry for the given parameters.
+//
+// Parameters:
+// o tractParams (in): Is a vector of vocal tract parameters with
+//     numVocalTractParams elements.
+// o centerlineData (out): Is a vector of 129*5 = 645 doubles.
+//     For each point i (0..128): [x, y, normal_x, normal_y, pos].
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlGetCenterline(double *tractParams, double *centerlineData);
+
+// ****************************************************************************
+// Returns the 4 outlines (upper, lower, tongue, epiglottis) used for
+// centerline computation, after calculating vocal tract geometry.
+//
+// Parameters:
+// o tractParams (in): Vocal tract parameters (numVocalTractParams elements).
+// o outlineData (out): Flat array for 4 outlines, each point = (x, y).
+//     Layout: [upper_n, upper_x0, upper_y0, ..., lower_n, lower_x0, ...]
+//     Max total size: 4 * (1 + 2*200) = 1604 doubles.
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlGetOutlines(double *tractParams, double *outlineData, int *outlineSizes);
+
+C_EXPORT int vtlGetTongueRibData(double *tractParams, double *ribData, int *numRibs);
+
+C_EXPORT int vtlGetTongueWidthBounds(double *tractParams, double *boundsData, int *numRibs);
+
+C_EXPORT int vtlGetSurfaceVertices(double *tractParams, int surfaceIndex,
+    double *vertexData, int *numRibs, int *numRibPoints);
+
+C_EXPORT int vtlGetCuts(double *tractParams, int centerlineIndex,
+    double *cutData, int *numCuts);
+
+// ****************************************************************************
+// Apply anatomy parameters derived from age and gender to the loaded vocal
+// tract. This calls AnatomyParams::calcFromAge(), restrictParams(), and
+// setFor() on the currently loaded VocalTract.
+//
+// Parameters:
+// o ageMonths (in): Age in months (minimum 12).
+// o isMale (in): true for male, false for female.
+//
+// Return values:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlSetAnatomyFromAge(int ageMonths, bool isMale);
+
+// ****************************************************************************
+// Get the 13 anatomy parameters from the currently loaded vocal tract.
+//
+// Parameters:
+// o anatomyParams (out): Array of 13 doubles to receive the values.
+//
+// Return values:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlGetAnatomyParams(double *anatomyParams);
+
+// ****************************************************************************
+// Set the 13 anatomy parameters on the currently loaded vocal tract.
+// This calls AnatomyParams::restrictParams() and setFor().
+//
+// Parameters:
+// o anatomyParams (in): Array of 13 doubles with the anatomy values.
+//
+// Return values:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+C_EXPORT int vtlSetAnatomyParams(double *anatomyParams);
+
+// ****************************************************************************
+
 #ifdef __cplusplus
 } /* end extern "C" */
 #endif

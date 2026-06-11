@@ -29,3 +29,7 @@ vtlGesturalScoreToEma
 vtlGesturalScoreToEmaAndMesh
 vtlTractSequenceToEmaAndMesh
 vtlSaveSpeaker
+vtlGlottisCalcGeometry
+vtlGlottisIncTime
+vtlGlottisResetMotion
+vtlGetGlottisStaticParamInfo

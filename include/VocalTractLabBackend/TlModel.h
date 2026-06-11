@@ -84,6 +84,10 @@ public:
   
   void getImpulseResponseWindow(Signal *window, int length);
   void getImpulseResponse(Signal *impulseResponse, int lengthExponent);
+  Matrix2x2 getMatrixProduct(int section, int freqIndex);
+  ComplexValue getFossaInputImpedance(int freqIndex);
+  ComplexValue getNoseRadiationImpedance(int freqIndex);
+  ComplexValue getMouthRadiationImpedance(int freqIndex);
   void getSpectrum(SpectrumType type, ComplexSignal *spectrum, int spectrumLength, int section);
 
   int getMostConstrictedSection();
@@ -121,6 +125,7 @@ private:
   ComplexValue noseRadiationImpedance[MAX_NUM_FREQ];
   ComplexValue lungTerminationImpedance[MAX_NUM_FREQ];
   ComplexValue radiationCharacteristic[MAX_NUM_FREQ];
+  ComplexValue fossaInputImpedanceArray[MAX_NUM_FREQ];
 
 
   // ************************************************************************

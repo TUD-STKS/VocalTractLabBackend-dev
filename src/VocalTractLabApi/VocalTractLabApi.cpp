@@ -34,6 +34,7 @@
 #include "VocalTractLabBackend/GesturalScore.h"
 
 #include "VocalTractLabBackend/Speaker.h"
+#include "VocalTractLabBackend/AnatomyParams.h"
 
 #include "VocalTractLabBackend/TlModel.h"
 
@@ -697,6 +698,76 @@ int vtlFastTractToTube(double *tractParams,
   return 0;
 }
 
+
+// ****************************************************************************
+// Returns all 93 tube sections (area, length, volume, wall properties, etc.)
+// for the given vocal tract parameters. Unlike vtlTractToTube which only
+// returns pharynx+mouth sections, this returns the full tube including
+// trachea, glottis, nose, fossa, and sinus sections.
+//
+// Function return value:
+// 0: success.
+// 1: The API has not been initialized.
+// ****************************************************************************
+
+int vtlTractToFullTube(double *tractParams,
+                       double *tubeLength_cm,
+                       double *tubeArea_cm2,
+                       double *tubeVolume_cm3,
+                       double *tubeWallMass_cgs,
+                       double *tubeWallStiffness_cgs,
+                       double *tubeWallResistance_cgs,
+                       int *tubeArticulator,
+                       double *incisorPos_cm,
+                       double *tongueTipSideElevation,
+                       double *velumOpening_cm2,
+                       double *piriformFossaLength_cm,
+                       double *piriformFossaVolume_cm3)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  int i;
+  for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+  {
+    vocalTract->param[i].x = tractParams[i];
+  }
+
+  vocalTract->calculateAll();
+
+  Tube tube;
+  vocalTract->getTube(&tube);
+  tube.setGlottisArea(0.0);
+
+  // Copy all 93 sections
+  for (i = 0; i < Tube::NUM_SECTIONS; i++)
+  {
+    Tube::Section *ts = tube.section[i];
+    tubeLength_cm[i] = ts->length_cm;
+    tubeArea_cm2[i] = ts->area_cm2;
+    tubeVolume_cm3[i] = ts->volume_cm3;
+    tubeWallMass_cgs[i] = ts->wallMass_cgs;
+    tubeWallStiffness_cgs[i] = ts->wallStiffness_cgs;
+    tubeWallResistance_cgs[i] = ts->wallResistance_cgs;
+    tubeArticulator[i] = ts->articulator;
+  }
+
+  *incisorPos_cm = tube.teethPosition_cm;
+  *tongueTipSideElevation = tube.tongueTipSideElevation;
+  *velumOpening_cm2 = tube.getVelumOpening_cm2();
+
+  // Get static tube dimensions (fossa length and volume)
+  double subglottalLength, nasalLength, fossaLength, fossaVolume;
+  tube.getStaticTubeDimensions(subglottalLength, nasalLength, fossaLength, fossaVolume);
+
+  *piriformFossaLength_cm = fossaLength;
+  *piriformFossaVolume_cm3 = fossaVolume;
+
+  return 0;
+}
 
 // ****************************************************************************
 // Returns the default options for the transfer function calculation. 
@@ -2253,3 +2324,776 @@ int vtlGesturalScoreToEmaAndMesh(const char *gestureFileName, const char *filePa
 }
 
 // ****************************************************************************
+
+// ****************************************************************************
+// Set control parameters on the current glottis model, call calcGeometry(),
+// and return derived parameters and tube data.
+// ****************************************************************************
+
+int vtlGlottisCalcGeometry(double *controlParams, double *derivedParams,
+                           int *numDerivedParams, double *tubeLength_cm,
+                           double *tubeArea_cm2)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  Glottis *g = glottis[selectedGlottis];
+  int numCP = (int)g->controlParam.size();
+
+  // Set control parameters
+  for (int i = 0; i < numCP; i++)
+  {
+    g->controlParam[i].x = controlParams[i];
+  }
+
+  // Calculate geometry
+  g->calcGeometry();
+
+  // Return derived parameters
+  int numDP = (int)g->derivedParam.size();
+  *numDerivedParams = numDP;
+  for (int i = 0; i < numDP; i++)
+  {
+    derivedParams[i] = g->derivedParam[i].x;
+  }
+
+  // Return tube data
+  g->getTubeData(tubeLength_cm, tubeArea_cm2);
+
+  return 0;
+}
+
+// ****************************************************************************
+// Perform one incTime step, then calcGeometry, and return updated state.
+// ****************************************************************************
+
+int vtlGlottisIncTime(double timeIncrement_s, double *pressure_dPa,
+                      double *controlParams, double *derivedParams,
+                      int *numDerivedParams, double *tubeLength_cm,
+                      double *tubeArea_cm2)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  Glottis *g = glottis[selectedGlottis];
+  int numCP = (int)g->controlParam.size();
+
+  // Set control parameters
+  for (int i = 0; i < numCP; i++)
+  {
+    g->controlParam[i].x = controlParams[i];
+  }
+
+  // Advance time
+  g->incTime(timeIncrement_s, pressure_dPa);
+
+  // Calculate geometry with updated state
+  g->calcGeometry();
+
+  // Return derived parameters
+  int numDP = (int)g->derivedParam.size();
+  *numDerivedParams = numDP;
+  for (int i = 0; i < numDP; i++)
+  {
+    derivedParams[i] = g->derivedParam[i].x;
+  }
+
+  // Return tube data
+  g->getTubeData(tubeLength_cm, tubeArea_cm2);
+
+  return 0;
+}
+
+// ****************************************************************************
+// Reset the motion state of the current glottis model.
+// ****************************************************************************
+
+int vtlGlottisResetMotion()
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  glottis[selectedGlottis]->resetMotion();
+  return 0;
+}
+
+// ****************************************************************************
+// Returns static parameter info for the current glottis model.
+// ****************************************************************************
+
+int vtlGetGlottisStaticParamInfo(char *names, double *paramMin,
+                                 double *paramMax, double *paramStandard,
+                                 int *numStaticParams)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  Glottis *g = glottis[selectedGlottis];
+  int numSP = (int)g->staticParam.size();
+  *numStaticParams = numSP;
+
+  strcpy(names, "");
+  for (int i = 0; i < numSP; i++)
+  {
+    strcat(names, g->staticParam[i].name.c_str());
+    if (i != numSP - 1)
+    {
+      strcat(names, "\t");
+    }
+    paramMin[i] = g->staticParam[i].min;
+    paramMax[i] = g->staticParam[i].max;
+    paramStandard[i] = g->staticParam[i].neutral;
+  }
+
+  return 0;
+}
+
+// ****************************************************************************
+// TDS API implementations
+// ****************************************************************************
+
+int vtlTdsSetOptions(bool generateNoiseSources, bool turbulenceLosses,
+                     bool softWalls, bool radiationFromSkin, bool piriformFossa,
+                     bool innerLengthCorrections, bool transvelarCoupling)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  tdsModel->options.generateNoiseSources = generateNoiseSources;
+  tdsModel->options.turbulenceLosses = turbulenceLosses;
+  tdsModel->options.softWalls = softWalls;
+  tdsModel->options.radiationFromSkin = radiationFromSkin;
+  tdsModel->options.piriformFossa = piriformFossa;
+  tdsModel->options.innerLengthCorrections = innerLengthCorrections;
+  tdsModel->options.transvelarCoupling = transvelarCoupling;
+  return 0;
+}
+
+int vtlTdsResetMotion()
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  tdsModel->resetMotion();
+  return 0;
+}
+
+int vtlSetFossaDims(double length_cm, double volume_cm3)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  tube->initPiriformFossa(length_cm, volume_cm3);
+  return 0;
+}
+
+int vtlTdsSetTubeAndRun(double *tubeLength_cm, double *tubeArea_cm2,
+                        int *tubeArticulator, double incisorPos_cm,
+                        double velumOpening_cm2, double tongueTipSideElevation,
+                        bool filtering, int pressureSourceSection,
+                        double pressureSourceAmp, double *secArea,
+                        double *secLength, double *secR0, double *secR1,
+                        double *secL, double *secC, double *secD, double *secE,
+                        double *secAlpha, double *secBeta, double *secPressure,
+                        double *bcMagnitude, double *mouthFlow,
+                        double *nostrilFlow, double *skinFlow)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  // Set tube geometry
+  Tube::Articulator articulator[Tube::NUM_PHARYNX_MOUTH_SECTIONS];
+  for (int i = 0; i < Tube::NUM_PHARYNX_MOUTH_SECTIONS; i++)
+  {
+    articulator[i] = (Tube::Articulator)tubeArticulator[i];
+  }
+
+  tube->setPharynxMouthGeometry(tubeLength_cm, tubeArea_cm2, articulator,
+                                incisorPos_cm, tongueTipSideElevation);
+  tube->setVelumOpening(velumOpening_cm2);
+
+  // Load into TDS model
+  tdsModel->setTube(tube, filtering);
+
+  // Set pressure source
+  if (pressureSourceSection >= 0)
+  {
+    tdsModel->setPressureSource(pressureSourceAmp, pressureSourceSection);
+  }
+  else
+  {
+    tdsModel->pressureSourceSection = -1;
+    tdsModel->pressureSourceAmp = 0.0;
+  }
+
+  // Run one time step
+  double mouth = 0.0, nostril = 0.0, skin = 0.0;
+  tdsModel->proceedTimeStep(mouth, nostril, skin);
+
+  // Copy out all internal state
+  for (int i = 0; i < Tube::NUM_SECTIONS; i++)
+  {
+    secArea[i] = tdsModel->tubeSection[i].area;
+    secLength[i] = tdsModel->tubeSection[i].length;
+    secR0[i] = tdsModel->tubeSection[i].R[0];
+    secR1[i] = tdsModel->tubeSection[i].R[1];
+    secL[i] = tdsModel->tubeSection[i].L;
+    secC[i] = tdsModel->tubeSection[i].C;
+    secD[i] = tdsModel->tubeSection[i].D;
+    secE[i] = tdsModel->tubeSection[i].E;
+    secAlpha[i] = tdsModel->tubeSection[i].alpha;
+    secBeta[i] = tdsModel->tubeSection[i].beta;
+    secPressure[i] = tdsModel->tubeSection[i].pressure;
+  }
+
+  for (int i = 0; i < TdsModel::NUM_BRANCH_CURRENTS; i++)
+  {
+    bcMagnitude[i] = tdsModel->branchCurrent[i].magnitude;
+  }
+
+  *mouthFlow = mouth;
+  *nostrilFlow = nostril;
+  *skinFlow = skin;
+
+  return 0;
+}
+
+// ****************************************************************************
+
+// ****************************************************************************
+
+int vtlGetTLIntermediateValues(
+    double *tractParams, int numSpectrumSamples, TransferFunctionOptions *opts,
+    int freqIndex, double *matrix_A_re, double *matrix_A_im,
+    double *matrix_B_re, double *matrix_B_im, double *matrix_C_re,
+    double *matrix_C_im, double *matrix_D_re, double *matrix_D_im,
+    double *fossa_input_imp_re, double *fossa_input_imp_im,
+    double *nose_rad_imp_re, double *nose_rad_imp_im, double *mouth_rad_imp_re,
+    double *mouth_rad_imp_im)
+{
+
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  TlModel *tlModel = new TlModel();
+
+  // Set options
+  if (opts != NULL)
+  {
+    TlModel::Options tlOpts;
+    tlOpts.radiation = (TlModel::RadiationType)opts->radiationType;
+    tlOpts.boundaryLayer = opts->boundaryLayer;
+    tlOpts.heatConduction = opts->heatConduction;
+    tlOpts.softWalls = opts->softWalls;
+    tlOpts.hagenResistance = opts->hagenResistance;
+    tlOpts.innerLengthCorrections = opts->innerLengthCorrections;
+    tlOpts.lumpedElements = opts->lumpedElements;
+    tlOpts.paranasalSinuses = opts->paranasalSinuses;
+    tlOpts.piriformFossa = opts->piriformFossa;
+    tlOpts.staticPressureDrops = opts->staticPressureDrops;
+    tlModel->options = tlOpts;
+  }
+
+  // Calculate Tube
+  for (int i = 0; i < VocalTract::NUM_PARAMS; i++)
+  {
+    vocalTract->param[i].x = tractParams[i];
+  }
+  vocalTract->calculateAll();
+  vocalTract->getTube(&tlModel->tube);
+  tlModel->tube.setGlottisArea(0.0);
+
+  ComplexSignal dummySpectrum;
+  tlModel->getSpectrum(TlModel::FLOW_SOURCE_TF, &dummySpectrum,
+                       numSpectrumSamples, Tube::FIRST_PHARYNX_SECTION);
+
+  if (freqIndex < 0 || freqIndex >= (numSpectrumSamples / 2))
+  {
+    delete tlModel;
+    return 2;
+  }
+
+  for (int i = 0; i < Tube::NUM_SECTIONS; i++)
+  {
+    Matrix2x2 M = tlModel->getMatrixProduct(i, freqIndex);
+    matrix_A_re[i] = M.A.real();
+    matrix_A_im[i] = M.A.imag();
+    matrix_B_re[i] = M.B.real();
+    matrix_B_im[i] = M.B.imag();
+    matrix_C_re[i] = M.C.real();
+    matrix_C_im[i] = M.C.imag();
+    matrix_D_re[i] = M.D.real();
+    matrix_D_im[i] = M.D.imag();
+  }
+
+  ComplexValue fcc = tlModel->getFossaInputImpedance(freqIndex);
+  *fossa_input_imp_re = fcc.real();
+  *fossa_input_imp_im = fcc.imag();
+
+  ComplexValue ncc = tlModel->getNoseRadiationImpedance(freqIndex);
+  *nose_rad_imp_re = ncc.real();
+  *nose_rad_imp_im = ncc.imag();
+
+  ComplexValue mcc = tlModel->getMouthRadiationImpedance(freqIndex);
+  *mouth_rad_imp_re = mcc.real();
+  *mouth_rad_imp_im = mcc.imag();
+
+  delete tlModel;
+  return 0;
+}
+
+// ****************************************************************************
+// Returns the 129 cross-section areas, positions, and articulators from the
+// VocalTract model after calling calculateAll on the given tract parameters.
+// ****************************************************************************
+
+int vtlGetCrossSections(double *tractParams, double *crossSectionAreas,
+                        double *crossSectionPositions,
+                        int *crossSectionArticulators)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  // Store the current control parameter values.
+  vocalTract->storeControlParams();
+
+  // Set the given vocal tract parameters.
+  int i;
+  for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+  {
+    vocalTract->param[i].x = tractParams[i];
+  }
+
+  // Calculate the vocal tract shape.
+  vocalTract->calculateAll();
+
+  // Copy the cross-section data to the output arrays.
+  for (i = 0; i < VocalTract::NUM_CENTERLINE_POINTS; i++)
+  {
+    crossSectionAreas[i] = vocalTract->crossSection[i].area;
+    crossSectionPositions[i] = vocalTract->crossSection[i].pos;
+    crossSectionArticulators[i] = (int)vocalTract->crossSection[i].articulator;
+  }
+
+  // Restore the previous control parameter values.
+  vocalTract->restoreControlParams();
+
+  return 0;
+}
+
+// ****************************************************************************
+// Returns the upper and lower cross-sectional profiles at a specific
+// centerline index for the given vocal tract parameters.
+// ****************************************************************************
+
+int vtlGetProfiles(double *tractParams, int centerlineIndex,
+                   double *upperProfile, double *lowerProfile,
+                   double *centerlineInfo)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  if (centerlineIndex < 0 ||
+      centerlineIndex >= VocalTract::NUM_CENTERLINE_POINTS)
+  {
+    printf("Error: centerlineIndex %d is out of range [0, %d).\n",
+           centerlineIndex, VocalTract::NUM_CENTERLINE_POINTS);
+    return 2;
+  }
+
+  // Store the current control parameter values.
+  vocalTract->storeControlParams();
+
+  // Set the given vocal tract parameters.
+  int i;
+  for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+  {
+    vocalTract->param[i].x = tractParams[i];
+  }
+
+  // Calculate the vocal tract shape.
+  vocalTract->calculateAll();
+
+  // Get the cross profiles at the specified centerline index.
+  double upProfile[VocalTract::NUM_PROFILE_SAMPLES];
+  double loProfile[VocalTract::NUM_PROFILE_SAMPLES];
+  Tube::Articulator articulator;
+
+  vocalTract->getCrossProfiles(vocalTract->centerLine[centerlineIndex].point,
+                               vocalTract->centerLine[centerlineIndex].normal,
+                               upProfile, loProfile, true, articulator);
+
+  // Copy profile data to output arrays.
+  for (i = 0; i < VocalTract::NUM_PROFILE_SAMPLES; i++)
+  {
+    upperProfile[i] = upProfile[i];
+    lowerProfile[i] = loProfile[i];
+  }
+
+  // Copy centerline info: point.x, point.y, normal.x, normal.y, area, pos
+  centerlineInfo[0] = vocalTract->centerLine[centerlineIndex].point.x;
+  centerlineInfo[1] = vocalTract->centerLine[centerlineIndex].point.y;
+  centerlineInfo[2] = vocalTract->centerLine[centerlineIndex].normal.x;
+  centerlineInfo[3] = vocalTract->centerLine[centerlineIndex].normal.y;
+  centerlineInfo[4] = vocalTract->crossSection[centerlineIndex].area;
+  centerlineInfo[5] = vocalTract->crossSection[centerlineIndex].pos;
+
+  // Restore the previous control parameter values.
+  vocalTract->restoreControlParams();
+
+  return 0;
+}
+
+// ****************************************************************************
+// Returns all 129 centerline points after computing vocal tract geometry.
+// ****************************************************************************
+
+int vtlGetCenterline(double *tractParams, double *centerlineData)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  // Store the current control parameter values.
+  vocalTract->storeControlParams();
+
+  // Set the given vocal tract parameters.
+  int i;
+  for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+  {
+    vocalTract->param[i].x = tractParams[i];
+  }
+
+  // Calculate the vocal tract shape.
+  vocalTract->calculateAll();
+
+  // Copy all 129 centerline points: x, y, normal_x, normal_y, pos
+  for (i = 0; i < VocalTract::NUM_CENTERLINE_POINTS; i++)
+  {
+    centerlineData[i * 5 + 0] = vocalTract->centerLine[i].point.x;
+    centerlineData[i * 5 + 1] = vocalTract->centerLine[i].point.y;
+    centerlineData[i * 5 + 2] = vocalTract->centerLine[i].normal.x;
+    centerlineData[i * 5 + 3] = vocalTract->centerLine[i].normal.y;
+    centerlineData[i * 5 + 4] = vocalTract->centerLine[i].pos;
+  }
+
+  // Restore the previous control parameter values.
+  vocalTract->restoreControlParams();
+
+  return 0;
+}
+
+// ****************************************************************************
+// Returns the 4 outlines used for centerline computation.
+// ****************************************************************************
+
+int vtlGetOutlines(double *tractParams, double *outlineData, int *outlineSizes)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  vocalTract->storeControlParams();
+
+  int i;
+  for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+  {
+    vocalTract->param[i].x = tractParams[i];
+  }
+
+  vocalTract->calculateAll();
+
+  // Export 4 outlines: upper, lower, tongue, epiglottis
+  // Each outline is stored as n points of (x, y) pairs
+  int offset = 0;
+  auto exportOutline = [&](LineStrip2D &outline, int outlineIdx)
+  {
+    int n = outline.getNumPoints();
+    outlineSizes[outlineIdx] = n;
+    for (int j = 0; j < n; j++)
+    {
+      outlineData[offset++] = outline.getControlPoint(j).x;
+      outlineData[offset++] = outline.getControlPoint(j).y;
+    }
+  };
+
+  exportOutline(vocalTract->upperOutline, 0);
+  exportOutline(vocalTract->lowerOutline, 1);
+  exportOutline(vocalTract->tongueOutline, 2);
+  exportOutline(vocalTract->epiglottisOutline, 3);
+
+  vocalTract->restoreControlParams();
+
+  return 0;
+}
+
+// ****************************************************************************
+// Returns tongue rib data (point, normal, leftSideHeight, rightSideHeight).
+// ****************************************************************************
+
+int vtlGetTongueRibData(double *tractParams, double *ribData, int *numRibs)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  vocalTract->storeControlParams();
+
+  int i;
+  for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+  {
+    vocalTract->param[i].x = tractParams[i];
+  }
+
+  vocalTract->calculateAll();
+
+  *numRibs = VocalTract::NUM_TONGUE_RIBS;
+  for (i = 0; i < VocalTract::NUM_TONGUE_RIBS; i++)
+  {
+    ribData[i * 6 + 0] = vocalTract->tongueRib[i].point.x;
+    ribData[i * 6 + 1] = vocalTract->tongueRib[i].point.y;
+    ribData[i * 6 + 2] = vocalTract->tongueRib[i].normal.x;
+    ribData[i * 6 + 3] = vocalTract->tongueRib[i].normal.y;
+    ribData[i * 6 + 4] = vocalTract->tongueRib[i].leftSideHeight;
+    ribData[i * 6 + 5] = vocalTract->tongueRib[i].rightSideHeight;
+  }
+
+  vocalTract->restoreControlParams();
+
+  return 0;
+}
+
+// ****************************************************************************
+// Returns tongue rib width bounds (minX, maxX) after getCrossProfiles + lowpass.
+// boundsData: flat array of size numRibs * 2 (minX, maxX per rib).
+// ****************************************************************************
+
+int vtlGetTongueWidthBounds(double *tractParams, double *boundsData,
+                            int *numRibs)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  vocalTract->storeControlParams();
+
+  int i;
+  for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+  {
+    vocalTract->param[i].x = tractParams[i];
+  }
+
+  vocalTract->calculateAll();
+
+  *numRibs = VocalTract::NUM_TONGUE_RIBS;
+  for (i = 0; i < VocalTract::NUM_TONGUE_RIBS; i++)
+  {
+    boundsData[i * 2 + 0] = vocalTract->tongueRib[i].minX;
+    boundsData[i * 2 + 1] = vocalTract->tongueRib[i].maxX;
+  }
+
+  vocalTract->restoreControlParams();
+
+  return 0;
+}
+
+// ****************************************************************************
+// Export all vertex positions for a specific surface.
+// vertexData: flat array of size numRibs * numRibPoints * 3 (x, y, z per vertex)
+// ****************************************************************************
+
+int vtlGetSurfaceVertices(double *tractParams, int surfaceIndex,
+                          double *vertexData, int *numRibs, int *numRibPoints)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+  if (surfaceIndex < 0 || surfaceIndex >= VocalTract::NUM_SURFACES)
+  {
+    printf("Error: Invalid surface index %d.\n", surfaceIndex);
+    return 2;
+  }
+
+  vocalTract->storeControlParams();
+
+  int i;
+  for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+  {
+    vocalTract->param[i].x = tractParams[i];
+  }
+
+  vocalTract->calculateAll();
+
+  Surface *s = &vocalTract->surface[surfaceIndex];
+  *numRibs = s->numRibs;
+  *numRibPoints = s->numRibPoints;
+
+  int idx = 0;
+  for (int r = 0; r < s->numRibs; r++)
+  {
+    for (int p = 0; p < s->numRibPoints; p++)
+    {
+      Point3D v = s->getVertex(r, p);
+      vertexData[idx++] = v.x;
+      vertexData[idx++] = v.y;
+      vertexData[idx++] = v.z;
+    }
+  }
+
+  vocalTract->restoreControlParams();
+
+  return 0;
+}
+
+// ****************************************************************************
+// Returns raw triangle intersection cuts at a specific centerline index.
+// cutData: flat array of size 2048 * 8 (P0.x, P0.y, P1.x, P1.y,
+//          n.x, n.y, globalSurfaceIndex, localSurfaceIndex per cut).
+// numCuts: output, number of cuts found.
+// ****************************************************************************
+
+int vtlGetCuts(double *tractParams, int centerlineIndex, double *cutData,
+               int *numCuts)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  if (centerlineIndex < 0 ||
+      centerlineIndex >= VocalTract::NUM_CENTERLINE_POINTS)
+  {
+    printf("Error: centerlineIndex %d is out of range [0, %d).\n",
+           centerlineIndex, VocalTract::NUM_CENTERLINE_POINTS);
+    return 2;
+  }
+
+  vocalTract->storeControlParams();
+
+  int i;
+  for (i = 0; i < VocalTract::NUM_PARAMS; i++)
+  {
+    vocalTract->param[i].x = tractParams[i];
+  }
+
+  vocalTract->calculateAll();
+
+  const int MAX_CUTS = 2048;
+  *numCuts = vocalTract->getRawCuts(
+      vocalTract->centerLine[centerlineIndex].point,
+      vocalTract->centerLine[centerlineIndex].normal, cutData, MAX_CUTS);
+
+  vocalTract->restoreControlParams();
+
+  return 0;
+}
+
+// ****************************************************************************
+// Apply anatomy parameters derived from age and gender to the loaded vocal
+// tract.
+// ****************************************************************************
+
+int vtlSetAnatomyFromAge(int ageMonths, bool isMale)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  AnatomyParams ap;
+  ap.calcFromAge(ageMonths, isMale);
+  ap.restrictParams();
+  ap.setFor(vocalTract);
+
+  return 0;
+}
+
+// ****************************************************************************
+// Get the 13 anatomy parameters from the currently loaded vocal tract.
+// ****************************************************************************
+
+int vtlGetAnatomyParams(double *anatomyParams)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  AnatomyParams ap;
+  ap.getFrom(vocalTract);
+  for (int i = 0; i < AnatomyParams::NUM_ANATOMY_PARAMS; i++)
+  {
+    anatomyParams[i] = ap.param[i].x;
+  }
+
+  return 0;
+}
+
+// ****************************************************************************
+// Set the 13 anatomy parameters on the currently loaded vocal tract.
+// ****************************************************************************
+
+int vtlSetAnatomyParams(double *anatomyParams)
+{
+  if (!vtlApiInitialized)
+  {
+    printf("Error: The API has not been initialized.\n");
+    return 1;
+  }
+
+  AnatomyParams ap;
+  for (int i = 0; i < AnatomyParams::NUM_ANATOMY_PARAMS; i++)
+  {
+    ap.param[i].x = anatomyParams[i];
+  }
+  ap.restrictParams();
+  ap.setFor(vocalTract);
+
+  return 0;
+}

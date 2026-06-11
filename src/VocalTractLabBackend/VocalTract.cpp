@@ -5727,6 +5727,151 @@ void VocalTract::calcCrossSections()
 
 
 // ****************************************************************************
+/// Returns raw triangle intersection cuts for a cross-section defined by
+/// point P and normal vector v. Each cut is stored as 8 doubles:
+/// [P0.x, P0.y, P1.x, P1.y, n.x, n.y, globalSurfaceIndex, localSurfaceIndex]
+/// Returns the number of cuts found.
+// ****************************************************************************
+
+int VocalTract::getRawCuts(Point2D P, Point2D v, double *cutData, int maxCuts)
+{
+  const int NUM_PROFILE_SURFACES = 10;
+
+  int i, k;
+  Surface *s;
+  Point2D P0, P1, n;
+  int globalIndex;
+
+  int profileSurfaceIndex[NUM_PROFILE_SURFACES] =
+  {
+    UPPER_COVER, UPPER_TEETH, UPPER_LIP, UVULA,
+    LOWER_COVER, LOWER_TEETH, LOWER_LIP, EPIGLOTTIS,
+    LEFT_COVER, RADIATION
+  };
+
+  const int MAX_LIST_ENTRIES = 1024;
+  int indexList[MAX_LIST_ENTRIES];
+  int numListEntries;
+
+  int numCuts = 0;
+
+  for (k = 0; k < NUM_PROFILE_SURFACES; k++)
+  {
+    globalIndex = profileSurfaceIndex[k];
+    s = &surface[globalIndex];
+
+    if (makeFasterIntersections)
+    {
+      if (intersectionsPrepared[globalIndex] == false)
+      {
+        s->prepareIntersections();
+        intersectionsPrepared[globalIndex] = true;
+      }
+
+      s->prepareIntersection(P, v);
+      s->getTriangleList(indexList, numListEntries, MAX_LIST_ENTRIES);
+
+      for (i = 0; i < numListEntries; i++)
+      {
+        if ((s->getTriangleIntersection(indexList[i], P0, P1, n)) && (numCuts < maxCuts) &&
+            (P0.y < MAX_PROFILE_VALUE) && (P1.y < MAX_PROFILE_VALUE) &&
+            (P1.y > MIN_PROFILE_VALUE) && (P1.y > MIN_PROFILE_VALUE))
+        {
+          cutData[numCuts * 8 + 0] = P0.x;
+          cutData[numCuts * 8 + 1] = P0.y;
+          cutData[numCuts * 8 + 2] = P1.x;
+          cutData[numCuts * 8 + 3] = P1.y;
+          cutData[numCuts * 8 + 4] = n.x;
+          cutData[numCuts * 8 + 5] = n.y;
+          cutData[numCuts * 8 + 6] = (double)globalIndex;
+          cutData[numCuts * 8 + 7] = (double)k;
+          numCuts++;
+        }
+      }
+    }
+    else
+    {
+      s->prepareIntersection(P, v);
+
+      for (i = 0; i < s->numTriangles; i++)
+      {
+        if ((s->getTriangleIntersection(i, P0, P1, n)) && (numCuts < maxCuts) &&
+            (P0.y < MAX_PROFILE_VALUE) && (P1.y < MAX_PROFILE_VALUE) &&
+            (P1.y > MIN_PROFILE_VALUE) && (P1.y > MIN_PROFILE_VALUE))
+        {
+          cutData[numCuts * 8 + 0] = P0.x;
+          cutData[numCuts * 8 + 1] = P0.y;
+          cutData[numCuts * 8 + 2] = P1.x;
+          cutData[numCuts * 8 + 3] = P1.y;
+          cutData[numCuts * 8 + 4] = n.x;
+          cutData[numCuts * 8 + 5] = n.y;
+          cutData[numCuts * 8 + 6] = (double)globalIndex;
+          cutData[numCuts * 8 + 7] = (double)k;
+          numCuts++;
+        }
+      }
+    }
+  }
+
+  // Also include TONGUE surface cuts (no P0.y/P1.y bounds, matching getCrossProfiles)
+  {
+    globalIndex = TONGUE;
+    s = &surface[TONGUE];
+
+    if (makeFasterIntersections)
+    {
+      if (intersectionsPrepared[TONGUE] == false)
+      {
+        s->prepareIntersections();
+        intersectionsPrepared[TONGUE] = true;
+      }
+
+      s->prepareIntersection(P, v);
+      s->getTriangleList(indexList, numListEntries, MAX_LIST_ENTRIES);
+
+      for (i = 0; i < numListEntries; i++)
+      {
+        if ((s->getTriangleIntersection(indexList[i], P0, P1, n)) && (numCuts < maxCuts))
+        {
+          cutData[numCuts * 8 + 0] = P0.x;
+          cutData[numCuts * 8 + 1] = P0.y;
+          cutData[numCuts * 8 + 2] = P1.x;
+          cutData[numCuts * 8 + 3] = P1.y;
+          cutData[numCuts * 8 + 4] = n.x;
+          cutData[numCuts * 8 + 5] = n.y;
+          cutData[numCuts * 8 + 6] = (double)globalIndex;
+          cutData[numCuts * 8 + 7] = (double)10;  // localSurfaceIndex = 10 for tongue
+          numCuts++;
+        }
+      }
+    }
+    else
+    {
+      s->prepareIntersection(P, v);
+
+      for (i = 0; i < s->numTriangles; i++)
+      {
+        if ((s->getTriangleIntersection(i, P0, P1, n)) && (numCuts < maxCuts))
+        {
+          cutData[numCuts * 8 + 0] = P0.x;
+          cutData[numCuts * 8 + 1] = P0.y;
+          cutData[numCuts * 8 + 2] = P1.x;
+          cutData[numCuts * 8 + 3] = P1.y;
+          cutData[numCuts * 8 + 4] = n.x;
+          cutData[numCuts * 8 + 5] = n.y;
+          cutData[numCuts * 8 + 6] = (double)globalIndex;
+          cutData[numCuts * 8 + 7] = (double)10;
+          numCuts++;
+        }
+      }
+    }
+  }
+
+  return numCuts;
+}
+
+
+// ****************************************************************************
 /// Calculates the upper and lower profile of a cross-section defined by the
 /// Point P and normal vector v on the center line.
 // ****************************************************************************
