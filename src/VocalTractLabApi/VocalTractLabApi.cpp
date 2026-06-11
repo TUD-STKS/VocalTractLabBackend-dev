@@ -788,11 +788,13 @@ int vtlGetTransferFunction(double* tractParams, int numSpectrumSamples, Transfer
 
     TlModel* tlModel = new TlModel();
 
-    // Set the options
+    // Set the options.
+    // tfOpts is declared outside the if-block below, because it must
+    // still be alive when opts is dereferenced further down.
+    TransferFunctionOptions tfOpts;
     TlModel::Options tlOpts;
     if (opts == NULL)
     {
-      TransferFunctionOptions tfOpts;
       vtlGetDefaultTransferFunctionOptions(&tfOpts);
       opts = &tfOpts;
     }
@@ -805,6 +807,7 @@ int vtlGetTransferFunction(double* tractParams, int numSpectrumSamples, Transfer
     tlOpts.piriformFossa = opts->piriformFossa;
     tlOpts.radiation = (TlModel::RadiationType)opts->radiationType;
     tlOpts.softWalls = opts->softWalls;
+    tlOpts.staticPressureDrops = opts->staticPressureDrops;
 
     tlModel->options = tlOpts;
     vocalTract->getTube(&tlModel->tube);

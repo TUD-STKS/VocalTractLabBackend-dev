@@ -761,6 +761,12 @@ void Tube::operator=(const Tube &t)
   this->teethPosition_cm = t.teethPosition_cm;
   this->aspirationStrength_dB = t.aspirationStrength_dB;
   this->tongueTipSideElevation = t.tongueTipSideElevation;
+
+  this->staticPartsInitialized = t.staticPartsInitialized;
+  this->subglottalCavityLength_cm = t.subglottalCavityLength_cm;
+  this->nasalCavityLength_cm = t.nasalCavityLength_cm;
+  this->piriformFossaLength_cm = t.piriformFossaLength_cm;
+  this->piriformFossaVolume_cm3 = t.piriformFossaVolume_cm3;
 }
 
 // ****************************************************************************
