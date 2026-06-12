@@ -4891,7 +4891,7 @@ void VocalTract::calcTongueRibs()
     lastInside = false;
     ok = false;
 
-    for (k=NUM_PROFILE_SAMPLES; k > N2; k--)
+    for (k=NUM_PROFILE_SAMPLES-1; k > N2; k--)
     {
       x = (double)k*PROFILE_SAMPLE_LENGTH - 0.5*PROFILE_LENGTH;
 

@@ -1262,7 +1262,7 @@ void AnatomyParams::adaptArticulation(double *oldParams, double *newParams)
   // Scale the tongue side height linearly with the VT depth. *******
 
   double depthScale = param[PALATE_DEPTH].x / origAnatomyParams.param[PALATE_DEPTH].x;
-  for (i=0; i < 4; i++)
+  for (i=0; i < VocalTract::NUM_PARAMS - VocalTract::TS1; i++)
   {
     newParams[VocalTract::TS1+i] = oldParams[VocalTract::TS1+i]*depthScale;
   }
