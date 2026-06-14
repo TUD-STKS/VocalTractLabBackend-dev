@@ -178,6 +178,7 @@ private:
   double nasalCavityLength_cm;
   double piriformFossaLength_cm;
   double piriformFossaVolume_cm3;
+  double rawVelumOpening_cm2 = 0.0;
 
   // **************************************************************************
   // Private functions.
